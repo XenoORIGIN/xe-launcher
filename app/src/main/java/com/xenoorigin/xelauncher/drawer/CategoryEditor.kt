@@ -1,5 +1,12 @@
 package com.xenoorigin.xelauncher.drawer
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.fillMaxSize
+import com.xenoorigin.xelauncher.design.ReorderableColumn
+import com.xenoorigin.xelauncher.design.glassTile
+import com.xenoorigin.xelauncher.design.LocalGlassStyle
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -52,6 +59,7 @@ val CategoryIconChoices = listOf(
     "video", "camera", "heart", "star", "home", "shopping-bag", "wallet", "currency-baht", "map-pin", "plane", "car", "run",
     "ball-football", "heartbeat", "code", "terminal", "cpu", "brush", "palette", "shirt", "coffee", "pizza", "gift", "rocket",
     "leaf", "paw", "flame", "bolt", "cloud", "shield", "news", "users", "world", "sparkles", "mood-smile", "wand",
+    "tool", "apps", "player-play", "building-bank", "cash", "shopping-cart", "plane-departure", "device-mobile", "users-group",
 )
 
 data class EditorActions(
@@ -76,21 +84,25 @@ fun CategoryEditor(categories: List<Pair<CategoryEntity, String>>, actions: Edit
                 Text(stringResource(R.string.edit_categories), Modifier.weight(1f).padding(start = 14.dp), style = XeType.Title, color = scheme.text)
                 GlassIconButton(R.drawable.ti_plus, stringResource(R.string.add_category), { adding = true })
             }
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                itemsIndexed(categories, key = { _, c -> c.first.id }) { i, (c, title) ->
-                    GlassSurface(RoundedCornerShape(22.dp), Modifier.fillMaxWidth().height(64.dp).clickable { editing = c }) {
-                        Row(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(painterResource(XeIcons.res(c.iconName)), null, Modifier.size(24.dp), tint = scheme.text)
-                            Text(title, Modifier.weight(1f).padding(start = 14.dp), style = XeType.Headline, color = scheme.text)
-                            val ids = categories.map { it.first.id }
-                            if (i > 0) GlassIconButton(R.drawable.ti_chevron_up, stringResource(R.string.move_up), {
-                                actions.reorder(ids.toMutableList().apply { add(i - 1, removeAt(i)) })
-                            }, size = 36.dp)
-                            if (i < categories.lastIndex) GlassIconButton(R.drawable.ti_chevron_down, stringResource(R.string.move_down), {
-                                actions.reorder(ids.toMutableList().apply { add(i + 1, removeAt(i)) })
-                            }, Modifier.padding(start = 6.dp), size = 36.dp)
-                        }
+            Text(stringResource(R.string.drag_to_reorder), style = XeType.Caption, color = scheme.textSecondary, modifier = Modifier.padding(bottom = 10.dp))
+            ReorderableColumn(
+                categories, key = { it.first.id }, rowHeight = 64.dp, spacing = 10.dp,
+                onMoved = { list -> actions.reorder(list.map { it.first.id }) },
+                modifier = Modifier.verticalScroll(rememberScrollState()).padding(bottom = 24.dp),
+            ) { (c, title), handle, dragging ->
+                Row(
+                    Modifier.fillMaxSize()
+                        .glassTile(RoundedCornerShape(22.dp), LocalGlassStyle.current, Color.White.copy(alpha = if (dragging) .2f else .1f))
+                        .clickable { editing = c }
+                        .padding(start = 4.dp, end = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(handle.size(48.dp), contentAlignment = Alignment.Center) {
+                        Icon(painterResource(R.drawable.ti_grip_vertical), stringResource(R.string.drag_to_reorder), Modifier.size(22.dp), tint = scheme.textSecondary)
                     }
+                    Icon(painterResource(XeIcons.res(c.iconName)), null, Modifier.size(24.dp), tint = scheme.text)
+                    Text(title, Modifier.weight(1f).padding(start = 14.dp), style = XeType.Headline, color = scheme.text)
+                    Icon(painterResource(R.drawable.ti_chevron_right), null, Modifier.size(20.dp), tint = scheme.textSecondary)
                 }
             }
         }

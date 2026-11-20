@@ -1,5 +1,14 @@
 package com.xenoorigin.xelauncher.di
 
+import com.xenoorigin.xelauncher.apps.AppEntry
+import com.xenoorigin.xelauncher.icons.CustomIconStore
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -32,7 +41,16 @@ class AppGraph(val context: Context) {
     val db: XeDatabase = XeDatabase.open(context)
     val settings = SettingsStore(context, CoroutineScope(SupervisorJob() + Dispatchers.IO))
     val apps = LauncherAppsSource(context, scope)
-    val icons = IconRepository({ apps.icon(it, context.resources.displayMetrics.densityDpi.coerceAtLeast(480)) }, File(context.cacheDir, "icons"))
+    val customIcons = CustomIconStore(File(context.filesDir, "custom_icons"))
+    val icons = IconRepository(
+        { apps.icon(it, context.resources.displayMetrics.densityDpi.coerceAtLeast(480)) }, File(context.cacheDir, "icons"),
+        customIcons::get, customIcons::version,
+    )
+
+    /** Installed apps with the user's own names applied. Everything shown on screen uses this list. */
+    val labeledApps: StateFlow<List<AppEntry>> = combine(apps.apps, settings.settings.map { it.labelOverrides }.distinctUntilChanged()) { list, names ->
+        if (names.isEmpty()) list else list.map { a -> names[a.key.encode()]?.let { a.copy(label = it) } ?: a }
+    }.stateIn(scope, SharingStarted.Eagerly, emptyList())
     val wallpaper = WallpaperController(context, settings)
 
     /** Fires when the Home button is pressed while Xe is already in front. */
@@ -45,14 +63,18 @@ class AppGraph(val context: Context) {
             BuiltInCategory.GAMES -> R.string.cat_games
             BuiltInCategory.MEDIA -> R.string.cat_media
             BuiltInCategory.TOOLS -> R.string.cat_tools
+            BuiltInCategory.SHOPPING -> R.string.cat_shopping
+            BuiltInCategory.FINANCE -> R.string.cat_finance
+            BuiltInCategory.TRAVEL -> R.string.cat_travel
+            BuiltInCategory.WORK -> R.string.cat_work
             BuiltInCategory.OTHER -> R.string.cat_other
         },
     )
 
-    val categories = CategoryRepository(db, apps.apps, settings.settings, ::categoryLabel)
+    val categories = CategoryRepository(db, labeledApps, settings.settings, ::categoryLabel)
 
     val home = HomeRepository(
-        db, apps.apps, settings.settings,
+        db, labeledApps, settings.settings,
         folderNameFor = { categoryLabel(Categorizer.categorize(it.key.packageName, it.androidCategory)) },
         defaults = ::defaultDockApps,
         isInstalled = { pkg -> runCatching { context.packageManager.getPackageInfo(pkg, 0) }.isSuccess },
@@ -61,6 +83,10 @@ class AppGraph(val context: Context) {
     init {
         scope.launch {
             categories.ensureDefaults()
+            if (settings.current().categoriesVersion < 2) {
+                categories.upgradeBuiltIns()
+                settings.update { it.copy(categoriesVersion = 2) }
+            }
             wallpaper.restore()
         }
         scope.launch { apps.packageChanges.collect { pkg -> icons.invalidate(pkg); home.pruneUninstalled() } }

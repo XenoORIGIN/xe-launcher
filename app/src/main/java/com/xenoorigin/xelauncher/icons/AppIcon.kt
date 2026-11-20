@@ -41,6 +41,8 @@ import com.xenoorigin.xelauncher.design.toShape
 
 val LocalIconRepository = staticCompositionLocalOf<IconRepository?> { null }
 val LocalGrayscaleContrast = staticCompositionLocalOf { 1.15f }
+/** The user's custom icon pictures (AppKey.encode() -> file); a change re-renders that tile. */
+val LocalCustomIcons = staticCompositionLocalOf<Map<String, java.io.File>> { emptyMap() }
 /** How large the symbol is drawn on its tile (1 = default). */
 val LocalGlyphScale = staticCompositionLocalOf { 1f }
 
@@ -72,7 +74,8 @@ fun IconTile(app: AppEntry, size: Dp, style: IconStyle, shape: IconShape, modifi
     val contrast = LocalGrayscaleContrast.current
     val glyphScale = LocalGlyphScale.current
     val px = with(LocalDensity.current) { size.roundToPx() }
-    val icon by produceState(repo?.peek(app.key, style, px, contrast), app.key, style, px, contrast) {
+    val custom = LocalCustomIcons.current[app.key.encode()]
+    val icon by produceState(repo?.peek(app.key, style, px, contrast), app.key, style, px, contrast, custom) {
         if (value == null) value = repo?.icon(app.key, style, px, contrast)
     }
     val s = shape.toShape()

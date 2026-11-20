@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -67,7 +68,9 @@ import com.xenoorigin.xelauncher.drawer.EditorActions
 import com.xenoorigin.xelauncher.home.AppCell
 import com.xenoorigin.xelauncher.home.DropRequest
 import com.xenoorigin.xelauncher.home.EditBar
-import com.xenoorigin.xelauncher.home.EditIconSheet
+import com.xenoorigin.xelauncher.home.EditAppSheet
+import com.xenoorigin.xelauncher.drawer.ArrangeApps
+import com.xenoorigin.xelauncher.drawer.BulkIcons
 import com.xenoorigin.xelauncher.home.FolderCell
 import com.xenoorigin.xelauncher.home.FolderPopup
 import com.xenoorigin.xelauncher.home.GestureResolver
@@ -110,7 +113,11 @@ fun XeApp(graph: AppGraph) {
         val haze = remember { HazeState() }
         CompositionLocalProvider(
             LocalHazeState provides haze, LocalIconRepository provides graph.icons, LocalGrayscaleContrast provides settings.grayscaleContrast,
-        ) { LauncherRoot(graph, settings) }
+            com.xenoorigin.xelauncher.icons.LocalGlyphScale provides settings.glyphScale,
+        ) {
+            val customIcons by graph.customIcons.files.collectAsState()
+            CompositionLocalProvider(com.xenoorigin.xelauncher.icons.LocalCustomIcons provides customIcons) { LauncherRoot(graph, settings) }
+        }
     }
 }
 
@@ -121,7 +128,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     val density = LocalDensity.current
     val speed = LocalAnimationSpeed.current
     val scope = rememberCoroutineScope()
-    val apps by graph.apps.apps.collectAsState()
+    val apps by graph.labeledApps.collectAsState()
     val categories by graph.categories.categories.collectAsState(initial = emptyList())
     val editable by graph.categories.editable.collectAsState(initial = emptyList())
     val layout by graph.home.layout.collectAsState(initial = HomeLayout.Empty)
@@ -135,20 +142,52 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     var drawerMenu by remember { mutableStateOf(false) }
     var editor by remember { mutableStateOf<Boolean?>(null) } // true = start adding
     var moveFor by remember { mutableStateOf<AppEntry?>(null) }
-    var styleFor by remember { mutableStateOf<AppEntry?>(null) }
+    var editFor by remember { mutableStateOf<AppEntry?>(null) }
+    var pictureFor by remember { mutableStateOf<AppEntry?>(null) }
+    var arrange by remember { mutableStateOf<com.xenoorigin.xelauncher.categories.CategoryWithApps?>(null) }
+    var bulkIcons by remember { mutableStateOf(false) }
+    val iconPicker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()) { uri ->
+        val app = pictureFor
+        pictureFor = null
+        if (uri != null && app != null) scope.launch {
+            val ok = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching {
+                    val bmp = android.graphics.ImageDecoder.decodeBitmap(android.graphics.ImageDecoder.createSource(ctx.contentResolver, uri)) { d, info, _ ->
+                        d.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
+                        val big = maxOf(info.size.width, info.size.height)
+                        if (big > 512) { val f = 512f / big; d.setTargetSize((info.size.width * f).toInt().coerceAtLeast(1), (info.size.height * f).toInt().coerceAtLeast(1)) }
+                    }
+                    graph.customIcons.set(app.key, bmp)
+                }.isSuccess
+            }
+            if (!ok) Toast.makeText(ctx, ctx.getString(R.string.import_failed), Toast.LENGTH_SHORT).show()
+        }
+    }
     var settingsRoute by remember { mutableStateOf<String?>(null) }
     var editMode by remember { mutableStateOf(false) }
 
-    fun styleOf(a: AppEntry): IconStyle = settings.iconOverrides[a.key.encode()] ?: settings.iconStyle
-    val homeLook = HomeLook(settings.homeColumns, settings.homeRows, settings.dockSize, settings.iconSizeDp, settings.showLabels, settings.iconShape, ::styleOf)
-    val drawerLook = DrawerLook(::styleOf, settings.iconShape, settings.iconSizeDp, settings.showLabels, settings.categoryBar)
+    // Stable objects: they only change when settings do, so the drawer and home don't recompose every frame.
+    val styleOf: (AppEntry) -> IconStyle = remember(settings.iconOverrides, settings.iconStyle) {
+        { a -> settings.iconOverrides[a.key.encode()] ?: settings.iconStyle }
+    }
+    val homeLook = remember(settings, styleOf) { HomeLook(settings.homeColumns, settings.homeRows, settings.dockSize, settings.iconSizeDp, settings.showLabels, settings.iconShape, styleOf) }
+    val drawerLook = remember(settings, styleOf) { DrawerLook(styleOf, settings.iconShape, settings.iconSizeDp, settings.showLabels, settings.categoryBar) }
+    // Read the animated drawer position only through these, never directly in composition.
+    val drawerShown by remember { derivedStateOf { drawer.value > 0f } }
+    val drawerFull by remember { derivedStateOf { drawer.value >= 1f } }
+
+    // Render every icon ahead of time so the drawer opens with icons already in place.
+    LaunchedEffect(apps, settings.iconStyle, settings.iconOverrides, settings.iconSizeDp, settings.grayscaleContrast) {
+        val px = with(density) { settings.iconSizeDp.dp.roundToPx() }
+        graph.icons.prewarm(apps.map { it.key }, { k -> settings.iconOverrides[k.encode()] ?: settings.iconStyle }, px, settings.grayscaleContrast)
+    }
 
     fun update(f: (XeSettings) -> XeSettings) = scope.launch { graph.settings.update(f) }
     fun settleDrawer(open: Boolean) = scope.launch {
         drawer.animateTo(if (open) 1f else 0f, XeMotion.spring(speed, dampingRatio = .86f, stiffness = 380f))
     }
     fun closeAll() {
-        menu = null; openFolder = null; drawerMenu = false; editor = null; moveFor = null; styleFor = null
+        menu = null; openFolder = null; drawerMenu = false; editor = null; moveFor = null; editFor = null; arrange = null; bulkIcons = false
         searchOpen = false; settingsRoute = null; editMode = false
     }
 
@@ -175,13 +214,13 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     LaunchedEffect(Unit) {
         graph.homePressed.collect {
             val anyOverlay = menu != null || openFolder != null || drawerMenu || editor != null || moveFor != null ||
-                styleFor != null || searchOpen || settingsRoute != null || editMode
+                editFor != null || arrange != null || bulkIcons || searchOpen || settingsRoute != null || editMode
             if (anyOverlay) closeAll()
-            else if (drawer.value > 0f) settleDrawer(false)
+            else if (drawerShown) settleDrawer(false)
             else homePager.animateScrollToPage(0)
         }
     }
-    BackHandler(enabled = drawer.value > 0f) { settleDrawer(false) }
+    BackHandler(enabled = drawerShown) { settleDrawer(false) }
     BackHandler(enabled = editMode) { editMode = false }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -239,7 +278,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                         }
                     },
                     Orientation.Vertical,
-                    enabled = drawer.value < 1f,
+                    enabled = !drawerFull,
                     onDragStarted = { totalDy = 0f },
                     onDragStopped = { v ->
                         if (drawer.value > 0f) settleDrawer(v < -fling * .6f || (drawer.value > .35f && v < fling * .6f))
@@ -255,7 +294,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
         )
 
         // ---------- App drawer (follows the finger) ----------
-        if (drawer.value > 0f) {
+        if (drawerShown) {
             val closeConnection = remember {
                 object : NestedScrollConnection {
                     override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
@@ -278,10 +317,9 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                     }
                 }
             }
-            Box(
-                Modifier.fillMaxSize()
-                    .graphicsLayer { alpha = drawer.value.coerceIn(0f, 1f) }
-                    .liquidGlass(RectangleShape, LocalGlassStyle.current.copy(rimAlpha = 0f, tint = Color.Black.copy(alpha = .32f)), LocalHazeState.current),
+            com.xenoorigin.xelauncher.wallpaper.BlurredBackdrop(
+                graph.wallpaper, Color.Black.copy(alpha = .38f),
+                Modifier.graphicsLayer { alpha = drawer.value.coerceIn(0f, 1f) },
             )
             AppDrawer(
                 categories, drawerState, drawerLook,
@@ -294,6 +332,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                     }
                 },
                 onMenu = { drawerMenu = true },
+                onEditCategories = { editor = false },
                 modifier = Modifier
                     .graphicsLayer { val p = drawer.value; translationY = (1f - p) * heightPx * .35f; alpha = p.coerceIn(0f, 1f) }
                     .nestedScroll(closeConnection)
@@ -308,9 +347,9 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
         // ---------- Overlays ----------
         AnimatedVisibility(searchOpen, enter = fadeIn() + scaleIn(initialScale = .96f), exit = fadeOut() + scaleOut(targetScale = .96f)) {
             Box(Modifier.fillMaxSize()) {
-                Box(Modifier.fillMaxSize().liquidGlass(RectangleShape, LocalGlassStyle.current.copy(rimAlpha = 0f, tint = Color.Black.copy(alpha = .4f)), LocalHazeState.current))
+                com.xenoorigin.xelauncher.wallpaper.BlurredBackdrop(graph.wallpaper, Color.Black.copy(alpha = .45f))
                 SearchPage(
-                    apps.filter { it.key.encode() !in settings.hiddenApps }, graph.apps::allShortcuts, ::styleOf, settings.iconShape,
+                    apps.filter { it.key.encode() !in settings.hiddenApps }, graph.apps::allShortcuts, styleOf, settings.iconShape,
                     settings.searchCalculator, settings.searchWeb, settings.searchAutoKeyboard,
                     onLaunch = ::launch,
                     onLongPress = { a, b -> menu = MenuState(b, a, null, MenuSource.DRAWER) },
@@ -343,6 +382,34 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
             onEditCategories = { drawerMenu = false; editor = false },
             onHiddenApps = { drawerMenu = false; settingsRoute = "hidden" },
             onAllSettings = { drawerMenu = false; settingsRoute = "root" },
+            onArrange = {
+                drawerMenu = false
+                val pages = if (settings.categoryBar) categories else null
+                arrange = pages?.getOrNull(drawerState.pager.currentPage) ?: com.xenoorigin.xelauncher.categories.CategoryWithApps(
+                    -1, ctx.getString(R.string.all_apps), "apps", null, categories.flatMap { it.apps },
+                )
+            },
+            onBulkIcons = { drawerMenu = false; bulkIcons = true },
+        )
+        arrange?.let { cat ->
+            ArrangeApps(
+                cat.title, cat.apps, styleOf, settings.iconShape,
+                onSave = { list ->
+                    update { st ->
+                        val ranks = st.appOrder.toMutableMap()
+                        list.forEachIndexed { i, a -> ranks[a.key.encode()] = i }
+                        st.copy(appOrder = ranks, drawerSort = com.xenoorigin.xelauncher.settings.DrawerSort.CUSTOM)
+                    }
+                },
+                onClose = { arrange = null },
+            )
+        }
+        if (bulkIcons) BulkIcons(
+            apps.filter { it.key.encode() !in settings.hiddenApps }, styleOf, settings.iconShape,
+            onApply = { keys, style ->
+                update { st -> st.copy(iconOverrides = if (style == null) st.iconOverrides - keys else st.iconOverrides + keys.associateWith { style }) }
+            },
+            onClose = { bulkIcons = false },
         )
         editor?.let { adding ->
             CategoryEditor(
@@ -358,10 +425,32 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
             )
         }
         MoveToCategorySheet(moveFor, editable, onPick = { id -> moveFor?.let { a -> scope.launch { graph.categories.moveApp(a.key, id) } }; moveFor = null }, onDismiss = { moveFor = null })
-        EditIconSheet(styleFor, styleFor?.let { settings.iconOverrides[it.key.encode()] }, onPick = { s ->
-            styleFor?.let { a -> update { st -> st.copy(iconOverrides = if (s == null) st.iconOverrides - a.key.encode() else st.iconOverrides + (a.key.encode() to s)) } }
-            styleFor = null
-        }, onDismiss = { styleFor = null })
+        val editing = editFor
+        EditAppSheet(
+            editing,
+            originalLabel = editing?.let { e -> graph.apps.apps.value.firstOrNull { it.key == e.key }?.label },
+            currentStyle = editing?.let { settings.iconOverrides[it.key.encode()] },
+            hasCustomIcon = editing?.let { graph.customIcons.get(it.key) != null } == true,
+            shape = settings.iconShape,
+            onSave = { name, style ->
+                editing?.let { a ->
+                    val k = a.key.encode()
+                    update { st ->
+                        st.copy(
+                            labelOverrides = if (name == null) st.labelOverrides - k else st.labelOverrides + (k to name),
+                            iconOverrides = if (style == null) st.iconOverrides - k else st.iconOverrides + (k to style),
+                        )
+                    }
+                }
+                editFor = null
+            },
+            onPickImage = {
+                pictureFor = editing
+                iconPicker.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly))
+            },
+            onResetImage = { editing?.let { a -> scope.launch(kotlinx.coroutines.Dispatchers.IO) { graph.customIcons.clear(a.key) } } },
+            onDismiss = { editFor = null },
+        )
 
         menu?.let { m ->
             val app = m.app
@@ -380,7 +469,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                     }
                 }
                 if (app != null) {
-                    add(MenuAction(R.drawable.ti_palette, stringResource(R.string.edit_icon)) { styleFor = app; menu = null })
+                    add(MenuAction(R.drawable.ti_pencil, stringResource(R.string.edit_app)) { editFor = app; menu = null })
                     add(MenuAction(R.drawable.ti_category, stringResource(R.string.move_to_category)) { moveFor = app; menu = null })
                     add(MenuAction(R.drawable.ti_eye_off, stringResource(R.string.hide_app)) { update { it.copy(hiddenApps = it.hiddenApps + app.key.encode()) }; menu = null })
                     add(MenuAction(R.drawable.ti_info_circle, stringResource(R.string.app_info)) { graph.apps.openAppInfo(app.key); menu = null })
@@ -397,7 +486,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
 
         // First run: offer to become the Home app.
         var offerDefault by remember { mutableStateOf(com.xenoorigin.xelauncher.onboarding.shouldOfferDefaultHome(com.xenoorigin.xelauncher.onboarding.isDefaultHome(ctx), settings.firstRunDone)) }
-        if (offerDefault && drawer.value == 0f && !editMode) {
+        if (offerDefault && !drawerShown && !editMode) {
             com.xenoorigin.xelauncher.onboarding.SetDefaultHomeCard(
                 onRequest = {
                     offerDefault = false; update { it.copy(firstRunDone = true) }

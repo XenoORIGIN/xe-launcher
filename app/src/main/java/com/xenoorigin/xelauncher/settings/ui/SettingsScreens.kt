@@ -65,7 +65,7 @@ fun SettingsRoot(s: XeSettings, push: (String) -> Unit, onClose: () -> Unit) {
             NavRow(stringResource(R.string.icons), R.drawable.ti_apps, RowColors.Blue) { push("icons") }
             NavRow(stringResource(R.string.animation), R.drawable.ti_sparkles, RowColors.Purple) { push("animation") }
             NavRow(stringResource(R.string.gestures), R.drawable.ti_hand_finger, RowColors.Red) { push("gestures") }
-            NavRow(stringResource(R.string.xe_studio), R.drawable.ti_brush, RowColors.Pink, subtitle = stringResource(R.string.coming_soon), enabled = false) {}
+            NavRow(stringResource(R.string.xe_studio), R.drawable.ti_brush, RowColors.Pink, subtitle = stringResource(R.string.xe_studio_desc)) { push("studio") }
             NavRow(stringResource(R.string.backup), R.drawable.ti_device_floppy, RowColors.Cyan) { push("backup") }
         }
         SettingsGroup(stringResource(R.string.pages)) {
@@ -122,28 +122,60 @@ fun AppearanceScreen(s: XeSettings, update: Update, back: () -> Unit) {
 }
 
 @Composable
-fun IconsScreen(s: XeSettings, update: Update, back: () -> Unit) {
+fun IconsScreen(s: XeSettings, update: Update, back: () -> Unit, sample: com.xenoorigin.xelauncher.apps.AppEntry?, onBulk: () -> Unit) {
     SettingsPage(stringResource(R.string.icons), back) {
         SettingsGroup(stringResource(R.string.icon_style)) {
-            listOf(
-                Triple(IconStyle.GLASS_DARK, R.string.style_glass_dark, R.string.style_glass_dark_desc),
-                Triple(IconStyle.GLASS_COLOR, R.string.style_glass_color, null),
-                Triple(IconStyle.GLASS_CLEAR, R.string.style_glass_clear, null),
-                Triple(IconStyle.ORIGINAL, R.string.style_original, null),
-            ).forEach { (st, l, d) -> ChoiceRow(stringResource(l), s.iconStyle == st, d?.let { stringResource(it) }) { update { it.copy(iconStyle = st) } } }
+            com.xenoorigin.xelauncher.home.IconStylePicker(sample, s.iconStyle, s.iconShape, { st -> update { it.copy(iconStyle = st) } })
+            Text(
+                stringResource(
+                    when (s.iconStyle) {
+                        IconStyle.GLASS_DARK -> R.string.style_glass_dark_desc
+                        IconStyle.MONO -> R.string.style_mono_desc
+                        IconStyle.GLASS_COLOR -> R.string.style_glass_color_desc
+                        IconStyle.GLASS_CLEAR -> R.string.style_glass_clear_desc
+                        IconStyle.ORIGINAL -> R.string.style_original_desc
+                    },
+                ),
+                style = com.xenoorigin.xelauncher.design.XeType.Caption, color = com.xenoorigin.xelauncher.design.LocalXeScheme.current.textSecondary,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+            NavRow(stringResource(R.string.bulk_icons), R.drawable.ti_palette, RowColors.Pink, subtitle = stringResource(R.string.bulk_icons_desc), onClick = onBulk)
         }
         SettingsGroup(stringResource(R.string.icon_shape)) {
-            listOf(IconShape.SQUIRCLE to R.string.shape_squircle, IconShape.CIRCLE to R.string.shape_circle, IconShape.ROUNDED to R.string.shape_rounded).forEach { (sh, l) ->
+            listOf(
+                IconShape.SQUIRCLE to R.string.shape_squircle, IconShape.CIRCLE to R.string.shape_circle, IconShape.ROUNDED to R.string.shape_rounded,
+                IconShape.SQUARE to R.string.shape_square, IconShape.TEARDROP to R.string.shape_teardrop,
+            ).forEach { (sh, l) ->
                 ChoiceRow(stringResource(l), s.iconShape == sh) { update { it.copy(iconShape = sh) } }
             }
         }
         SettingsGroup {
-            SliderRow(stringResource(R.string.icon_size), s.iconSizeDp.toFloat(), 48f..72f, steps = 11, display = { "${it.roundToInt()} dp" }) { v -> update { it.copy(iconSizeDp = v.roundToInt()) } }
-            if (s.iconStyle == IconStyle.GLASS_DARK) {
-                SliderRow(stringResource(R.string.bw_contrast), s.grayscaleContrast, .8f..1.6f, steps = 7, display = { "%.1f".format(it) }) { v -> update { it.copy(grayscaleContrast = (v * 10).roundToInt() / 10f) } }
-            }
+            SliderRow(stringResource(R.string.icon_size), s.iconSizeDp.toFloat(), 44f..76f, steps = 15, display = { "${it.roundToInt()} dp" }) { v -> update { it.copy(iconSizeDp = v.roundToInt()) } }
+            SliderRow(stringResource(R.string.symbol_size), s.glyphScale, .8f..1.25f, steps = 8, display = { "${(it * 100).roundToInt()}%" }) { v -> update { it.copy(glyphScale = (v * 20).roundToInt() / 20f) } }
+            SliderRow(stringResource(R.string.bw_contrast), s.grayscaleContrast, .8f..1.6f, steps = 7, display = { "%.1f".format(it) }) { v -> update { it.copy(grayscaleContrast = (v * 10).roundToInt() / 10f) } }
             XeRow(stringResource(R.string.show_labels)) { GlassSwitch(s.showLabels, { v -> update { it.copy(showLabels = v) } }) }
+            if (s.iconOverrides.isNotEmpty()) XeRow(stringResource(R.string.reset_all_icons), icon = R.drawable.ti_refresh, onClick = { update { it.copy(iconOverrides = emptyMap()) } })
         }
+    }
+}
+
+/** Xe Studio: one place for every creative tool. */
+@Composable
+fun StudioScreen(push: (String) -> Unit, back: () -> Unit) {
+    SettingsPage(stringResource(R.string.xe_studio), back) {
+        SettingsGroup {
+            NavRow(stringResource(R.string.studio_wallpaper), R.drawable.ti_wallpaper, RowColors.Green, subtitle = stringResource(R.string.studio_wallpaper_desc)) { push("wallpaper") }
+            NavRow(stringResource(R.string.studio_icons), R.drawable.ti_palette, RowColors.Pink, subtitle = stringResource(R.string.studio_icons_desc)) { push("icons") }
+            NavRow(stringResource(R.string.bulk_icons), R.drawable.ti_apps, RowColors.Blue, subtitle = stringResource(R.string.bulk_icons_desc)) { push("bulk") }
+            NavRow(stringResource(R.string.studio_widgets), R.drawable.ti_layout_grid_add, RowColors.Orange, subtitle = stringResource(R.string.studio_widgets_desc)) { push("widgets_help") }
+        }
+    }
+}
+
+@Composable
+fun WidgetsHelpScreen(back: () -> Unit) {
+    SettingsPage(stringResource(R.string.studio_widgets), back) {
+        Text(stringResource(R.string.widgets_how), style = com.xenoorigin.xelauncher.design.XeType.Body, color = com.xenoorigin.xelauncher.design.LocalXeScheme.current.text)
     }
 }
 

@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 @Serializable enum class ThemeMode { LIGHT, DARK, AUTO }
 @Serializable enum class AppLanguage { SYSTEM, TH, EN }
 @Serializable enum class GestureAction { NONE, OPEN_DRAWER, NOTIFICATIONS, OPEN_SEARCH, OPEN_SETTINGS, EDIT_MODE }
-@Serializable enum class DrawerSort { ALPHABETICAL, MOST_USED, RECENTLY_INSTALLED }
+@Serializable enum class DrawerSort { ALPHABETICAL, MOST_USED, RECENTLY_INSTALLED, CUSTOM }
 
 @Serializable
 data class XeSettings(
@@ -44,4 +44,12 @@ data class XeSettings(
     val searchAutoKeyboard: Boolean = true,
     /** Per-app icon style overrides, keyed by AppKey.encode(). */
     val iconOverrides: Map<String, IconStyle> = emptyMap(),
+    /** Size of the symbol on its tile, 0.8..1.25 (1 = default). */
+    val glyphScale: Float = 1f,
+    /** Per-app custom names, keyed by AppKey.encode(). */
+    val labelOverrides: Map<String, String> = emptyMap(),
+    /** Built-in category set version already added to the database (see CategoryRepository). */
+    val categoriesVersion: Int = 1,
+    /** Hand-arranged app order (AppKey.encode() -> rank) used by DrawerSort.CUSTOM. */
+    val appOrder: Map<String, Int> = emptyMap(),
 )

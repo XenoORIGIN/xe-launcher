@@ -43,7 +43,7 @@ fun SettingsHost(graph: AppGraph, start: String, onClose: () -> Unit) {
     fun pop() { if (stack.size > 1) stack.removeAt(stack.lastIndex) else onClose() }
     BackHandler(onBack = ::pop)
     Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, null) {}) {
-        Box(Modifier.fillMaxSize().liquidGlass(RectangleShape, LocalGlassStyle.current.let { it.copy(rimAlpha = 0f, tint = if (it.dark) Color.Black.copy(alpha = .62f) else Color.White.copy(alpha = .7f)) }, LocalHazeState.current))
+        com.xenoorigin.xelauncher.wallpaper.BlurredBackdrop(graph.wallpaper, if (LocalGlassStyle.current.dark) Color.Black.copy(alpha = .55f) else Color.White.copy(alpha = .62f))
         val depth = stack.size
         AnimatedContent(
             stack.last() to depth,
@@ -59,7 +59,15 @@ fun SettingsHost(graph: AppGraph, start: String, onClose: () -> Unit) {
                 "root" -> SettingsRoot(settings, ::push, onClose)
                 "wallpaper" -> WallpaperScreen(graph, back)
                 "appearance" -> AppearanceScreen(settings, update, back)
-                "icons" -> IconsScreen(settings, update, back)
+                "icons" -> IconsScreen(settings, update, back, graph.labeledApps.value.firstOrNull { it.key.packageName.contains("camera") } ?: graph.labeledApps.value.firstOrNull()) { push("bulk") }
+                "bulk" -> com.xenoorigin.xelauncher.drawer.BulkIcons(
+                    graph.labeledApps.value.filter { it.key.encode() !in settings.hiddenApps },
+                    { a -> settings.iconOverrides[a.key.encode()] ?: settings.iconStyle }, settings.iconShape,
+                    onApply = { keys, style -> update { st -> st.copy(iconOverrides = if (style == null) st.iconOverrides - keys else st.iconOverrides + keys.associateWith { style }) } },
+                    onClose = back,
+                )
+                "studio" -> StudioScreen(::push, back)
+                "widgets_help" -> WidgetsHelpScreen(back)
                 "animation" -> AnimationScreen(settings, update, back)
                 "gestures" -> GesturesScreen(settings, update, back)
                 "backup" -> BackupScreen(graph, back)

@@ -128,6 +128,19 @@ object XeIcons {
         "layers-subtract" to R.drawable.ti_layers_subtract,
         "mood-smile" to R.drawable.ti_mood_smile,
         "wand" to R.drawable.ti_wand,
+        "tool" to R.drawable.ti_tool,
+        "tools" to R.drawable.ti_tools,
+        "square-check" to R.drawable.ti_square_check,
+        "square" to R.drawable.ti_square,
+        "building-bank" to R.drawable.ti_building_bank,
+        "cash" to R.drawable.ti_cash,
+        "shopping-cart" to R.drawable.ti_shopping_cart,
+        "plane-departure" to R.drawable.ti_plane_departure,
+        "arrows-diagonal" to R.drawable.ti_arrows_diagonal,
+        "layout-grid-add" to R.drawable.ti_layout_grid_add,
+        "device-mobile" to R.drawable.ti_device_mobile,
+        "users-group" to R.drawable.ti_users_group,
+        "checklist" to R.drawable.ti_checklist,
     )
 
     fun res(name: String): Int = all[name] ?: R.drawable.ti_category

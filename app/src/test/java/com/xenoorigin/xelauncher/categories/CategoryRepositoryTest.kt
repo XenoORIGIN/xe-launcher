@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Test
+import com.xenoorigin.xelauncher.design.moved
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
@@ -32,9 +33,27 @@ class CategoryRepositoryTest {
 
     @After fun close() = db.close()
 
-    @Test fun ensureDefaults_twice_keepsSix() = runBlocking<Unit> {
+    @Test fun ensureDefaults_twice_keepsOneOfEachBuiltIn() = runBlocking<Unit> {
         repo.ensureDefaults(); repo.ensureDefaults()
-        assertThat(db.categories().all()).hasSize(6)
+        assertThat(db.categories().all()).hasSize(BuiltInCategory.entries.size)
+        assertThat(db.categories().all().last().builtIn).isEqualTo("OTHER")
+    }
+
+    @Test fun upgrade_addsNewBuiltInsBeforeOther_andRefreshesOldIcons() = runBlocking<Unit> {
+        // A phone set up with the first version: six built-ins with the old icons, plus one user category.
+        listOf("COMMUNICATION" to "message-circle", "SOCIAL" to "affiliate", "GAMES" to "device-gamepad-2", "MEDIA" to "photo",
+            "TOOLS" to "settings", "OTHER" to "category").forEachIndexed { i, (b, icon) ->
+            db.categories().insert(com.xenoorigin.xelauncher.data.CategoryEntity(builtIn = b, iconName = icon, position = i))
+        }
+        repo.add("School", "school")
+        repo.upgradeBuiltIns()
+        val all = db.categories().all()
+        assertThat(all.map { it.builtIn }.filterNotNull()).containsAtLeast("FINANCE", "SHOPPING", "TRAVEL", "WORK")
+        assertThat(all.last().builtIn).isEqualTo("OTHER")
+        assertThat(all.first { it.builtIn == "SOCIAL" }.iconName).isEqualTo(BuiltInCategory.SOCIAL.iconName)
+        assertThat(all.any { it.name == "School" }).isTrue()
+        repo.upgradeBuiltIns()
+        assertThat(db.categories().all()).hasSize(all.size)
     }
 
     @Test fun moveApp_showsInNewCategoryOnly() = runBlocking<Unit> {
@@ -105,5 +124,21 @@ class CategoryRepositoryTest {
         val other = db.categories().all().single { it.builtIn == "OTHER" }.id
         repo.delete(other)
         assertThat(db.categories().all().any { it.id == other }).isTrue()
+    }
+
+    @Test fun customOrder_putsArrangedAppsFirst_restAlphabetical() = runBlocking<Unit> {
+        repo.ensureDefaults()
+        apps.value = listOf(app("com.discord", "Discord"), app("com.whatsapp", "WhatsApp"), app("org.telegram.messenger", "Telegram"), app("com.viber.voip", "Viber"))
+        settings.value = XeSettings(
+            drawerSort = com.xenoorigin.xelauncher.settings.DrawerSort.CUSTOM,
+            appOrder = mapOf(app("com.whatsapp", "").key.encode() to 0, app("org.telegram.messenger", "").key.encode() to 1),
+        )
+        val labels = repo.categories.first().first().apps.map { it.label }
+        assertThat(labels).containsExactly("WhatsApp", "Telegram", "Discord", "Viber").inOrder()
+    }
+
+    @Test fun moved_shiftsItemAndClamps() {
+        assertThat(listOf("a", "b", "c").moved(0, 2)).containsExactly("b", "c", "a").inOrder()
+        assertThat(listOf("a", "b", "c").moved(2, -9)).containsExactly("c", "a", "b").inOrder()
     }
 }

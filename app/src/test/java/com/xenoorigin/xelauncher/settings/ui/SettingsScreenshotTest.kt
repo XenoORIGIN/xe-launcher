@@ -28,6 +28,6 @@ class SettingsScreenshotTest {
 
     @Test fun root() = shot("root_th") { SettingsRoot(XeSettings(), {}, {}) }
     @Test fun appearance() = shot("appearance_th") { AppearanceScreen(XeSettings(), {}, {}) }
-    @Test fun icons() = shot("icons_th") { IconsScreen(XeSettings(), {}, {}) }
+    @Test fun icons() = shot("icons_th") { IconsScreen(XeSettings(), {}, {}, null, {}) }
     @Test @Config(qualifiers = "en-w390dp-h844dp-xxhdpi") fun rootEnglish() = shot("root_en") { SettingsRoot(XeSettings(), {}, {}) }
 }

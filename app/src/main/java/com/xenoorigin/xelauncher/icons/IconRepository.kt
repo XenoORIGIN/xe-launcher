@@ -29,6 +29,7 @@ class IconRepository(
     private val dir: File,
     /** Optional custom icon image per app (user picked); takes priority over the app's own icon. */
     private val customIcon: (AppKey) -> File? = { null },
+    private val customVersion: (AppKey) -> String? = { k -> customIcon(k)?.let { "1" } },
 ) {
     private val memory = object : LruCache<String, RenderedIcon>(40 * 1024 * 1024) {
         override fun sizeOf(key: String, value: RenderedIcon) = value.bitmap.width * value.bitmap.height * 4
@@ -45,7 +46,7 @@ class IconRepository(
     }
 
     private fun cacheKey(key: AppKey, v: Variant, size: Int, contrast: Float): String {
-        val custom = customIcon(key)?.let { "|c${it.lastModified()}" }.orEmpty()
+        val custom = customVersion(key)?.let { "|c$it" }.orEmpty()
         return "v2|${key.encode()}|$v|$size|${"%.2f".format(contrast)}$custom"
     }
 

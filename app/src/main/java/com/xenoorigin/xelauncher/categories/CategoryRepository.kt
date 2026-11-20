@@ -32,7 +32,7 @@ class CategoryRepository(
         val overrideMap = overrides.associate { it.appKey to it.categoryId }
         val statMap = stats.associateBy { it.appKey }
         val ids = cats.map { it.id }.toSet()
-        val builtInIds = cats.filter { it.builtIn != null }.associate { BuiltInCategory.valueOf(it.builtIn!!) to it.id }
+        val builtInIds = cats.mapNotNull { c -> c.builtIn?.let { n -> runCatching { BuiltInCategory.valueOf(n) }.getOrNull() }?.let { it to c.id } }.toMap()
         val otherId = builtInIds[BuiltInCategory.OTHER]
         val grouped = all.asSequence()
             .filter { it.key.encode() !in s.hiddenApps }
@@ -42,8 +42,8 @@ class CategoryRepository(
                     ?: otherId
             }
         cats.mapNotNull { c ->
-            val builtIn = c.builtIn?.let { BuiltInCategory.valueOf(it) }
-            val members = AppSorting.sort(grouped[c.id].orEmpty(), s.drawerSort, statMap)
+            val builtIn = c.builtIn?.let { runCatching { BuiltInCategory.valueOf(it) }.getOrNull() }
+            val members = AppSorting.sort(grouped[c.id].orEmpty(), s.drawerSort, statMap, s.appOrder)
             if (builtIn != null && members.isEmpty()) return@mapNotNull null
             CategoryWithApps(c.id, c.name ?: labelFor(builtIn ?: BuiltInCategory.OTHER), c.iconName, builtIn, members)
         }
@@ -59,6 +59,31 @@ class CategoryRepository(
         BuiltInCategory.entries.forEachIndexed { i, b ->
             db.categories().insert(CategoryEntity(builtIn = b.name, iconName = b.iconName, position = i))
         }
+    }
+
+    /**
+     * Brings an older category list up to date: adds built-ins it doesn't have yet (just before "Other",
+     * which stays last) and swaps first-release icons for the new ones. User categories and order are kept.
+     */
+    suspend fun upgradeBuiltIns() = db.withTransaction {
+        val all = db.categories().all()
+        val present = all.mapNotNull { it.builtIn }.toSet()
+        val missing = BuiltInCategory.entries.filter { it.name !in present }
+        all.forEach { c ->
+            val b = c.builtIn?.let { runCatching { BuiltInCategory.valueOf(it) }.getOrNull() } ?: return@forEach
+            if (BuiltInCategory.legacyIcons[b] == c.iconName) db.categories().update(c.copy(iconName = b.iconName))
+        }
+        if (missing.isEmpty()) return@withTransaction
+        val ordered = db.categories().all().toMutableList()
+        val other = ordered.firstOrNull { it.builtIn == BuiltInCategory.OTHER.name }
+        if (other != null) ordered.remove(other)
+        var pos = 0
+        ordered.forEach { db.categories().update(it.copy(position = pos++)) }
+        missing.filter { it != BuiltInCategory.OTHER }.forEach { b ->
+            db.categories().insert(CategoryEntity(builtIn = b.name, iconName = b.iconName, position = pos++))
+        }
+        if (other != null) db.categories().update(other.copy(position = pos))
+        else db.categories().insert(CategoryEntity(builtIn = BuiltInCategory.OTHER.name, iconName = BuiltInCategory.OTHER.iconName, position = pos))
     }
 
     suspend fun add(name: String, iconName: String): Long {

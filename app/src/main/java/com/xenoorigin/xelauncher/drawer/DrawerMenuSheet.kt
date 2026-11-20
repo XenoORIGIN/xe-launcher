@@ -30,18 +30,22 @@ fun DrawerMenuSheet(
     onEditCategories: () -> Unit,
     onHiddenApps: () -> Unit,
     onAllSettings: () -> Unit,
+    onArrange: () -> Unit = {},
+    onBulkIcons: () -> Unit = {},
 ) {
     GlassSheet(visible, onDismiss) {
         Text(stringResource(R.string.drawer_menu_title), style = XeType.Title, color = LocalXeScheme.current.text, modifier = Modifier.padding(vertical = 8.dp))
         androidx.compose.foundation.layout.Column(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             GlassPillButton(stringResource(R.string.add_category), onAddCategory, Modifier.fillMaxWidth(), icon = R.drawable.ti_plus)
             GlassPillButton(stringResource(R.string.edit_categories), onEditCategories, Modifier.fillMaxWidth(), icon = R.drawable.ti_edit)
+            GlassPillButton(stringResource(R.string.arrange_apps), onArrange, Modifier.fillMaxWidth(), icon = R.drawable.ti_arrows_sort)
+            GlassPillButton(stringResource(R.string.bulk_icons), onBulkIcons, Modifier.fillMaxWidth(), icon = R.drawable.ti_palette)
         }
         XeRow(stringResource(R.string.category_bar), icon = R.drawable.ti_layout_grid) {
             GlassSwitch(settings.categoryBar, { v -> onUpdate { it.copy(categoryBar = v) } })
         }
         SectionTitle(stringResource(R.string.sorting))
-        listOf(DrawerSort.ALPHABETICAL to R.string.sort_alpha, DrawerSort.MOST_USED to R.string.sort_most_used, DrawerSort.RECENTLY_INSTALLED to R.string.sort_recent)
+        listOf(DrawerSort.ALPHABETICAL to R.string.sort_alpha, DrawerSort.MOST_USED to R.string.sort_most_used, DrawerSort.RECENTLY_INSTALLED to R.string.sort_recent, DrawerSort.CUSTOM to R.string.sort_custom)
             .forEach { (sort, label) ->
                 XeRow(stringResource(label), icon = if (settings.drawerSort == sort) R.drawable.ti_check else R.drawable.ti_arrows_sort,
                     onClick = { onUpdate { it.copy(drawerSort = sort) } })

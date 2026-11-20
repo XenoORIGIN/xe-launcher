@@ -74,6 +74,7 @@ fun AppDrawer(
     onStore: () -> Unit,
     onMenu: () -> Unit,
     modifier: Modifier = Modifier,
+    onEditCategories: () -> Unit = {},
 ) {
     val speed = LocalAnimationSpeed.current
     val scope = rememberCoroutineScope()
@@ -108,7 +109,7 @@ fun AppDrawer(
         }
         if (look.categoryBar && pages.size > 1) {
             CategoryBar(pages, state, onSelect = { scope.launch { state.animateTo(it, speed) } },
-                Modifier.padding(horizontal = 16.dp).navigationBarsPadding().padding(bottom = 14.dp))
+                Modifier.padding(horizontal = 16.dp).navigationBarsPadding().padding(bottom = 14.dp), onLongPress = onEditCategories)
         } else Spacer(Modifier.navigationBarsPadding().height(14.dp))
     }
 }
