@@ -9,7 +9,7 @@ import com.xenoorigin.xelauncher.icons.IconStyle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
@@ -33,9 +33,9 @@ class SettingsStoreTest {
     }
 
     @Test fun update_survivesNewInstance() = runBlocking<Unit> {
-        val sc = scope()
-        SettingsStore(ctx, sc, "t_persist").update { it.copy(homeColumns = 5, hiddenApps = setOf("a/b#0")) }
-        sc.cancel()
+        val job = SupervisorJob()
+        SettingsStore(ctx, CoroutineScope(job + Dispatchers.IO), "t_persist").update { it.copy(homeColumns = 5, hiddenApps = setOf("a/b#0")) }
+        job.cancelAndJoin()
         val again = SettingsStore(ctx, scope(), "t_persist").settings.first()
         assertThat(again.homeColumns).isEqualTo(5)
         assertThat(again.hiddenApps).containsExactly("a/b#0")
