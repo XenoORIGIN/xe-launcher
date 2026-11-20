@@ -1,0 +1,23 @@
+package com.xenoorigin.xelauncher.update
+
+import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.runBlocking
+import org.junit.Test
+
+class UpdateCheckerTest {
+    @Test fun newer() { assertThat(UpdateChecker.isNewer("v1.0.12", "1.0.9")).isTrue() }
+    @Test fun same() { assertThat(UpdateChecker.isNewer("v1.0.9", "1.0.9")).isFalse() }
+    @Test fun older() { assertThat(UpdateChecker.isNewer("v1.0.8", "1.0.9")).isFalse() }
+    @Test fun garbage() { assertThat(UpdateChecker.isNewer("latest", "1.0.9")).isFalse() }
+
+    @Test fun parsesGithubRelease() = runBlocking<Unit> {
+        val json = """{"tag_name":"v1.0.20","body":"Notes","assets":[{"name":"other.txt","browser_download_url":"x"},
+            {"name":"xe-launcher.apk","browser_download_url":"https://github.com/XenoORIGIN/xe-launcher/releases/download/v1.0.20/xe-launcher.apk"}]}"""
+        val r = UpdateChecker.latest { json }!!
+        assertThat(r.tag).isEqualTo("v1.0.20")
+        assertThat(r.apkUrl).endsWith("/v1.0.20/xe-launcher.apk")
+        assertThat(r.notes).isEqualTo("Notes")
+    }
+
+    @Test fun networkFailure_isNull() = runBlocking<Unit> { assertThat(UpdateChecker.latest { null }).isNull() }
+}

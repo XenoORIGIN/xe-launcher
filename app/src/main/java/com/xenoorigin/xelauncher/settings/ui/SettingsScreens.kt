@@ -1,0 +1,282 @@
+package com.xenoorigin.xelauncher.settings.ui
+
+import android.content.Intent
+import android.net.Uri
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.core.os.LocaleListCompat
+import com.xenoorigin.xelauncher.BuildConfig
+import com.xenoorigin.xelauncher.R
+import com.xenoorigin.xelauncher.design.AnimationSpeed
+import com.xenoorigin.xelauncher.design.GlassPillButton
+import com.xenoorigin.xelauncher.design.GlassQuality
+import com.xenoorigin.xelauncher.design.GlassSheet
+import com.xenoorigin.xelauncher.design.GlassSwitch
+import com.xenoorigin.xelauncher.design.LocalXeScheme
+import com.xenoorigin.xelauncher.design.XeColors
+import com.xenoorigin.xelauncher.design.XeRow
+import com.xenoorigin.xelauncher.design.XeType
+import com.xenoorigin.xelauncher.di.AppGraph
+import com.xenoorigin.xelauncher.icons.IconShape
+import com.xenoorigin.xelauncher.icons.IconStyle
+import com.xenoorigin.xelauncher.settings.AppLanguage
+import com.xenoorigin.xelauncher.settings.DrawerSort
+import com.xenoorigin.xelauncher.settings.GestureAction
+import com.xenoorigin.xelauncher.settings.ThemeMode
+import com.xenoorigin.xelauncher.settings.XeSettings
+import com.xenoorigin.xelauncher.update.ReleaseInfo
+import com.xenoorigin.xelauncher.update.UpdateChecker
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
+
+private typealias Update = ((XeSettings) -> XeSettings) -> Unit
+
+@Composable
+fun SettingsRoot(s: XeSettings, push: (String) -> Unit, onClose: () -> Unit) {
+    SettingsPage(stringResource(R.string.settings), onBack = onClose) {
+        SettingsGroup {
+            NavRow(stringResource(R.string.wallpaper), R.drawable.ti_photo, RowColors.Green) { push("wallpaper") }
+            NavRow(stringResource(R.string.appearance), R.drawable.ti_palette, RowColors.Orange) { push("appearance") }
+            NavRow(stringResource(R.string.icons), R.drawable.ti_apps, RowColors.Blue) { push("icons") }
+            NavRow(stringResource(R.string.animation), R.drawable.ti_sparkles, RowColors.Purple) { push("animation") }
+            NavRow(stringResource(R.string.gestures), R.drawable.ti_hand_finger, RowColors.Red) { push("gestures") }
+            NavRow(stringResource(R.string.xe_studio), R.drawable.ti_brush, RowColors.Pink, subtitle = stringResource(R.string.coming_soon), enabled = false) {}
+            NavRow(stringResource(R.string.backup), R.drawable.ti_device_floppy, RowColors.Cyan) { push("backup") }
+        }
+        SettingsGroup(stringResource(R.string.pages)) {
+            NavRow(stringResource(R.string.home_screen), R.drawable.ti_home, RowColors.Blue, subtitle = stringResource(R.string.home_settings_desc)) { push("pages/home") }
+            NavRow(stringResource(R.string.app_page), R.drawable.ti_layout_grid, RowColors.Indigo, subtitle = stringResource(R.string.app_page_desc)) { push("pages/apps") }
+            NavRow(stringResource(R.string.search_page), R.drawable.ti_search, RowColors.Cyan, subtitle = stringResource(R.string.search_page_desc)) { push("pages/search") }
+        }
+        SettingsGroup { NavRow(stringResource(R.string.about), R.drawable.ti_info_circle, RowColors.Grey) { push("about") } }
+    }
+}
+
+@Composable
+fun AppearanceScreen(s: XeSettings, update: Update, back: () -> Unit) {
+    SettingsPage(stringResource(R.string.appearance), back) {
+        SettingsGroup(stringResource(R.string.theme)) {
+            listOf(ThemeMode.DARK to R.string.theme_dark, ThemeMode.LIGHT to R.string.theme_light, ThemeMode.AUTO to R.string.theme_auto).forEach { (m, l) ->
+                ChoiceRow(stringResource(l), s.themeMode == m) { update { it.copy(themeMode = m) } }
+            }
+        }
+        SettingsGroup(stringResource(R.string.accent)) {
+            Row(Modifier.fillMaxWidth().padding(vertical = 14.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                XeColors.Accents.forEach { c ->
+                    val argb = c.value.toLong() ushr 32
+                    val sel = s.accent == argb
+                    Box(
+                        Modifier.size(30.dp).background(c, CircleShape)
+                            .border(if (sel) 3.dp else 1.dp, if (sel) LocalXeScheme.current.text else Color.White.copy(alpha = .2f), CircleShape)
+                            .clickable { update { it.copy(accent = argb) } },
+                    )
+                }
+            }
+        }
+        SettingsGroup(stringResource(R.string.glass_quality)) {
+            listOf(
+                Triple(GlassQuality.HIGH, R.string.glass_high, R.string.glass_high_desc),
+                Triple(GlassQuality.NORMAL, R.string.glass_normal, R.string.glass_normal_desc),
+                Triple(GlassQuality.SAVER, R.string.glass_saver, R.string.glass_saver_desc),
+            ).forEach { (q, l, d) -> ChoiceRow(stringResource(l), s.glassQuality == q, stringResource(d)) { update { it.copy(glassQuality = q) } } }
+        }
+        SettingsGroup {
+            SliderRow(stringResource(R.string.text_size), s.fontScale, .85f..1.3f, steps = 8, display = { "${(it * 100).roundToInt()}%" }) { v -> update { it.copy(fontScale = v) } }
+        }
+        SettingsGroup(stringResource(R.string.language)) {
+            listOf(AppLanguage.SYSTEM to R.string.lang_system, AppLanguage.TH to R.string.lang_th, AppLanguage.EN to R.string.lang_en).forEach { (lang, l) ->
+                ChoiceRow(stringResource(l), s.language == lang) {
+                    update { it.copy(language = lang) }
+                    AppCompatDelegate.setApplicationLocales(
+                        when (lang) { AppLanguage.SYSTEM -> LocaleListCompat.getEmptyLocaleList(); AppLanguage.TH -> LocaleListCompat.forLanguageTags("th"); AppLanguage.EN -> LocaleListCompat.forLanguageTags("en") },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun IconsScreen(s: XeSettings, update: Update, back: () -> Unit) {
+    SettingsPage(stringResource(R.string.icons), back) {
+        SettingsGroup(stringResource(R.string.icon_style)) {
+            listOf(
+                Triple(IconStyle.GLASS_DARK, R.string.style_glass_dark, R.string.style_glass_dark_desc),
+                Triple(IconStyle.GLASS_COLOR, R.string.style_glass_color, null),
+                Triple(IconStyle.GLASS_CLEAR, R.string.style_glass_clear, null),
+                Triple(IconStyle.ORIGINAL, R.string.style_original, null),
+            ).forEach { (st, l, d) -> ChoiceRow(stringResource(l), s.iconStyle == st, d?.let { stringResource(it) }) { update { it.copy(iconStyle = st) } } }
+        }
+        SettingsGroup(stringResource(R.string.icon_shape)) {
+            listOf(IconShape.SQUIRCLE to R.string.shape_squircle, IconShape.CIRCLE to R.string.shape_circle, IconShape.ROUNDED to R.string.shape_rounded).forEach { (sh, l) ->
+                ChoiceRow(stringResource(l), s.iconShape == sh) { update { it.copy(iconShape = sh) } }
+            }
+        }
+        SettingsGroup {
+            SliderRow(stringResource(R.string.icon_size), s.iconSizeDp.toFloat(), 48f..72f, steps = 11, display = { "${it.roundToInt()} dp" }) { v -> update { it.copy(iconSizeDp = v.roundToInt()) } }
+            if (s.iconStyle == IconStyle.GLASS_DARK) {
+                SliderRow(stringResource(R.string.bw_contrast), s.grayscaleContrast, .8f..1.6f, steps = 7, display = { "%.1f".format(it) }) { v -> update { it.copy(grayscaleContrast = (v * 10).roundToInt() / 10f) } }
+            }
+            XeRow(stringResource(R.string.show_labels)) { GlassSwitch(s.showLabels, { v -> update { it.copy(showLabels = v) } }) }
+        }
+    }
+}
+
+@Composable
+fun AnimationScreen(s: XeSettings, update: Update, back: () -> Unit) {
+    SettingsPage(stringResource(R.string.animation), back) {
+        SettingsGroup(stringResource(R.string.anim_speed)) {
+            listOf(AnimationSpeed.OFF to R.string.anim_off, AnimationSpeed.FAST to R.string.anim_fast, AnimationSpeed.NORMAL to R.string.anim_normal, AnimationSpeed.SMOOTH to R.string.anim_smooth)
+                .forEach { (sp, l) -> ChoiceRow(stringResource(l), s.animationSpeed == sp) { update { it.copy(animationSpeed = sp) } } }
+        }
+        SettingsGroup {
+            XeRow(stringResource(R.string.press_squish)) { GlassSwitch(s.pressSquish, { v -> update { it.copy(pressSquish = v) } }) }
+            XeRow(stringResource(R.string.parallax)) { GlassSwitch(s.wallpaperParallax, { v -> update { it.copy(wallpaperParallax = v) } }) }
+        }
+    }
+}
+
+private val gestureChoices = listOf(
+    GestureAction.NONE to R.string.action_none, GestureAction.OPEN_DRAWER to R.string.action_drawer,
+    GestureAction.NOTIFICATIONS to R.string.action_notifications, GestureAction.OPEN_SEARCH to R.string.action_search,
+    GestureAction.OPEN_SETTINGS to R.string.action_settings, GestureAction.EDIT_MODE to R.string.action_edit,
+)
+
+@Composable
+fun GesturesScreen(s: XeSettings, update: Update, back: () -> Unit) {
+    var picking by remember { mutableStateOf<Int?>(null) }
+    val label = { a: GestureAction -> gestureChoices.first { it.first == a }.second }
+    SettingsPage(stringResource(R.string.gestures), back) {
+        SettingsGroup {
+            NavRow(stringResource(R.string.gesture_swipe_up), R.drawable.ti_chevron_up, RowColors.Blue, stringResource(label(s.swipeUp))) { picking = 0 }
+            NavRow(stringResource(R.string.gesture_swipe_down), R.drawable.ti_chevron_down, RowColors.Green, stringResource(label(s.swipeDown))) { picking = 1 }
+            NavRow(stringResource(R.string.gesture_double_tap), R.drawable.ti_hand_finger, RowColors.Orange, stringResource(label(s.doubleTap))) { picking = 2 }
+            NavRow(stringResource(R.string.gesture_two_finger), R.drawable.ti_arrows_move, RowColors.Purple, stringResource(label(s.twoFingerDown))) { picking = 3 }
+        }
+    }
+    GlassSheet(picking != null, { picking = null }) {
+        val current = when (picking) { 0 -> s.swipeUp; 1 -> s.swipeDown; 2 -> s.doubleTap; else -> s.twoFingerDown }
+        gestureChoices.forEach { (a, l) ->
+            ChoiceRow(stringResource(l), current == a) {
+                val p = picking
+                update { st -> when (p) { 0 -> st.copy(swipeUp = a); 1 -> st.copy(swipeDown = a); 2 -> st.copy(doubleTap = a); else -> st.copy(twoFingerDown = a) } }
+                picking = null
+            }
+        }
+    }
+}
+
+@Composable
+fun HomePageScreen(s: XeSettings, update: Update, push: (String) -> Unit, back: () -> Unit) {
+    SettingsPage(stringResource(R.string.home_screen), back) {
+        SettingsGroup {
+            SliderRow(stringResource(R.string.grid_columns), s.homeColumns.toFloat(), 4f..6f, steps = 1, display = { "${it.roundToInt()}" }) { v -> update { it.copy(homeColumns = v.roundToInt()) } }
+            SliderRow(stringResource(R.string.grid_rows), s.homeRows.toFloat(), 5f..7f, steps = 1, display = { "${it.roundToInt()}" }) { v -> update { it.copy(homeRows = v.roundToInt()) } }
+            SliderRow(stringResource(R.string.dock_size), s.dockSize.toFloat(), 3f..5f, steps = 1, display = { "${it.roundToInt()}" }) { v -> update { it.copy(dockSize = v.roundToInt()) } }
+        }
+        SettingsGroup {
+            XeRow(stringResource(R.string.lock_layout), icon = R.drawable.ti_lock) { GlassSwitch(s.layoutLocked, { v -> update { it.copy(layoutLocked = v) } }) }
+            NavRow(stringResource(R.string.gestures), R.drawable.ti_hand_finger, RowColors.Red) { push("gestures") }
+        }
+    }
+}
+
+@Composable
+fun AppPageScreen(s: XeSettings, update: Update, push: (String) -> Unit, back: () -> Unit) {
+    SettingsPage(stringResource(R.string.app_page), back) {
+        SettingsGroup {
+            XeRow(stringResource(R.string.category_bar), icon = R.drawable.ti_layout_grid) { GlassSwitch(s.categoryBar, { v -> update { it.copy(categoryBar = v) } }) }
+        }
+        SettingsGroup(stringResource(R.string.sorting)) {
+            listOf(DrawerSort.ALPHABETICAL to R.string.sort_alpha, DrawerSort.MOST_USED to R.string.sort_most_used, DrawerSort.RECENTLY_INSTALLED to R.string.sort_recent)
+                .forEach { (so, l) -> ChoiceRow(stringResource(l), s.drawerSort == so) { update { it.copy(drawerSort = so) } } }
+        }
+        SettingsGroup { NavRow(stringResource(R.string.hidden_apps), R.drawable.ti_eye_off, RowColors.Grey) { push("hidden") } }
+    }
+}
+
+@Composable
+fun SearchPageScreen(s: XeSettings, update: Update, back: () -> Unit) {
+    SettingsPage(stringResource(R.string.search_page), back) {
+        SettingsGroup {
+            XeRow(stringResource(R.string.search_calc_enabled), icon = R.drawable.ti_calculator) { GlassSwitch(s.searchCalculator, { v -> update { it.copy(searchCalculator = v) } }) }
+            XeRow(stringResource(R.string.search_web_enabled), icon = R.drawable.ti_world) { GlassSwitch(s.searchWeb, { v -> update { it.copy(searchWeb = v) } }) }
+            XeRow(stringResource(R.string.auto_keyboard), icon = R.drawable.ti_typography) { GlassSwitch(s.searchAutoKeyboard, { v -> update { it.copy(searchAutoKeyboard = v) } }) }
+        }
+    }
+}
+
+@Composable
+fun HiddenAppsScreen(graph: AppGraph, s: XeSettings, update: Update, back: () -> Unit) {
+    val apps by graph.apps.apps.collectAsState()
+    val hidden = apps.filter { it.key.encode() in s.hiddenApps }.sortedBy { it.label }
+    SettingsPage(stringResource(R.string.hidden_apps), back) {
+        if (hidden.isEmpty()) Text(stringResource(R.string.hidden_apps_empty), style = XeType.Body, color = LocalXeScheme.current.textSecondary)
+        else SettingsGroup {
+            hidden.forEach { a ->
+                XeRow(a.label) { GlassPillButton(stringResource(R.string.unhide_app), { update { it.copy(hiddenApps = it.hiddenApps - a.key.encode()) } }) }
+            }
+        }
+    }
+}
+
+@Composable
+fun AboutScreen(back: () -> Unit) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var status by remember { mutableStateOf<String?>(null) }
+    var release by remember { mutableStateOf<ReleaseInfo?>(null) }
+    var licences by remember { mutableStateOf(false) }
+    val upToDate = stringResource(R.string.up_to_date); val failed = stringResource(R.string.update_check_failed)
+    val availableFmt = stringResource(R.string.update_available)
+    fun open(url: String) = runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+    SettingsPage(stringResource(R.string.about), back) {
+        Column(Modifier.fillMaxWidth().padding(vertical = 18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("Xe Launcher", style = XeType.Title, color = LocalXeScheme.current.text)
+            Text(stringResource(R.string.version, BuildConfig.VERSION_NAME), style = XeType.Caption, color = LocalXeScheme.current.textSecondary)
+        }
+        SettingsGroup {
+            NavRow(stringResource(R.string.check_updates), R.drawable.ti_refresh, RowColors.Blue, subtitle = status) {
+                scope.launch {
+                    val r = UpdateChecker.latest()
+                    release = r?.takeIf { UpdateChecker.isNewer(it.tag, BuildConfig.VERSION_NAME) }
+                    status = when { r == null -> failed; release != null -> availableFmt.format(r.tag); else -> upToDate }
+                }
+            }
+            release?.let { r -> XeRow(stringResource(R.string.download), icon = R.drawable.ti_download, iconTint = RowColors.Green, onClick = { open(r.apkUrl) }) }
+            NavRow(stringResource(R.string.website), R.drawable.ti_world_www, RowColors.Cyan) { open(UpdateChecker.WEBSITE) }
+            NavRow(stringResource(R.string.licenses), R.drawable.ti_book, RowColors.Grey) { licences = true }
+        }
+    }
+    GlassSheet(licences, { licences = false }) {
+        val text = remember {
+            ctx.assets.list("licenses").orEmpty().sorted().joinToString("\n\n") { f -> "— $f —\n" + ctx.assets.open("licenses/$f").bufferedReader().use { it.readText() } }
+        }
+        Text(text, style = XeType.Caption, color = LocalXeScheme.current.textSecondary)
+    }
+}
