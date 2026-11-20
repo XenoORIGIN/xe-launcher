@@ -395,6 +395,19 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
             )
         }
 
+        // First run: offer to become the Home app.
+        var offerDefault by remember { mutableStateOf(com.xenoorigin.xelauncher.onboarding.shouldOfferDefaultHome(com.xenoorigin.xelauncher.onboarding.isDefaultHome(ctx), settings.firstRunDone)) }
+        if (offerDefault && drawer.value == 0f && !editMode) {
+            com.xenoorigin.xelauncher.onboarding.SetDefaultHomeCard(
+                onRequest = {
+                    offerDefault = false; update { it.copy(firstRunDone = true) }
+                    runCatching { (ctx as? android.app.Activity)?.startActivityForResult(com.xenoorigin.xelauncher.onboarding.requestDefaultHomeIntent(ctx), 7) }
+                },
+                onLater = { offerDefault = false; update { it.copy(firstRunDone = true) } },
+                modifier = Modifier.align(androidx.compose.ui.Alignment.Center),
+            )
+        }
+
         settingsRoute?.let { route -> SettingsHost(graph, route, onClose = { settingsRoute = null }) }
     }
 }
