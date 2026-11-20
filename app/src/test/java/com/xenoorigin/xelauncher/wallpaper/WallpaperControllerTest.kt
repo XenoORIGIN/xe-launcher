@@ -49,4 +49,20 @@ class WallpaperControllerTest {
         assertThat(c.systemWallpaperSetCount).isEqualTo(0)
         sc.cancel()
     }
+
+    @Test fun applyImage_fitsPictureToScreen_andMakesBackdrop() = runBlocking<Unit> {
+        val sc = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val settings = SettingsStore(ctx, sc, "wp_test3")
+        val dir = File(ctx.filesDir, "wp-${System.nanoTime()}").apply { mkdirs() }
+        val pic = File(dir, "imported_1.jpg")
+        android.graphics.Bitmap.createBitmap(400, 200, android.graphics.Bitmap.Config.ARGB_8888).apply { eraseColor(android.graphics.Color.RED) }
+            .let { b -> pic.outputStream().use { b.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, it) } }
+        val c = WallpaperController(ctx, settings, dir, size)
+        c.applyImage(pic, WallpaperAdjust(dim = .2f), WallpaperTarget.HOME)
+        assertThat(c.current.value!!.width).isEqualTo(90)
+        assertThat(c.current.value!!.height).isEqualTo(195)
+        assertThat(c.backdrop.value).isNotNull()
+        assertThat(c.imports()).containsExactly(pic)
+        sc.cancel()
+    }
 }

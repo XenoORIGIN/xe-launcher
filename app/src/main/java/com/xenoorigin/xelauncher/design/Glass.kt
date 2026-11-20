@@ -117,6 +117,13 @@ fun Modifier.glassFilmAndRim(shape: Shape, style: GlassStyle, drawFilm: Boolean 
     }
 
 /**
+ * Cheap glass for things drawn many times at once (icon tiles, list rows): a tinted film, sheen and rim,
+ * with no live blur and no refraction, so a screen full of tiles stays smooth.
+ */
+fun Modifier.glassTile(shape: Shape, style: GlassStyle, fill: Color): Modifier =
+    glassFilmAndRim(shape, style.copy(tint = fill), drawFilm = true)
+
+/**
  * A Liquid Glass panel. The glass is drawn on its own layer (so refraction never bends [content]),
  * then [content] is drawn on top.
  */

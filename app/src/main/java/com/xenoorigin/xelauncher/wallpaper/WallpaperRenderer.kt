@@ -12,6 +12,18 @@ import android.graphics.Shader
 import java.util.Random
 import kotlin.math.max
 
+/**
+ * How a picture is fitted to the screen. [zoom] >= 1 enlarges beyond "fill"; [offsetX]/[offsetY] in -1..1
+ * pick which part of the overflow is shown (0 = centre). [dim] 0..0.8 darkens, [blur] 0..1 softens.
+ */
+data class WallpaperAdjust(
+    val zoom: Float = 1f,
+    val offsetX: Float = 0f,
+    val offsetY: Float = 0f,
+    val dim: Float = 0f,
+    val blur: Float = 0f,
+)
+
 object WallpaperRenderer {
     fun render(p: WallpaperPreset, w: Int, h: Int): Bitmap = when (p) {
         is WallpaperPreset.Mesh -> mesh(p, w, h)
@@ -91,6 +103,64 @@ object WallpaperRenderer {
     private fun image(p: WallpaperPreset.Image, w: Int, h: Int): Bitmap {
         val src = BitmapFactory.decodeFile(p.file.path) ?: return Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         return centerCrop(src, w, h)
+    }
+
+    /** Fits [src] to w×h without stretching, then applies pan, zoom, blur and dim. */
+    fun compose(src: Bitmap, w: Int, h: Int, a: WallpaperAdjust): Bitmap {
+        val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val scale = max(w.toFloat() / src.width, h.toFloat() / src.height) * a.zoom.coerceIn(1f, 4f)
+        val dx = src.width * scale - w; val dy = src.height * scale - h
+        val tx = -dx * (a.offsetX.coerceIn(-1f, 1f) + 1f) / 2f
+        val ty = -dy * (a.offsetY.coerceIn(-1f, 1f) + 1f) / 2f
+        val m = Matrix().apply { setScale(scale, scale); postTranslate(tx, ty) }
+        val c = Canvas(out)
+        c.drawBitmap(src, m, Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG))
+        if (a.blur > 0.01f) {
+            val small = Bitmap.createScaledBitmap(out, (w / 4).coerceAtLeast(1), (h / 4).coerceAtLeast(1), true)
+            boxBlur(small, (a.blur * 6f).toInt().coerceAtLeast(1))
+            c.drawBitmap(small, null, android.graphics.Rect(0, 0, w, h), Paint(Paint.FILTER_BITMAP_FLAG or Paint.DITHER_FLAG))
+        }
+        if (a.dim > 0.005f) c.drawColor(android.graphics.Color.argb((a.dim.coerceIn(0f, .8f) * 255).toInt(), 0, 0, 0))
+        return out
+    }
+
+    /** A tiny, heavily blurred copy of the wallpaper, drawn behind full-screen panels instead of live blur. */
+    fun backdrop(src: Bitmap): Bitmap {
+        val w = 120; val h = (src.height * w / src.width.toFloat()).toInt().coerceAtLeast(1)
+        val small = Bitmap.createScaledBitmap(src, w, h, true).copy(Bitmap.Config.ARGB_8888, true)
+        boxBlur(small, 5)
+        return small
+    }
+
+    /** Three-pass box blur (close to Gaussian), in place. */
+    fun boxBlur(b: Bitmap, radius: Int) {
+        val w = b.width; val h = b.height
+        val px = IntArray(w * h); b.getPixels(px, 0, w, 0, 0, w, h)
+        val tmp = IntArray(px.size)
+        repeat(3) {
+            pass(px, tmp, w, h, radius, horizontal = true)
+            pass(tmp, px, w, h, radius, horizontal = false)
+        }
+        b.setPixels(px, 0, w, 0, 0, w, h)
+    }
+
+    private fun pass(src: IntArray, dst: IntArray, w: Int, h: Int, r: Int, horizontal: Boolean) {
+        val lines = if (horizontal) h else w
+        val len = if (horizontal) w else h
+        val div = 2 * r + 1
+        for (line in 0 until lines) {
+            fun idx(i: Int) = if (horizontal) line * w + i.coerceIn(0, len - 1) else i.coerceIn(0, len - 1) * w + line
+            var sa = 0; var sr = 0; var sg = 0; var sb = 0
+            for (i in -r..r) { val p = src[idx(i)]; sa += p ushr 24; sr += (p shr 16) and 0xFF; sg += (p shr 8) and 0xFF; sb += p and 0xFF }
+            for (i in 0 until len) {
+                dst[idx(i)] = ((sa / div) shl 24) or ((sr / div) shl 16) or ((sg / div) shl 8) or (sb / div)
+                val add = src[idx(i + r + 1)]; val rem = src[idx(i - r)]
+                sa += (add ushr 24) - (rem ushr 24)
+                sr += ((add shr 16) and 0xFF) - ((rem shr 16) and 0xFF)
+                sg += ((add shr 8) and 0xFF) - ((rem shr 8) and 0xFF)
+                sb += (add and 0xFF) - (rem and 0xFF)
+            }
+        }
     }
 
     fun centerCrop(src: Bitmap, w: Int, h: Int): Bitmap {

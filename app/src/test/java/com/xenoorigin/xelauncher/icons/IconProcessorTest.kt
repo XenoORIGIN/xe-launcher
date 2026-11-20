@@ -50,4 +50,42 @@ class IconProcessorTest {
     @Test fun dominantColor_fallsBackToGrey() {
         assertThat(IconProcessor.dominantColor(bmp { _, _ -> Color.WHITE })).isEqualTo(0xFF8E8E93.toInt())
     }
+
+    // ---- glyph extraction (removes an icon's own plate so it doesn't sit as a frame inside the tile) ----
+
+    @Test fun extractGlyph_leavesPlainGlyphAlone() {
+        val src = bmp(64, 64) { x, y -> if (x in 24..40 && y in 24..40) Color.WHITE else Color.TRANSPARENT }
+        val r = IconProcessor.extractGlyph(src)
+        assertThat(r.isGlyph).isTrue()
+        assertThat(Color.alpha(r.bitmap.getPixel(2, 2))).isEqualTo(0)
+        assertThat(Color.alpha(r.bitmap.getPixel(32, 32))).isGreaterThan(200)
+    }
+
+    @Test fun extractGlyph_removesFlatPlateAndKeepsSymbol() {
+        // White rounded plate filling the icon with a black symbol in the middle (typical legacy icon).
+        val src = bmp(64, 64) { x, y ->
+            when {
+                x in 26..38 && y in 26..38 -> Color.BLACK
+                x in 4..59 && y in 4..59 -> Color.WHITE
+                else -> Color.TRANSPARENT
+            }
+        }
+        val r = IconProcessor.extractGlyph(src)
+        assertThat(r.isGlyph).isTrue()
+        assertThat(Color.alpha(r.bitmap.getPixel(8, 8))).isLessThan(30)   // plate gone
+        assertThat(Color.alpha(r.bitmap.getPixel(32, 32))).isGreaterThan(200) // symbol kept
+    }
+
+    @Test fun extractGlyph_givesUpOnFullBleedArtwork() {
+        // A photo-like icon: no single plate colour, so it must be shown whole instead.
+        val src = bmp(64, 64) { x, y -> Color.rgb((x * 4) % 256, (y * 4) % 256, ((x + y) * 3) % 256) }
+        assertThat(IconProcessor.extractGlyph(src).isGlyph).isFalse()
+    }
+
+    @Test fun extractGlyph_enlargesTinySymbol() {
+        val src = bmp(100, 100) { x, y -> if (x in 45..54 && y in 45..54) Color.WHITE else Color.TRANSPARENT }
+        val r = IconProcessor.extractGlyph(src)
+        // 10px symbol (10%) is scaled up to roughly 60% of the tile.
+        assertThat(Color.alpha(r.bitmap.getPixel(28, 50))).isGreaterThan(200)
+    }
 }

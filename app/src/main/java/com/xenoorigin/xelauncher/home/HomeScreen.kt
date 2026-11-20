@@ -56,6 +56,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.xenoorigin.xelauncher.apps.AppEntry
 import com.xenoorigin.xelauncher.design.GlassSurface
+import com.xenoorigin.xelauncher.design.glassTile
+import com.xenoorigin.xelauncher.design.LocalGlassStyle
+import com.xenoorigin.xelauncher.design.toShape
 import com.xenoorigin.xelauncher.design.LocalAnimationSpeed
 import com.xenoorigin.xelauncher.design.LocalXeScheme
 import com.xenoorigin.xelauncher.design.SquircleShape
@@ -236,12 +239,13 @@ fun CellContent(cell: HomeCell, look: HomeLook, label: Boolean) {
 fun FolderIcon(cell: FolderCell, look: HomeLook, label: Boolean) {
     val size = look.iconSize.dp
     Column(Modifier.width(size + 22.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        GlassSurface(SquircleShape, Modifier.size(size)) {
+        val fs = look.shape.toShape()
+        Box(Modifier.size(size).glassTile(fs, LocalGlassStyle.current, Color.White.copy(alpha = .16f))) {
             val mini = size * .36f
             Column(Modifier.align(Alignment.Center), verticalArrangement = Arrangement.spacedBy(size * .06f)) {
                 cell.apps.take(4).chunked(2).forEach { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(size * .06f)) {
-                        row.forEach { IconTile(it, mini, look.style(it).let { s -> if (s == IconStyle.GLASS_DARK) IconStyle.GLASS_DARK else IconStyle.ORIGINAL }, look.shape) }
+                        row.forEach { IconTile(it, mini, look.style(it), look.shape) }
                     }
                 }
             }

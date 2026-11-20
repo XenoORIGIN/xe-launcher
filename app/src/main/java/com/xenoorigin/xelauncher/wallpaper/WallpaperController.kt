@@ -28,6 +28,14 @@ class WallpaperController(
 ) {
     private val _current = MutableStateFlow<ImageBitmap?>(null)
     val current: StateFlow<ImageBitmap?> = _current.asStateFlow()
+    private val _backdrop = MutableStateFlow<ImageBitmap?>(null)
+    /** Small pre-blurred wallpaper for full-screen panels (drawer, search, settings): no live blur needed. */
+    val backdrop: StateFlow<ImageBitmap?> = _backdrop.asStateFlow()
+
+    private fun show(bmp: Bitmap) {
+        _current.value = bmp.asImageBitmap()
+        _backdrop.value = runCatching { WallpaperRenderer.backdrop(bmp).asImageBitmap() }.getOrNull()
+    }
     private val file get() = File(dir, "current.png")
 
     /** For tests: how many times the system wallpaper was changed. */
@@ -36,17 +44,18 @@ class WallpaperController(
 
     suspend fun restore() = withContext(Dispatchers.IO) {
         val saved = if (file.exists()) BitmapFactory.decodeFile(file.path) else null
-        if (saved != null) { _current.value = saved.asImageBitmap(); return@withContext }
+        if (saved != null) { show(saved); return@withContext }
         val (w, h) = screenSize()
         val preset = XeCollection.byId(settings.current().wallpaperId) ?: XeCollection.first()
         val bmp = WallpaperRenderer.render(preset, w, h)
         save(bmp)
-        _current.value = bmp.asImageBitmap()
+        show(bmp)
     }
 
-    suspend fun apply(preset: WallpaperPreset, target: WallpaperTarget) = withContext(Dispatchers.IO) {
+    suspend fun apply(preset: WallpaperPreset, target: WallpaperTarget, adjust: WallpaperAdjust = WallpaperAdjust()) = withContext(Dispatchers.IO) {
         val (w, h) = screenSize()
-        val bmp = WallpaperRenderer.render(preset, w, h)
+        val raw = WallpaperRenderer.render(preset, w, h)
+        val bmp = if (adjust == WallpaperAdjust()) raw else WallpaperRenderer.compose(raw, w, h, adjust)
         applyBitmap(bmp, target)
         settings.update { it.copy(wallpaperId = preset.id) }
     }
@@ -55,7 +64,7 @@ class WallpaperController(
     suspend fun applyBitmap(bmp: Bitmap, target: WallpaperTarget) = withContext(Dispatchers.IO) {
         if (target != WallpaperTarget.LOCK) {
             save(bmp)
-            _current.value = bmp.asImageBitmap()
+            show(bmp)
         }
         val flags = when (target) {
             WallpaperTarget.HOME -> WallpaperManager.FLAG_SYSTEM
@@ -66,16 +75,48 @@ class WallpaperController(
             .onSuccess { systemWallpaperSetCount++ }
     }
 
+    /**
+     * Copies a picture from the gallery into Xe's folder at a sensible size. Big camera photos (50 MP)
+     * are decoded downsampled, in sRGB, without HDR gain maps, so nothing is stretched, banded or
+     * out of memory. The picture keeps its own shape; it is fitted to the screen when applied.
+     */
     suspend fun importFromUri(uri: Uri): WallpaperPreset.Image = withContext(Dispatchers.IO) {
         val (w, h) = screenSize()
-        val src = ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, uri)) { d, _, _ ->
+        val longest = (maxOf(w, h) * 2.2f).toInt()
+        val src = ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, uri)) { d, info, _ ->
             d.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+            d.setTargetColorSpace(android.graphics.ColorSpace.get(android.graphics.ColorSpace.Named.SRGB))
+            d.memorySizePolicy = ImageDecoder.MEMORY_POLICY_LOW_RAM
+            val big = maxOf(info.size.width, info.size.height)
+            if (big > longest) {
+                val f = longest.toFloat() / big
+                d.setTargetSize((info.size.width * f).toInt().coerceAtLeast(1), (info.size.height * f).toInt().coerceAtLeast(1))
+            }
         }
-        val out = File(dir, "imported_${System.currentTimeMillis()}.png")
+        // Redraw into a plain 8-bit bitmap: drops any HDR gain map / 16-bit config.
+        val plain = Bitmap.createBitmap(src.width, src.height, Bitmap.Config.ARGB_8888)
+        android.graphics.Canvas(plain).drawBitmap(src, 0f, 0f, android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG))
         dir.mkdirs()
-        out.outputStream().use { WallpaperRenderer.centerCrop(src, w, h).compress(Bitmap.CompressFormat.PNG, 100, it) }
+        val out = File(dir, "imported_${System.currentTimeMillis()}.jpg")
+        out.outputStream().use { plain.compress(Bitmap.CompressFormat.JPEG, 94, it) }
+        pruneImports()
         WallpaperPreset.Image(out)
     }
+
+    /** Applies a picture with the user's framing, dim and blur. */
+    suspend fun applyImage(file: File, adjust: WallpaperAdjust, target: WallpaperTarget) = withContext(Dispatchers.IO) {
+        val (w, h) = screenSize()
+        val src = BitmapFactory.decodeFile(file.path) ?: return@withContext
+        applyBitmap(WallpaperRenderer.compose(src, w, h, adjust), target)
+        settings.update { it.copy(wallpaperId = "image:${file.name}") }
+    }
+
+    /** Recently imported pictures, newest first. */
+    fun imports(): List<File> = dir.listFiles { f -> f.name.startsWith("imported_") }?.sortedByDescending { it.lastModified() }.orEmpty()
+
+    fun deleteImport(f: File) { if (f.parentFile == dir) f.delete() }
+
+    private fun pruneImports() = imports().drop(12).forEach { it.delete() }
 
     fun currentFile(): File? = file.takeIf { it.exists() }
 

@@ -17,7 +17,14 @@ import kotlin.math.sin
 
 /** Continuous-curvature "squircle" (superellipse, n = 5). */
 object SquircleShape : Shape {
-    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
+    private val cache = object : LinkedHashMap<Size, Path>(16, .75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Size, Path>?) = size > 24
+    }
+
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline =
+        Outline.Generic(synchronized(cache) { cache.getOrPut(size) { path(size) } })
+
+    private fun path(size: Size): Path {
         val p = Path()
         val a = size.width / 2f; val b = size.height / 2f; val n = 5.0
         val steps = 96
@@ -29,12 +36,17 @@ object SquircleShape : Shape {
             if (i == 0) p.moveTo(x, y) else p.lineTo(x, y)
         }
         p.close()
-        return Outline.Generic(p)
+        return p
     }
 }
+
+/** Rounded on three corners, nearly sharp bottom-right: a teardrop. */
+val TeardropShape = RoundedCornerShape(topStartPercent = 50, topEndPercent = 50, bottomEndPercent = 12, bottomStartPercent = 50)
 
 fun IconShape.toShape(): Shape = when (this) {
     IconShape.SQUIRCLE -> SquircleShape
     IconShape.CIRCLE -> CircleShape
     IconShape.ROUNDED -> RoundedCornerShape(22)
+    IconShape.SQUARE -> RoundedCornerShape(10)
+    IconShape.TEARDROP -> TeardropShape
 }

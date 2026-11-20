@@ -32,7 +32,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.xenoorigin.xelauncher.R
 import com.xenoorigin.xelauncher.apps.AppEntry
-import com.xenoorigin.xelauncher.design.GlassSurface
+import com.xenoorigin.xelauncher.design.glassTile
+import androidx.compose.ui.draw.scale
 import com.xenoorigin.xelauncher.design.LocalGlassStyle
 import com.xenoorigin.xelauncher.design.XeType
 import com.xenoorigin.xelauncher.design.glassFilmAndRim
@@ -40,6 +41,8 @@ import com.xenoorigin.xelauncher.design.toShape
 
 val LocalIconRepository = staticCompositionLocalOf<IconRepository?> { null }
 val LocalGrayscaleContrast = staticCompositionLocalOf { 1.15f }
+/** How large the symbol is drawn on its tile (1 = default). */
+val LocalGlyphScale = staticCompositionLocalOf { 1f }
 
 /** One app tile: icon in the chosen style plus optional label. */
 @Composable
@@ -67,28 +70,35 @@ fun AppIcon(
 fun IconTile(app: AppEntry, size: Dp, style: IconStyle, shape: IconShape, modifier: Modifier = Modifier) {
     val repo = LocalIconRepository.current
     val contrast = LocalGrayscaleContrast.current
-    val px = with(LocalDensity.current) { (size * if (style == IconStyle.ORIGINAL) 1f else 0.62f).roundToPx() }
-    val icon by produceState<RenderedIcon?>(null, app.key, style, px, contrast) {
-        value = repo?.icon(app.key, style, px, contrast)
+    val glyphScale = LocalGlyphScale.current
+    val px = with(LocalDensity.current) { size.roundToPx() }
+    val icon by produceState(repo?.peek(app.key, style, px, contrast), app.key, style, px, contrast) {
+        if (value == null) value = repo?.icon(app.key, style, px, contrast)
     }
     val s = shape.toShape()
+    val base = LocalGlassStyle.current
     Box(modifier.size(size)) {
-        when (style) {
-            IconStyle.ORIGINAL -> icon?.let { Image(it.bitmap, app.label, Modifier.fillMaxSize().clip(s)) }
-            IconStyle.GLASS_COLOR -> {
-                val c = Color(icon?.dominantColor ?: 0xFF8E8E93.toInt())
+        val i = icon
+        when {
+            i != null && i.fillsTile -> Image(
+                i.bitmap, app.label, Modifier.fillMaxSize().clip(s).glassFilmAndRim(s, base.copy(rimAlpha = base.rimAlpha * .5f)),
+            )
+            style == IconStyle.GLASS_COLOR -> {
+                val c = Color(i?.dominantColor ?: 0xFF8E8E93.toInt())
                 Box(
                     Modifier.fillMaxSize().clip(s)
                         .background(Brush.linearGradient(listOf(lerp(c, Color.White, .35f), c, lerp(c, Color.Black, .35f))))
-                        .glassFilmAndRim(s, LocalGlassStyle.current),
+                        .glassFilmAndRim(s, base),
                     contentAlignment = Alignment.Center,
-                ) { icon?.let { Image(it.bitmap, app.label, Modifier.size(size * .62f)) } }
+                ) { i?.let { Image(it.bitmap, app.label, Modifier.fillMaxSize().scale(glyphScale)) } }
             }
-            IconStyle.GLASS_CLEAR, IconStyle.GLASS_DARK -> {
-                val base = LocalGlassStyle.current
-                val glass = if (style == IconStyle.GLASS_DARK) base.copy(tint = Color.Black.copy(alpha = .42f), dark = true) else base.copy(tint = Color.White.copy(alpha = .06f))
-                GlassSurface(s, Modifier.fillMaxSize(), glass) {
-                    icon?.let { Image(it.bitmap, app.label, Modifier.size(size * .62f).align(Alignment.Center)) }
+            else -> {
+                val fill = when (style) {
+                    IconStyle.GLASS_CLEAR -> Color.White.copy(alpha = .10f)
+                    else -> Color(0xFF1C1C1E).copy(alpha = .78f)
+                }
+                Box(Modifier.fillMaxSize().glassTile(s, base.copy(dark = true), fill), contentAlignment = Alignment.Center) {
+                    i?.let { Image(it.bitmap, app.label, Modifier.fillMaxSize().scale(glyphScale)) }
                 }
             }
         }
