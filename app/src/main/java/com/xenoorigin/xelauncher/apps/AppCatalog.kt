@@ -3,7 +3,10 @@ package com.xenoorigin.xelauncher.apps
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -18,6 +21,9 @@ class AppCatalog(
 ) {
     private val _apps = MutableStateFlow<List<AppEntry>>(emptyList())
     val apps: StateFlow<List<AppEntry>> = _apps.asStateFlow()
+    private val _changes = MutableSharedFlow<String>(extraBufferCapacity = 64)
+    /** Package names that were added, removed or updated. */
+    val packageChanges: SharedFlow<String> = _changes.asSharedFlow()
     private var unregister: (() -> Unit)? = null
 
     fun start() {
@@ -39,6 +45,7 @@ class AppCatalog(
         val profile = platform.profiles().firstOrNull { it.serial == serial } ?: return refreshAll()
         val fresh = platform.activities(profile, pkg).toEntries(profile)
         _apps.update { cur -> cur.filterNot { it.key.packageName == pkg && it.key.userSerial == serial } + fresh }
+        _changes.tryEmit(pkg)
     }
 
     private fun List<RawActivity>.toEntries(p: Profile) = filter { it.packageName != ownPackage }.map {

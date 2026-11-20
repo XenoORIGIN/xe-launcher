@@ -4,6 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.launch
 import org.junit.Test
 
 private class FakePlatform : AppPlatform {
@@ -62,5 +63,15 @@ class AppCatalogTest {
         val c = AppCatalog(p, backgroundScope, UnconfinedTestDispatcher(testScheduler), ownPackage = "com.xenoorigin.xelauncher")
         c.start()
         assertThat(c.apps.value.map { it.label }).containsExactly("Other")
+    }
+
+    @Test fun packageChange_isAnnounced() = runTest(UnconfinedTestDispatcher()) {
+        val p = FakePlatform()
+        val c = AppCatalog(p, backgroundScope, UnconfinedTestDispatcher(testScheduler))
+        val seen = mutableListOf<String>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { c.packageChanges.collect { seen += it } }
+        c.start()
+        p.pkgListener!!.invoke("x.y", 0)
+        assertThat(seen).containsExactly("x.y")
     }
 }

@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 
 interface AppSource {
     val apps: StateFlow<List<AppEntry>>
+    val packageChanges: kotlinx.coroutines.flow.Flow<String>
     fun launch(key: AppKey, sourceBounds: Rect?, opts: Bundle?)
     fun openAppInfo(key: AppKey)
     fun uninstall(key: AppKey)

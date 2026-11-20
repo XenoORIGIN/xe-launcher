@@ -72,6 +72,7 @@ class LauncherAppsSource(private val context: Context, scope: CoroutineScope) : 
     private val catalog = AppCatalog(platform, scope, ownPackage = context.packageName).also { it.start() }
 
     override val apps: StateFlow<List<AppEntry>> = catalog.apps
+    override val packageChanges = catalog.packageChanges
 
     private fun cn(k: AppKey) = ComponentName(k.packageName, k.activity)
 

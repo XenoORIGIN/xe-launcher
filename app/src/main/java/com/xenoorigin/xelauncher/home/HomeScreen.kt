@@ -1,0 +1,288 @@
+package com.xenoorigin.xelauncher.home
+
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import com.xenoorigin.xelauncher.apps.AppEntry
+import com.xenoorigin.xelauncher.design.GlassSurface
+import com.xenoorigin.xelauncher.design.LocalAnimationSpeed
+import com.xenoorigin.xelauncher.design.LocalXeScheme
+import com.xenoorigin.xelauncher.design.SquircleShape
+import com.xenoorigin.xelauncher.design.XeMotion
+import com.xenoorigin.xelauncher.design.XeType
+import com.xenoorigin.xelauncher.design.AnimationSpeed
+import com.xenoorigin.xelauncher.icons.AppIcon
+import com.xenoorigin.xelauncher.icons.IconShape
+import com.xenoorigin.xelauncher.icons.IconStyle
+import com.xenoorigin.xelauncher.icons.IconTile
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.math.floor
+import kotlin.math.roundToInt
+import kotlin.math.sin
+
+sealed interface DropRequest {
+    data class Move(val itemId: Long, val page: Int, val x: Int, val y: Int) : DropRequest
+    data class Onto(val itemId: Long, val targetId: Long) : DropRequest
+    data class ToDock(val itemId: Long, val position: Int) : DropRequest
+}
+
+data class HomeLook(
+    val columns: Int, val rows: Int, val dockSize: Int,
+    val iconSize: Int, val labels: Boolean, val shape: IconShape, val style: (AppEntry) -> IconStyle,
+)
+
+class HomeCallbacks(
+    val onLaunch: (AppEntry, Rect) -> Unit,
+    val onItemMenu: (HomeCell, AppEntry?, Rect) -> Unit,
+    val onFolderOpen: (FolderCell, Rect) -> Unit,
+    val onEmptyLongPress: () -> Unit,
+    val onEmptyTap: () -> Unit,
+    val onDoubleTap: () -> Unit,
+    val onDrop: (DropRequest) -> Unit,
+    val onDragStart: () -> Unit,
+)
+
+private data class Drag(val cell: HomeCell, val pos: Offset, val grab: Offset)
+
+@Composable
+fun HomeScreen(
+    layout: HomeLayout,
+    look: HomeLook,
+    pager: PagerState,
+    editMode: Boolean,
+    cb: HomeCallbacks,
+    modifier: Modifier = Modifier,
+) {
+    val density = LocalDensity.current
+    val haptic = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
+    var drag by remember { mutableStateOf<Drag?>(null) }
+    var gridBounds by remember { mutableStateOf(Rect.Zero) }
+    var dockBounds by remember { mutableStateOf(Rect.Zero) }
+    val pageCount = layout.pages.size + if (editMode) 1 else 0
+    var edgeSince by remember { mutableStateOf(0L) }
+
+    fun dropFor(p: Offset, cell: HomeCell): DropRequest? {
+        if (dockBounds.contains(p)) {
+            val slot = ((p.x - dockBounds.left) / (dockBounds.width / look.dockSize)).toInt().coerceIn(0, look.dockSize - 1)
+            return DropRequest.ToDock(cell.id, slot)
+        }
+        if (!gridBounds.contains(p)) return null
+        val cw = gridBounds.width / look.columns; val ch = gridBounds.height / look.rows
+        val x = floor((p.x - gridBounds.left) / cw).toInt().coerceIn(0, look.columns - 1)
+        val y = floor((p.y - gridBounds.top) / ch).toInt().coerceIn(0, look.rows - 1)
+        val page = pager.currentPage
+        val occupant = layout.pages.getOrNull(page)?.firstOrNull { it.x == x && it.y == y && it.id != cell.id }
+        if (occupant != null && cell is AppCell) {
+            val cx = gridBounds.left + (x + .5f) * cw; val cy = gridBounds.top + (y + .45f) * ch
+            if ((Offset(cx, cy) - p).getDistance() < cw * .32f) return DropRequest.Onto(cell.id, occupant.id)
+        }
+        return DropRequest.Move(cell.id, page, x, y)
+    }
+
+    fun callbacksFor(cell: HomeCell, coords: () -> LayoutCoordinates?, app: AppEntry?): ItemGestureCallbacks = ItemGestureCallbacks(
+        toRoot = { coords()?.localToRoot(it) ?: it },
+        onTap = {
+            val b = coords()?.boundsInWindow() ?: Rect.Zero
+            when {
+                editMode -> Unit
+                cell is FolderCell -> cb.onFolderOpen(cell, b)
+                app != null -> cb.onLaunch(app, b)
+            }
+        },
+        onLongPress = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            cb.onItemMenu(cell, app, coords()?.boundsInWindow() ?: Rect.Zero)
+        },
+        onDragStart = { p ->
+            val topLeft = coords()?.boundsInRoot()?.topLeft ?: p
+            drag = Drag(cell, p, p - topLeft); cb.onDragStart()
+        },
+        onDrag = { p ->
+            drag = drag?.copy(pos = p)
+            val w = gridBounds.width
+            val nearLeft = p.x < gridBounds.left + w * .06f; val nearRight = p.x > gridBounds.right - w * .06f
+            if (nearLeft || nearRight) {
+                val now = System.currentTimeMillis()
+                if (edgeSince == 0L) edgeSince = now
+                if (now - edgeSince > 650) {
+                    edgeSince = now
+                    val target = (pager.currentPage + if (nearRight) 1 else -1).coerceIn(0, pageCount - 1)
+                    scope.launch { pager.animateScrollToPage(target) }
+                }
+            } else edgeSince = 0L
+        },
+        onDragEnd = { p -> drag?.let { d -> dropFor(p, d.cell)?.let(cb.onDrop) }; drag = null; edgeSince = 0L },
+        onDragCancel = { drag = null; edgeSince = 0L },
+    )
+
+    Box(
+        modifier.fillMaxSize().pointerInput(editMode) {
+            detectTapGestures(onLongPress = { cb.onEmptyLongPress() }, onDoubleTap = { cb.onDoubleTap() }, onTap = { cb.onEmptyTap() })
+        },
+    ) {
+        val editInset by androidx.compose.animation.core.animateDpAsState(if (editMode) 64.dp else 0.dp, label = "editInset")
+        Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(top = editInset)) {
+            HorizontalPager(pager, Modifier.weight(1f).fillMaxWidth(), beyondViewportPageCount = 1, userScrollEnabled = drag == null) { page ->
+                Box(Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 18.dp).onGloballyPositioned { if (page == pager.currentPage) gridBounds = it.boundsInRoot() }) {
+                    PageGrid(layout.pages.getOrNull(page).orEmpty(), look, editMode, drag?.cell?.id, ::callbacksFor)
+                }
+            }
+            PageDots(pageCount, pager)
+            Dock(layout.dock, look, editMode, drag?.cell?.id, Modifier.onGloballyPositioned { dockBounds = it.boundsInRoot() }, ::callbacksFor)
+        }
+        // The icon being dragged floats above everything.
+        drag?.let { d ->
+            Box(Modifier.offset { IntOffset((d.pos.x - d.grab.x).roundToInt(), (d.pos.y - d.grab.y).roundToInt()) }.graphicsLayer { scaleX = 1.12f; scaleY = 1.12f; alpha = .92f }) {
+                CellContent(d.cell, look, label = false)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PageGrid(
+    cells: List<HomeCell>, look: HomeLook, editMode: Boolean, draggingId: Long?,
+    callbacksFor: (HomeCell, () -> LayoutCoordinates?, AppEntry?) -> ItemGestureCallbacks,
+) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val cw = maxWidth / look.columns; val ch = maxHeight / look.rows
+        cells.forEach { cell ->
+            Box(
+                Modifier.offset(cw * cell.x, ch * cell.y).size(cw, ch),
+                contentAlignment = Alignment.TopCenter,
+            ) { HomeItem(cell, look, editMode, draggingId == cell.id, label = look.labels, callbacksFor) }
+        }
+    }
+}
+
+@Composable
+private fun HomeItem(
+    cell: HomeCell, look: HomeLook, editMode: Boolean, isDragging: Boolean, label: Boolean,
+    callbacksFor: (HomeCell, () -> LayoutCoordinates?, AppEntry?) -> ItemGestureCallbacks,
+) {
+    var coords by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    val app = (cell as? AppCell)?.app
+    val wiggle = wiggleAngle(editMode, cell.id)
+    val cbs = callbacksFor(cell, { coords }, app)
+    Box(
+        Modifier.onGloballyPositioned { coords = it }
+            .homeItemGestures(Triple(cell, editMode, look), cbs)
+            .graphicsLayer { rotationZ = wiggle(); alpha = if (isDragging) .25f else 1f },
+    ) { CellContent(cell, look, label) }
+}
+
+@Composable
+fun CellContent(cell: HomeCell, look: HomeLook, label: Boolean) {
+    when (cell) {
+        is AppCell -> AppIcon(cell.app, look.iconSize.dp, look.style(cell.app), look.shape, label)
+        is FolderCell -> FolderIcon(cell, look, label)
+    }
+}
+
+@Composable
+fun FolderIcon(cell: FolderCell, look: HomeLook, label: Boolean) {
+    val size = look.iconSize.dp
+    Column(Modifier.width(size + 22.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        GlassSurface(SquircleShape, Modifier.size(size)) {
+            val mini = size * .36f
+            Column(Modifier.align(Alignment.Center), verticalArrangement = Arrangement.spacedBy(size * .06f)) {
+                cell.apps.take(4).chunked(2).forEach { row ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(size * .06f)) {
+                        row.forEach { IconTile(it, mini, look.style(it).let { s -> if (s == IconStyle.GLASS_DARK) IconStyle.GLASS_DARK else IconStyle.ORIGINAL }, look.shape) }
+                    }
+                }
+            }
+        }
+        if (label) Text(cell.name, style = XeType.Label, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+@Composable
+private fun Dock(
+    cells: List<HomeCell>, look: HomeLook, editMode: Boolean, draggingId: Long?, modifier: Modifier,
+    callbacksFor: (HomeCell, () -> LayoutCoordinates?, AppEntry?) -> ItemGestureCallbacks,
+) {
+    GlassSurface(RoundedCornerShape(36.dp), modifier.fillMaxWidth().padding(horizontal = 14.dp).padding(bottom = 10.dp).height(look.iconSize.dp + 30.dp)) {
+        Row(Modifier.fillMaxSize().padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            (0 until look.dockSize).forEach { slot ->
+                Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    cells.getOrNull(slot)?.let { HomeItem(it, look, editMode, draggingId == it.id, label = false, callbacksFor) }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PageDots(count: Int, pager: PagerState) {
+    if (count <= 1) { Spacer(Modifier.height(14.dp)); return }
+    Row(Modifier.fillMaxWidth().height(22.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+        repeat(count) { i ->
+            val active = pager.currentPage == i
+            Box(Modifier.padding(horizontal = 4.dp).size(if (active) 7.dp else 6.dp).alpha(if (active) 1f else .4f).background(Color.White, CircleShape))
+        }
+    }
+}
+
+/** Gentle ±2° wiggle while editing, each icon slightly out of phase. */
+@Composable
+private fun wiggleAngle(editMode: Boolean, seed: Long): () -> Float {
+    if (!editMode || LocalAnimationSpeed.current == AnimationSpeed.OFF) return { 0f }
+    val t = rememberInfiniteTransition(label = "wiggle")
+    val phase by t.animateFloat(0f, (2 * Math.PI).toFloat(), infiniteRepeatable(tween(280, easing = LinearEasing), RepeatMode.Restart), label = "p")
+    val offset = (seed % 7) / 7f * 6.28f
+    return { (sin(phase + offset) * 2f) }
+}
