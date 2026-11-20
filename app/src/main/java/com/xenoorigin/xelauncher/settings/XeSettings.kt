@@ -39,6 +39,9 @@ data class XeSettings(
     val hiddenApps: Set<String> = emptySet(),
     val wallpaperId: String = "xe_black",
     val firstRunDone: Boolean = false,
+    val searchCalculator: Boolean = true,
+    val searchWeb: Boolean = true,
+    val searchAutoKeyboard: Boolean = true,
     /** Per-app icon style overrides, keyed by AppKey.encode(). */
     val iconOverrides: Map<String, IconStyle> = emptyMap(),
 )
