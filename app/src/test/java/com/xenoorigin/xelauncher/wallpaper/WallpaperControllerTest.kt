@@ -1,0 +1,52 @@
+package com.xenoorigin.xelauncher.wallpaper
+
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.google.common.truth.Truth.assertThat
+import com.xenoorigin.xelauncher.settings.SettingsStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+import java.io.File
+
+@RunWith(AndroidJUnit4::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(sdk = [34])
+class WallpaperControllerTest {
+    private val ctx = ApplicationProvider.getApplicationContext<android.content.Context>()
+    private val size = { 90 to 195 }
+
+    @Test fun apply_writesFile_persistsId_andIsRestoredByNewInstance() = runBlocking<Unit> {
+        val sc = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val settings = SettingsStore(ctx, sc, "wp_test")
+        val dir = File(ctx.filesDir, "wp-${System.nanoTime()}")
+        val c = WallpaperController(ctx, settings, dir, size)
+        c.apply(XeCollection.byId("xe_blue")!!, WallpaperTarget.HOME)
+        assertThat(File(dir, "current.png").exists()).isTrue()
+        assertThat(settings.current().wallpaperId).isEqualTo("xe_blue")
+
+        val again = WallpaperController(ctx, settings, dir, size)
+        again.restore()
+        assertThat(again.current.value).isNotNull()
+        assertThat(again.current.value!!.width).isEqualTo(90)
+        sc.cancel()
+    }
+
+    @Test fun restore_withNothingSaved_rendersDefaultWithoutTouchingSystemWallpaper() = runBlocking<Unit> {
+        val sc = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val settings = SettingsStore(ctx, sc, "wp_test2")
+        val dir = File(ctx.filesDir, "wp-${System.nanoTime()}")
+        val c = WallpaperController(ctx, settings, dir, size)
+        c.restore()
+        assertThat(c.current.value).isNotNull()
+        assertThat(c.systemWallpaperSetCount).isEqualTo(0)
+        sc.cancel()
+    }
+}
