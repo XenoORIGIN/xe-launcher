@@ -94,11 +94,13 @@ fun FolderPopup(
                                 var coords by remember { mutableStateOf<LayoutCoordinates?>(null) }
                                 Box(Modifier.weight(1f).onGloballyPositioned { coords = it }, contentAlignment = Alignment.TopCenter) {
                                     AppIcon(app, (look.iconSize - 4).dp, look.style(app), look.shape, look.labels,
-                                        Modifier.homeItemGestures(app.key, ItemGestureCallbacks(
-                                            toRoot = { it }, onTap = { onLaunch(app, coords?.boundsInWindow() ?: Rect.Zero) },
-                                            onLongPress = { onLongPress(app, coords?.boundsInWindow() ?: Rect.Zero) },
-                                            onDragStart = {}, onDrag = {}, onDragEnd = { _: Offset -> }, onDragCancel = {},
-                                        )))
+                                        Modifier.homeItemGestures(app.key, { false }) {
+                                            ItemGestureCallbacks(
+                                                toRoot = { it }, onTap = { onLaunch(app, coords?.boundsInWindow() ?: Rect.Zero) },
+                                                onLongPress = { onLongPress(app, coords?.boundsInWindow() ?: Rect.Zero) },
+                                                onDragStart = {}, onDrag = {}, onDragEnd = { _: Offset -> }, onDragCancel = {},
+                                            )
+                                        })
                                 }
                             }
                             repeat(4 - row.size) { Box(Modifier.weight(1f)) }

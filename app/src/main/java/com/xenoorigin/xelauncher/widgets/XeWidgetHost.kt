@@ -24,7 +24,7 @@ class XeWidgetHost(context: Context) : AppWidgetHost(context.applicationContext,
     fun viewFor(context: Context, id: Int): XeWidgetHostView? {
         views[id]?.let { v -> (v.parent as? android.view.ViewGroup)?.removeView(v); return v }
         val info = manager.getAppWidgetInfo(id) ?: return null
-        return (createView(context, id, info) as XeWidgetHostView).also { views[id] = it }
+        return (createView(widgetContext(context), id, info) as XeWidgetHostView).also { views[id] = it }
     }
 
     fun release(id: Int) {
@@ -89,4 +89,17 @@ class XeWidgetHostView(context: Context) : AppWidgetHostView(context) {
             updateAppWidgetSize(null, w.toInt(), h.toInt(), w.toInt(), h.toInt())
         }
     }
+}
+
+/**
+ * Context for other apps' widget views: the activity underneath (so taps can open apps), but with a
+ * plain LayoutInflater. AppCompat's inflater swaps TextView for AppCompatTextView, which RemoteViews
+ * refuses, so with it every widget fails with "Couldn't add widget".
+ */
+fun widgetContext(base: Context): Context = PlainInflaterContext(base)
+
+private class PlainInflaterContext(base: Context) : android.content.ContextWrapper(base) {
+    private val inflater by lazy { android.view.LayoutInflater.from(base.applicationContext).cloneInContext(this) }
+    override fun getSystemService(name: String): Any? =
+        if (name == Context.LAYOUT_INFLATER_SERVICE) inflater else super.getSystemService(name)
 }

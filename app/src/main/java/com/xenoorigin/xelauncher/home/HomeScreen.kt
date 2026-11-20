@@ -240,11 +240,13 @@ private fun HomeItem(
     val app = (cell as? AppCell)?.app
     val wiggle = wiggleAngle(editMode, cell.id)
     val cbs = callbacksFor(cell, { coords }, app)
+    val latestCbs by androidx.compose.runtime.rememberUpdatedState(cbs)
+    val latestEdit by androidx.compose.runtime.rememberUpdatedState(editMode)
     val isWidget = cell is WidgetCell
     Box(
         Modifier.then(if (isWidget) Modifier.fillMaxSize() else Modifier)
             .onGloballyPositioned { coords = it }
-            .homeItemGestures(Triple(cell, editMode, look), cbs)
+            .homeItemGestures(cell.id, { latestEdit }, { latestCbs })
             .graphicsLayer { rotationZ = if (isWidget) wiggle() * .3f else wiggle(); alpha = if (isDragging) .25f else 1f },
     ) {
         CellContent(cell, look, label)
