@@ -1,0 +1,44 @@
+package com.xenoorigin.xelauncher.settings
+
+import com.xenoorigin.xelauncher.design.AnimationSpeed
+import com.xenoorigin.xelauncher.design.GlassQuality
+import com.xenoorigin.xelauncher.icons.IconShape
+import com.xenoorigin.xelauncher.icons.IconStyle
+import kotlinx.serialization.Serializable
+
+@Serializable enum class ThemeMode { LIGHT, DARK, AUTO }
+@Serializable enum class AppLanguage { SYSTEM, TH, EN }
+@Serializable enum class GestureAction { NONE, OPEN_DRAWER, NOTIFICATIONS, OPEN_SEARCH, OPEN_SETTINGS, EDIT_MODE }
+@Serializable enum class DrawerSort { ALPHABETICAL, MOST_USED, RECENTLY_INSTALLED }
+
+@Serializable
+data class XeSettings(
+    val themeMode: ThemeMode = ThemeMode.DARK,
+    val accent: Long = 0xFFFFFFFF,
+    val glassQuality: GlassQuality = GlassQuality.NORMAL,
+    val fontScale: Float = 1f,
+    val language: AppLanguage = AppLanguage.SYSTEM,
+    val iconStyle: IconStyle = IconStyle.GLASS_DARK,
+    val iconShape: IconShape = IconShape.SQUIRCLE,
+    val iconSizeDp: Int = 60,
+    val showLabels: Boolean = true,
+    val grayscaleContrast: Float = 1.15f,
+    val animationSpeed: AnimationSpeed = AnimationSpeed.NORMAL,
+    val pressSquish: Boolean = true,
+    val wallpaperParallax: Boolean = true,
+    val homeColumns: Int = 4,
+    val homeRows: Int = 6,
+    val dockSize: Int = 4,
+    val swipeUp: GestureAction = GestureAction.OPEN_DRAWER,
+    val swipeDown: GestureAction = GestureAction.NOTIFICATIONS,
+    val doubleTap: GestureAction = GestureAction.NONE,
+    val twoFingerDown: GestureAction = GestureAction.OPEN_SEARCH,
+    val drawerSort: DrawerSort = DrawerSort.ALPHABETICAL,
+    val categoryBar: Boolean = true,
+    val layoutLocked: Boolean = false,
+    val hiddenApps: Set<String> = emptySet(),
+    val wallpaperId: String = "xe_black",
+    val firstRunDone: Boolean = false,
+    /** Per-app icon style overrides, keyed by AppKey.encode(). */
+    val iconOverrides: Map<String, IconStyle> = emptyMap(),
+)

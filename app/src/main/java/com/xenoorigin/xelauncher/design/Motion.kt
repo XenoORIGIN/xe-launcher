@@ -5,7 +5,7 @@ import androidx.compose.animation.core.SpringSpec
 import androidx.compose.animation.core.spring
 import androidx.compose.runtime.staticCompositionLocalOf
 
-enum class AnimationSpeed(val scale: Float) { OFF(0f), FAST(0.7f), NORMAL(1f), SMOOTH(1.35f) }
+@kotlinx.serialization.Serializable enum class AnimationSpeed(val scale: Float) { OFF(0f), FAST(0.7f), NORMAL(1f), SMOOTH(1.35f) }
 
 object XeMotion {
     const val staggerStepMs: Int = 28

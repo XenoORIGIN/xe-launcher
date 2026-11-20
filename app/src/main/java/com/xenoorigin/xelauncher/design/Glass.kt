@@ -23,7 +23,7 @@ import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
 
-enum class GlassQuality { HIGH, NORMAL, SAVER }
+@kotlinx.serialization.Serializable enum class GlassQuality { HIGH, NORMAL, SAVER }
 
 /** Everything that defines how a Liquid Glass panel is rendered. */
 data class GlassStyle(
