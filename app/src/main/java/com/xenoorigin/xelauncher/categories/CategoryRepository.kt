@@ -8,6 +8,7 @@ import com.xenoorigin.xelauncher.data.XeDatabase
 import com.xenoorigin.xelauncher.settings.XeSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import androidx.room.withTransaction
 
 data class CategoryWithApps(
@@ -46,6 +47,11 @@ class CategoryRepository(
             if (builtIn != null && members.isEmpty()) return@mapNotNull null
             CategoryWithApps(c.id, c.name ?: labelFor(builtIn ?: BuiltInCategory.OTHER), c.iconName, builtIn, members)
         }
+    }
+
+    /** Every category (including empty ones) with its display title, for the editor. */
+    val editable: Flow<List<Pair<CategoryEntity, String>>> = db.categories().observe().map { list ->
+        list.map { it to (it.name ?: labelFor(it.builtIn?.let(BuiltInCategory::valueOf) ?: BuiltInCategory.OTHER)) }
     }
 
     suspend fun ensureDefaults() = db.withTransaction {
