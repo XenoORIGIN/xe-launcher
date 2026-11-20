@@ -1,0 +1,5 @@
+-keepattributes *Annotation*, InnerClasses, Signature
+-keep,includedescriptorclasses class com.xenoorigin.xelauncher.**$$serializer { *; }
+-keepclassmembers class com.xenoorigin.xelauncher.** { *** Companion; }
+-keepclasseswithmembers class com.xenoorigin.xelauncher.** { kotlinx.serialization.KSerializer serializer(...); }
+-dontwarn org.slf4j.**
