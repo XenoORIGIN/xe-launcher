@@ -52,6 +52,7 @@ class AppGraph(val context: Context) {
         if (names.isEmpty()) list else list.map { a -> names[a.key.encode()]?.let { a.copy(label = it) } ?: a }
     }.stateIn(scope, SharingStarted.Eagerly, emptyList())
     val wallpaper = WallpaperController(context, settings)
+    val widgetHost = com.xenoorigin.xelauncher.widgets.XeWidgetHost(context)
 
     /** Fires when the Home button is pressed while Xe is already in front. */
     val homePressed = MutableSharedFlow<Unit>(extraBufferCapacity = 1)

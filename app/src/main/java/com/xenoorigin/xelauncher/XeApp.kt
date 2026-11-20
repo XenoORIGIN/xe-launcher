@@ -146,6 +146,69 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     var pictureFor by remember { mutableStateOf<AppEntry?>(null) }
     var arrange by remember { mutableStateOf<com.xenoorigin.xelauncher.categories.CategoryWithApps?>(null) }
     var bulkIcons by remember { mutableStateOf(false) }
+    var widgetPicker by remember { mutableStateOf(false) }
+    var resizeId by remember { mutableStateOf<Long?>(null) }
+    var pendingWidget by remember { mutableStateOf<Pair<Int, android.appwidget.AppWidgetProviderInfo>?>(null) }
+    val host = graph.widgetHost
+    val conf = androidx.compose.ui.platform.LocalConfiguration.current
+    val cellWDp = (conf.screenWidthDp - 20f) / settings.homeColumns
+    val cellHDp = (conf.screenHeightDp - 230f) / settings.homeRows
+    fun spanOf(info: android.appwidget.AppWidgetProviderInfo) =
+        com.xenoorigin.xelauncher.widgets.XeWidgetHost.spanFor(info, density.density, cellWDp, cellHDp, settings.homeColumns, settings.homeRows)
+    fun placeWidget(id: Int, info: android.appwidget.AppWidgetProviderInfo) {
+        val (w, h) = spanOf(info)
+        scope.launch { graph.home.addWidget(homePager.currentPage, w, h, id, null) }
+    }
+    val configureLauncher = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { r ->
+        val p = pendingWidget; pendingWidget = null
+        if (p != null) { if (r.resultCode == android.app.Activity.RESULT_OK) placeWidget(p.first, p.second) else host.release(p.first) }
+    }
+    fun configureOrPlace(id: Int, info: android.appwidget.AppWidgetProviderInfo) {
+        val optional = android.os.Build.VERSION.SDK_INT >= 31 &&
+            (info.widgetFeatures and android.appwidget.AppWidgetProviderInfo.WIDGET_FEATURE_CONFIGURATION_OPTIONAL) != 0
+        if (info.configure == null || optional) { placeWidget(id, info); return }
+        pendingWidget = id to info
+        val i = Intent(android.appwidget.AppWidgetManager.ACTION_APPWIDGET_CONFIGURE).setComponent(info.configure)
+            .putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID, id)
+        runCatching { configureLauncher.launch(i) }.onFailure {
+            // Not openable directly: let the system start it for the host, and place the widget now.
+            pendingWidget = null
+            runCatching { host.startAppWidgetConfigureActivityForResult(ctx as android.app.Activity, id, 0, 77, null) }
+            placeWidget(id, info)
+        }
+    }
+    val bindLauncher = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { r ->
+        val p = pendingWidget
+        if (p != null) {
+            if (r.resultCode == android.app.Activity.RESULT_OK) configureOrPlace(p.first, p.second)
+            else { host.release(p.first); pendingWidget = null }
+        }
+    }
+    fun addWidget(choice: com.xenoorigin.xelauncher.widgets.WidgetChoice) {
+        widgetPicker = false
+        when (choice) {
+            is com.xenoorigin.xelauncher.widgets.WidgetChoice.Glass -> scope.launch {
+                graph.home.addWidget(homePager.currentPage, choice.kind.spanX.coerceAtMost(settings.homeColumns), choice.kind.spanY, 0, choice.kind.id)
+            }
+            is com.xenoorigin.xelauncher.widgets.WidgetChoice.Provider -> {
+                val info = choice.info
+                val id = runCatching { host.allocateAppWidgetId() }.getOrNull()
+                if (id == null) { Toast.makeText(ctx, ctx.getString(R.string.widget_failed), Toast.LENGTH_SHORT).show(); return }
+                val bound = runCatching { host.manager.bindAppWidgetIdIfAllowed(id, info.profile, info.provider, null) }.getOrDefault(false)
+                if (bound) configureOrPlace(id, info) else {
+                    pendingWidget = id to info
+                    val i = Intent(android.appwidget.AppWidgetManager.ACTION_APPWIDGET_BIND)
+                        .putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID, id)
+                        .putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_PROVIDER, info.provider)
+                        .putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_PROVIDER_PROFILE, info.profile)
+                    runCatching { bindLauncher.launch(i) }.onFailure {
+                        host.release(id); pendingWidget = null
+                        Toast.makeText(ctx, ctx.getString(R.string.widget_failed), Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+    }
     val iconPicker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()) { uri ->
         val app = pictureFor
         pictureFor = null
@@ -188,6 +251,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     }
     fun closeAll() {
         menu = null; openFolder = null; drawerMenu = false; editor = null; moveFor = null; editFor = null; arrange = null; bulkIcons = false
+        widgetPicker = false; resizeId = null
         searchOpen = false; settingsRoute = null; editMode = false
     }
 
@@ -214,7 +278,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     LaunchedEffect(Unit) {
         graph.homePressed.collect {
             val anyOverlay = menu != null || openFolder != null || drawerMenu || editor != null || moveFor != null ||
-                editFor != null || arrange != null || bulkIcons || searchOpen || settingsRoute != null || editMode
+                editFor != null || arrange != null || bulkIcons || widgetPicker || resizeId != null || searchOpen || settingsRoute != null || editMode
             if (anyOverlay) closeAll()
             else if (drawerShown) settleDrawer(false)
             else homePager.animateScrollToPage(0)
@@ -239,6 +303,11 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
         })
 
         // ---------- Home ----------
+        CompositionLocalProvider(
+            com.xenoorigin.xelauncher.home.LocalWidgetContent provides { cell ->
+                com.xenoorigin.xelauncher.widgets.WidgetContent(cell, host) { c, b -> if (!editMode) menu = MenuState(b, null, c, MenuSource.HOME) }
+            },
+        ) {
         HomeScreen(
             layout, homeLook, homePager, editMode,
             HomeCallbacks(
@@ -286,8 +355,9 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                     },
                 ),
         )
+        }
         if (editMode) EditBar(
-            onWidgets = { Toast.makeText(ctx, ctx.getString(R.string.coming_soon), Toast.LENGTH_SHORT).show() },
+            onWidgets = { widgetPicker = true },
             onWallpaper = { settingsRoute = "wallpaper" }, onSettings = { settingsRoute = "root" },
             onAddPage = { scope.launch { graph.home.addPage(); homePager.animateScrollToPage(homePager.pageCount - 1) } },
             onDone = { editMode = false; scope.launch { graph.home.removeEmptyPages() } },
@@ -452,6 +522,16 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
             onDismiss = { editFor = null },
         )
 
+        if (widgetPicker) com.xenoorigin.xelauncher.widgets.WidgetPicker(host, ::spanOf, onPick = ::addWidget, onClose = { widgetPicker = false })
+        val resizing = resizeId?.let { id -> layout.pages.flatten().filterIsInstance<com.xenoorigin.xelauncher.home.WidgetCell>().firstOrNull { it.id == id } }
+        com.xenoorigin.xelauncher.widgets.WidgetResizeSheet(
+            resizing, settings.homeColumns, settings.homeRows,
+            onResize = { w, h ->
+                resizing?.let { c -> scope.launch { if (!graph.home.resizeWidget(c.id, w, h)) Toast.makeText(ctx, ctx.getString(R.string.widget_no_space), Toast.LENGTH_SHORT).show() } }
+            },
+            onDismiss = { resizeId = null },
+        )
+
         menu?.let { m ->
             val app = m.app
             val actions = buildList {
@@ -459,7 +539,15 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                     MenuSource.DRAWER -> if (app != null) add(MenuAction(R.drawable.ti_home, stringResource(R.string.add_to_home)) {
                         scope.launch { graph.home.addApp(app.key, homePager.currentPage) }; menu = null; settleDrawer(false)
                     })
-                    MenuSource.HOME, MenuSource.FOLDER -> m.cell?.let { cell ->
+                    MenuSource.HOME, MenuSource.FOLDER -> if (m.cell is com.xenoorigin.xelauncher.home.WidgetCell) {
+                        val wc = m.cell
+                        add(MenuAction(R.drawable.ti_arrows_diagonal, stringResource(R.string.widget_resize)) { resizeId = wc.id; menu = null })
+                        add(MenuAction(R.drawable.ti_arrows_move, stringResource(R.string.widget_move)) { editMode = true; menu = null })
+                        add(MenuAction(R.drawable.ti_trash, stringResource(R.string.widget_remove)) {
+                            scope.launch { val hid = graph.home.removeWidget(wc.id); if (hid > 0) host.release(hid) }
+                            menu = null
+                        })
+                    } else m.cell?.let { cell ->
                         add(MenuAction(R.drawable.ti_x, stringResource(R.string.remove_from_home)) {
                             scope.launch {
                                 if (m.source == MenuSource.FOLDER && app != null) graph.home.removeApp(app.key) else graph.home.remove(cell.id)

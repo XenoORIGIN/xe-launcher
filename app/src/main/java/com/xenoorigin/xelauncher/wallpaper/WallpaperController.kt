@@ -129,8 +129,14 @@ class WallpaperController(
 
     companion object {
         fun defaultScreenSize(context: Context): Pair<Int, Int> {
-            val b = context.getSystemService(WindowManager::class.java).maximumWindowMetrics.bounds
-            return minOf(b.width(), b.height()) to maxOf(b.width(), b.height())
+            val wm = context.getSystemService(WindowManager::class.java)
+            val (w, h) = if (android.os.Build.VERSION.SDK_INT >= 30) {
+                wm.maximumWindowMetrics.bounds.let { it.width() to it.height() }
+            } else {
+                @Suppress("DEPRECATION")
+                android.util.DisplayMetrics().also { wm.defaultDisplay.getRealMetrics(it) }.let { it.widthPixels to it.heightPixels }
+            }
+            return minOf(w, h) to maxOf(w, h)
         }
     }
 }

@@ -15,6 +15,12 @@ data class FolderCell(
     val folderId: Long, val name: String, val apps: List<AppEntry>,
 ) : HomeCell
 
+/** A widget: an Android AppWidget ([widgetId] > 0) or one of Xe's glass widgets ([kind]). */
+data class WidgetCell(
+    override val id: Long, override val x: Int, override val y: Int,
+    val spanX: Int, val spanY: Int, val widgetId: Int, val kind: String?,
+) : HomeCell
+
 data class HomeLayout(val pages: List<List<HomeCell>>, val dock: List<HomeCell>) {
     companion object { val Empty = HomeLayout(listOf(emptyList()), emptyList()) }
 }

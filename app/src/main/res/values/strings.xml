@@ -198,4 +198,18 @@
     <string name="studio_widgets">Widgets</string>
     <string name="studio_widgets_desc">Add widgets to the home screen</string>
     <string name="widgets_how">Long-press an empty spot on the home screen, then tap Widgets. Pick a widget from any app or one of the Xe glass widgets (clock, date, battery). Long-press a widget to resize or remove it.</string>
+    <string name="widget_clock">Clock</string>
+    <string name="widget_date">Calendar</string>
+    <string name="widget_battery">Battery</string>
+    <string name="charging">Charging</string>
+    <string name="xe_widgets">Xe glass widgets</string>
+    <string name="app_widgets">From your apps</string>
+    <string name="widget_resize">Resize</string>
+    <string name="widget_remove">Remove widget</string>
+    <string name="widget_move">Move</string>
+    <string name="widget_width">Width</string>
+    <string name="widget_height">Height</string>
+    <string name="widget_no_space">Not enough free space here</string>
+    <string name="widget_failed">This widget couldn’t be added</string>
+    <string name="no_widgets">No widgets found</string>
 </resources>

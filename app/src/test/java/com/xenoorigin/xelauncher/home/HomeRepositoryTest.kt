@@ -125,4 +125,52 @@ class HomeRepositoryTest {
         assertThat(l.pages).hasSize(1)
         assertThat((l.pages[0].single() as AppCell).app.label).isEqualTo("A9")
     }
+
+    // ---- widgets ----
+
+    @Test fun addWidget_takesAFreeAreaAroundApps() = runBlocking<Unit> {
+        repo.addApp(all[0].key) // (0,0)
+        val id = repo.addWidget(page = 0, spanX = 2, spanY = 2, widgetId = 7, kind = null)
+        val w = layout().pages[0].filterIsInstance<WidgetCell>().single()
+        assertThat(w.id).isEqualTo(id)
+        assertThat(w.x to w.y).isEqualTo(1 to 0)
+        assertThat(w.spanX to w.spanY).isEqualTo(2 to 2)
+    }
+
+    @Test fun addWidget_tooBigForPage_goesToNewPage() = runBlocking<Unit> {
+        repeat(3) { repo.addApp(all[it].key) } // (0,0)(1,0)(2,0)
+        repo.addWidget(page = 0, spanX = 4, spanY = 2, widgetId = 1, kind = null)
+        val l = layout()
+        assertThat(l.pages).hasSize(2)
+        assertThat(l.pages[1].filterIsInstance<WidgetCell>().single().x).isEqualTo(0)
+    }
+
+    @Test fun addApp_skipsCellsCoveredByWidget() = runBlocking<Unit> {
+        repo.addWidget(page = 0, spanX = 2, spanY = 2, widgetId = 1, kind = null) // covers (0..1, 0..1)
+        repo.addApp(all[0].key)
+        val app = layout().pages[0].filterIsInstance<AppCell>().single()
+        assertThat(app.x to app.y).isEqualTo(2 to 0)
+    }
+
+    @Test fun moveApp_ontoWidget_isRefused() = runBlocking<Unit> {
+        repo.addWidget(page = 0, spanX = 2, spanY = 2, widgetId = 1, kind = null)
+        repo.addApp(all[0].key)
+        repo.move(idOf("A1"), 0, 1, 1)
+        val app = layout().pages[0].filterIsInstance<AppCell>().single()
+        assertThat(app.x to app.y).isEqualTo(2 to 0)
+    }
+
+    @Test fun resizeWidget_growsOnlyIntoFreeSpace() = runBlocking<Unit> {
+        val id = repo.addWidget(page = 0, spanX = 1, spanY = 1, widgetId = 1, kind = "xe_clock")
+        repo.addApp(all[0].key) // (1,0)
+        assertThat(repo.resizeWidget(id, 2, 1)).isFalse()
+        assertThat(repo.resizeWidget(id, 1, 2)).isTrue()
+        assertThat(layout().pages[0].filterIsInstance<WidgetCell>().single().spanY).isEqualTo(2)
+    }
+
+    @Test fun removeWidget_returnsItsHostId() = runBlocking<Unit> {
+        val id = repo.addWidget(page = 0, spanX = 2, spanY = 1, widgetId = 42, kind = null)
+        assertThat(repo.removeWidget(id)).isEqualTo(42)
+        assertThat(layout().pages[0]).isEmpty()
+    }
 }

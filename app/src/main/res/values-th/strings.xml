@@ -197,4 +197,18 @@
     <string name="studio_widgets">วิดเจ็ต</string>
     <string name="studio_widgets_desc">เพิ่มวิดเจ็ตบนหน้าโฮม</string>
     <string name="widgets_how">กดค้างที่ที่ว่างบนหน้าโฮม แล้วแตะ “วิดเจ็ต” เลือกวิดเจ็ตจากแอปไหนก็ได้ หรือวิดเจ็ตกระจกของ Xe (นาฬิกา วันที่ แบตเตอรี่) กดค้างที่วิดเจ็ตเพื่อปรับขนาดหรือลบ</string>
+    <string name="widget_clock">นาฬิกา</string>
+    <string name="widget_date">ปฏิทิน</string>
+    <string name="widget_battery">แบตเตอรี่</string>
+    <string name="charging">กำลังชาร์จ</string>
+    <string name="xe_widgets">วิดเจ็ตกระจก Xe</string>
+    <string name="app_widgets">จากแอปของคุณ</string>
+    <string name="widget_resize">ปรับขนาด</string>
+    <string name="widget_remove">ลบวิดเจ็ต</string>
+    <string name="widget_move">ย้าย</string>
+    <string name="widget_width">ความกว้าง</string>
+    <string name="widget_height">ความสูง</string>
+    <string name="widget_no_space">พื้นที่ว่างไม่พอ</string>
+    <string name="widget_failed">เพิ่มวิดเจ็ตนี้ไม่ได้</string>
+    <string name="no_widgets">ไม่พบวิดเจ็ต</string>
 </resources>

@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -81,6 +82,11 @@ sealed interface DropRequest {
     data class ToDock(val itemId: Long, val position: Int) : DropRequest
 }
 
+/** Draws a widget cell; provided by the app (needs the widget host), a placeholder in previews/tests. */
+val LocalWidgetContent = androidx.compose.runtime.staticCompositionLocalOf<@Composable (WidgetCell) -> Unit> {
+    { Box(Modifier.fillMaxSize().background(Color.White.copy(alpha = .08f), RoundedCornerShape(24.dp))) }
+}
+
 data class HomeLook(
     val columns: Int, val rows: Int, val dockSize: Int,
     val iconSize: Int, val labels: Boolean, val shape: IconShape, val style: (AppEntry) -> IconStyle,
@@ -118,7 +124,7 @@ fun HomeScreen(
     var edgeSince by remember { mutableStateOf(0L) }
 
     fun dropFor(p: Offset, cell: HomeCell): DropRequest? {
-        if (dockBounds.contains(p)) {
+        if (dockBounds.contains(p) && cell !is WidgetCell) {
             val slot = ((p.x - dockBounds.left) / (dockBounds.width / look.dockSize)).toInt().coerceIn(0, look.dockSize - 1)
             return DropRequest.ToDock(cell.id, slot)
         }
@@ -127,6 +133,12 @@ fun HomeScreen(
         val x = floor((p.x - gridBounds.left) / cw).toInt().coerceIn(0, look.columns - 1)
         val y = floor((p.y - gridBounds.top) / ch).toInt().coerceIn(0, look.rows - 1)
         val page = pager.currentPage
+        if (cell is WidgetCell) {
+            // Drop so the widget's top-left follows where it was grabbed.
+            val gx = floor((p.x - drag!!.grab.x + cw / 2 - gridBounds.left) / cw).toInt().coerceIn(0, look.columns - cell.spanX)
+            val gy = floor((p.y - drag!!.grab.y + ch / 2 - gridBounds.top) / ch).toInt().coerceIn(0, look.rows - cell.spanY)
+            return DropRequest.Move(cell.id, page, gx, gy)
+        }
         val occupant = layout.pages.getOrNull(page)?.firstOrNull { it.x == x && it.y == y && it.id != cell.id }
         if (occupant != null && cell is AppCell) {
             val cx = gridBounds.left + (x + .5f) * cw; val cy = gridBounds.top + (y + .45f) * ch
@@ -189,7 +201,13 @@ fun HomeScreen(
         // The icon being dragged floats above everything.
         drag?.let { d ->
             Box(Modifier.offset { IntOffset((d.pos.x - d.grab.x).roundToInt(), (d.pos.y - d.grab.y).roundToInt()) }.graphicsLayer { scaleX = 1.12f; scaleY = 1.12f; alpha = .92f }) {
-                CellContent(d.cell, look, label = false)
+                val wc = d.cell as? WidgetCell
+                if (wc != null) {
+                    // A light stand-in while moving (the real widget view stays in its place).
+                    val cwDp = with(density) { (gridBounds.width / look.columns).toDp() }
+                    val chDp = with(density) { (gridBounds.height / look.rows).toDp() }
+                    Box(Modifier.size(cwDp * wc.spanX - 12.dp, chDp * wc.spanY - 12.dp).glassTile(RoundedCornerShape(26.dp), LocalGlassStyle.current, Color.White.copy(alpha = .22f)))
+                } else CellContent(d.cell, look, label = false)
             }
         }
     }
@@ -203,8 +221,10 @@ private fun PageGrid(
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val cw = maxWidth / look.columns; val ch = maxHeight / look.rows
         cells.forEach { cell ->
+            val w = cell as? WidgetCell
             Box(
-                Modifier.offset(cw * cell.x, ch * cell.y).size(cw, ch),
+                Modifier.offset(cw * cell.x, ch * cell.y).size(cw * (w?.spanX ?: 1), ch * (w?.spanY ?: 1))
+                    .then(if (w != null) Modifier.padding(6.dp) else Modifier),
                 contentAlignment = Alignment.TopCenter,
             ) { HomeItem(cell, look, editMode, draggingId == cell.id, label = look.labels, callbacksFor) }
         }
@@ -220,11 +240,20 @@ private fun HomeItem(
     val app = (cell as? AppCell)?.app
     val wiggle = wiggleAngle(editMode, cell.id)
     val cbs = callbacksFor(cell, { coords }, app)
+    val isWidget = cell is WidgetCell
     Box(
-        Modifier.onGloballyPositioned { coords = it }
+        Modifier.then(if (isWidget) Modifier.fillMaxSize() else Modifier)
+            .onGloballyPositioned { coords = it }
             .homeItemGestures(Triple(cell, editMode, look), cbs)
-            .graphicsLayer { rotationZ = wiggle(); alpha = if (isDragging) .25f else 1f },
-    ) { CellContent(cell, look, label) }
+            .graphicsLayer { rotationZ = if (isWidget) wiggle() * .3f else wiggle(); alpha = if (isDragging) .25f else 1f },
+    ) {
+        CellContent(cell, look, label)
+        // While editing, a cover over the widget takes the touches so it can be dragged instead of used.
+        if (isWidget && editMode) Box(
+            Modifier.matchParentSize().border(1.dp, Color.White.copy(alpha = .5f), RoundedCornerShape(26.dp))
+                .pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent() } },
+        )
+    }
 }
 
 @Composable
@@ -232,6 +261,7 @@ fun CellContent(cell: HomeCell, look: HomeLook, label: Boolean) {
     when (cell) {
         is AppCell -> AppIcon(cell.app, look.iconSize.dp, look.style(cell.app), look.shape, label)
         is FolderCell -> FolderIcon(cell, look, label)
+        is WidgetCell -> LocalWidgetContent.current(cell)
     }
 }
 

@@ -35,6 +35,7 @@ import kotlinx.coroutines.launch
 fun SettingsHost(graph: AppGraph, start: String, onClose: () -> Unit) {
     val loaded by graph.settings.settings.collectAsState(initial = null)
     val settings = loaded ?: return
+    val allApps by graph.labeledApps.collectAsState()
     val scope = rememberCoroutineScope()
     val speed = LocalAnimationSpeed.current
     val stack = remember { mutableStateListOf(start) }
@@ -59,9 +60,9 @@ fun SettingsHost(graph: AppGraph, start: String, onClose: () -> Unit) {
                 "root" -> SettingsRoot(settings, ::push, onClose)
                 "wallpaper" -> WallpaperScreen(graph, back)
                 "appearance" -> AppearanceScreen(settings, update, back)
-                "icons" -> IconsScreen(settings, update, back, graph.labeledApps.value.firstOrNull { it.key.packageName.contains("camera") } ?: graph.labeledApps.value.firstOrNull()) { push("bulk") }
+                "icons" -> IconsScreen(settings, update, back, allApps.firstOrNull { it.key.packageName.contains("camera") } ?: allApps.firstOrNull()) { push("bulk") }
                 "bulk" -> com.xenoorigin.xelauncher.drawer.BulkIcons(
-                    graph.labeledApps.value.filter { it.key.encode() !in settings.hiddenApps },
+                    allApps.filter { it.key.encode() !in settings.hiddenApps },
                     { a -> settings.iconOverrides[a.key.encode()] ?: settings.iconStyle }, settings.iconShape,
                     onApply = { keys, style -> update { st -> st.copy(iconOverrides = if (style == null) st.iconOverrides - keys else st.iconOverrides + keys.associateWith { style }) } },
                     onClose = back,

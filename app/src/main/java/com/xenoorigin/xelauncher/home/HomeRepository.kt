@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.first
 
 private const val APP = "APP"
 private const val FOLDER = "FOLDER"
+private const val WIDGET = "WIDGET"
 private const val PAGE_MARKER = "PAGE"
 private const val C_PAGE = "PAGE"
 private const val C_DOCK = "DOCK"
@@ -43,6 +44,7 @@ class HomeRepository(
                     else -> FolderCell(i.id, i.x, i.y, i.folderId!!, folderNames[i.folderId] ?: "", members)
                 }
             }
+            WIDGET -> WidgetCell(i.id, i.x, i.y, i.spanX, i.spanY, i.widgetId, i.widgetKind)
             else -> null
         }
         val pageCount = (items.filter { it.container == C_PAGE }.maxOfOrNull { it.page } ?: 0) + 1
@@ -55,11 +57,52 @@ class HomeRepository(
 
     private suspend fun pageCount(): Int = (dao.all().filter { it.container == C_PAGE }.maxOfOrNull { it.page } ?: 0) + 1
 
-    private suspend fun freeCell(page: Int): Pair<Int, Int>? {
+    /** Every cell covered on [page] (widgets cover their whole span), ignoring item [except]. */
+    private suspend fun taken(page: Int, except: Long = -1): Set<Pair<Int, Int>> =
+        dao.all().filter { it.container == C_PAGE && it.page == page && it.type != PAGE_MARKER && it.id != except }
+            .flatMap { i -> (0 until i.spanX).flatMap { dx -> (0 until i.spanY).map { dy -> (i.x + dx) to (i.y + dy) } } }.toSet()
+
+    private suspend fun fits(page: Int, x: Int, y: Int, w: Int, h: Int, except: Long = -1): Boolean {
         val (cols, rows) = grid()
-        val taken = dao.all().filter { it.container == C_PAGE && it.page == page && it.type != PAGE_MARKER }.map { it.x to it.y }.toSet()
-        for (y in 0 until rows) for (x in 0 until cols) if ((x to y) !in taken) return x to y
+        if (x < 0 || y < 0 || x + w > cols || y + h > rows) return false
+        val t = taken(page, except)
+        return (0 until w).all { dx -> (0 until h).all { dy -> (x + dx to y + dy) !in t } }
+    }
+
+    private suspend fun freeArea(page: Int, w: Int, h: Int): Pair<Int, Int>? {
+        val (cols, rows) = grid()
+        for (y in 0 until rows) for (x in 0 until cols) if (fits(page, x, y, w, h)) return x to y
         return null
+    }
+
+    private suspend fun freeCell(page: Int): Pair<Int, Int>? = freeArea(page, 1, 1)
+
+    /** Places a widget on the first free area from [page] onwards (new pages as needed). Returns its item id. */
+    suspend fun addWidget(page: Int, spanX: Int, spanY: Int, widgetId: Int, kind: String?): Long = db.withTransaction {
+        val (cols, rows) = grid()
+        val w = spanX.coerceIn(1, cols); val h = spanY.coerceIn(1, rows)
+        var p = page
+        while (true) {
+            val at = freeArea(p, w, h)
+            if (at != null) return@withTransaction dao.insert(
+                HomeItemEntity(type = WIDGET, container = C_PAGE, page = p, x = at.first, y = at.second, spanX = w, spanY = h, widgetId = widgetId, widgetKind = kind),
+            )
+            p++
+        }
+        @Suppress("UNREACHABLE_CODE") -1L
+    }
+
+    /** Changes a widget's size if the new area is free; returns whether it changed. */
+    suspend fun resizeWidget(itemId: Long, spanX: Int, spanY: Int): Boolean = db.withTransaction {
+        val i = dao.get(itemId)?.takeIf { it.type == WIDGET } ?: return@withTransaction false
+        if (!fits(i.page, i.x, i.y, spanX, spanY, except = i.id)) return@withTransaction false
+        dao.update(i.copy(spanX = spanX, spanY = spanY)); true
+    }
+
+    /** Deletes a widget item and returns its Android widget id (0 for Xe widgets) so the host can free it. */
+    suspend fun removeWidget(itemId: Long): Int = db.withTransaction {
+        val i = dao.get(itemId)?.takeIf { it.type == WIDGET } ?: return@withTransaction 0
+        dao.delete(i.id); i.widgetId
     }
 
     suspend fun seedDefaultIfEmpty() = db.withTransaction {
@@ -93,6 +136,14 @@ class HomeRepository(
     /** Moves an item to a page cell; if occupied, the occupant takes the mover's old place. */
     suspend fun move(itemId: Long, page: Int, x: Int, y: Int) = db.withTransaction {
         val item = dao.get(itemId) ?: return@withTransaction
+        if (item.type == WIDGET) {
+            if (fits(page, x, y, item.spanX, item.spanY, except = item.id)) dao.update(item.copy(page = page, x = x, y = y))
+            return@withTransaction
+        }
+        // A cell under a widget is not free and can't be swapped into.
+        val underWidget = dao.all().any { it.type == WIDGET && it.container == C_PAGE && it.page == page &&
+            x in it.x until it.x + it.spanX && y in it.y until it.y + it.spanY }
+        if (underWidget) return@withTransaction
         val occupant = dao.all().firstOrNull { it.container == C_PAGE && it.type != PAGE_MARKER && it.page == page && it.x == x && it.y == y && it.id != itemId }
         if (occupant != null) {
             if (item.container == C_PAGE) dao.update(occupant.copy(page = item.page, x = item.x, y = item.y))
@@ -104,6 +155,7 @@ class HomeRepository(
 
     suspend fun moveToDock(itemId: Long, position: Int): Boolean = db.withTransaction {
         val item = dao.get(itemId) ?: return@withTransaction false
+        if (item.type == WIDGET) return@withTransaction false
         val dock = dao.all().filter { it.container == C_DOCK && it.id != itemId }.sortedBy { it.position }
         if (dock.size >= settings.first().dockSize) return@withTransaction false
         val ordered = dock.toMutableList().apply { add(position.coerceIn(0, size), item) }

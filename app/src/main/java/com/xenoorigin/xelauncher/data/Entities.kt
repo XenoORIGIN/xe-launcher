@@ -1,5 +1,6 @@
 package com.xenoorigin.xelauncher.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import kotlinx.serialization.Serializable
@@ -28,7 +29,7 @@ data class LaunchStat(@PrimaryKey val appKey: String, val count: Int, val lastLa
 @Entity(tableName = "home_items")
 data class HomeItemEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    /** APP or FOLDER */
+    /** APP, FOLDER or WIDGET */
     val type: String,
     val appKey: String? = null,
     val folderId: Long? = null,
@@ -39,6 +40,13 @@ data class HomeItemEntity(
     val y: Int = 0,
     /** Order inside the dock or a folder. */
     val position: Int = 0,
+    /** Widgets cover spanX × spanY cells starting at (x, y). */
+    @ColumnInfo(defaultValue = "1") val spanX: Int = 1,
+    @ColumnInfo(defaultValue = "1") val spanY: Int = 1,
+    /** Android AppWidget id (0 for Xe's own widgets). */
+    @ColumnInfo(defaultValue = "0") val widgetId: Int = 0,
+    /** Xe glass widget kind ("xe_clock", …) or null for Android widgets. */
+    val widgetKind: String? = null,
 )
 
 @Serializable
