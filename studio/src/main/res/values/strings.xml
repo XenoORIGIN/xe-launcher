@@ -38,4 +38,6 @@
     <string name="xe_missing_title">Xe Launcher isn\'t on this phone</string>
     <string name="xe_missing_body">Themes from Xe Studio show up in Xe Launcher. Get it free, then tap Use in Xe again.</string>
     <string name="get_xe">Get Xe Launcher</string>
+    <string name="theme_unreadable">This theme was made by a newer Xe Studio. Update Xe Studio to edit or use it.</string>
+    <string name="theme_unreadable_short">Can\'t open this theme</string>
 </resources>

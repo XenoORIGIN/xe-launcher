@@ -22,7 +22,7 @@ suspend fun onStudioThemeApplied(store: StudioThemeStore, settings: SettingsStor
     return true
 }
 
-/** Xe Studio says "a theme was applied" (only apps signed with Xe's key can send or receive it). */
+/** Xe Studio says "a theme was applied". The manifest only lets apps signed with Xe's key send this. */
 class StudioThemeReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != StudioThemeStore.ACTION_THEME_APPLIED) return

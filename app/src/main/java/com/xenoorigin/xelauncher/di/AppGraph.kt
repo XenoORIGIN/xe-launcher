@@ -43,7 +43,10 @@ class AppGraph(val context: Context) {
     val apps = LauncherAppsSource(context, scope)
     val customIcons = CustomIconStore(File(context.filesDir, "custom_icons"))
     /** Xe's copy of the icon theme applied in Xe Studio. */
-    val studioTheme = com.xenoorigin.xelauncher.studio.StudioThemeStore(File(context.filesDir, "studio_theme"), context.contentResolver)
+    val studioTheme = com.xenoorigin.xelauncher.studio.StudioThemeStore(
+        File(context.filesDir, "studio_theme"), context.contentResolver,
+        isTrusted = { com.xenoorigin.xelauncher.studio.StudioThemeStore.studioIsGenuine(context) },
+    )
     val icons = IconRepository(
         { apps.icon(it, context.resources.displayMetrics.densityDpi.coerceAtLeast(480)) }, File(context.cacheDir, "icons"),
         customIcons::get, customIcons::version,

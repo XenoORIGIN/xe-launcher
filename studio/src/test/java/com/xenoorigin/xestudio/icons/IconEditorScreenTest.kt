@@ -65,6 +65,17 @@ class IconEditorScreenTest {
         rule.onNodeWithTag("override_sheet").assertExists()
     }
 
+    @Test fun manyAppsAreLaidOutLazily() {
+        val many = AppSource { (0 until 200).map { InstalledApp("com.x$it/.M#0", "App $it", ColorDrawable(Color.GRAY)) } }
+        val st = state()
+        rule.setContent { StudioTheme { IconEditorScreen(st, many, onBack = {}, onApply = {}) } }
+        rule.waitUntil(3_000) { runCatching { rule.onNodeWithTag("icon_com.x0/.M#0").assertExists() }.isSuccess }
+        val tiles = rule.onAllNodes(androidx.compose.ui.test.SemanticsMatcher("icon tile") { n ->
+            androidx.compose.ui.semantics.SemanticsProperties.TestTag in n.config && n.config[androidx.compose.ui.semantics.SemanticsProperties.TestTag].startsWith("icon_")
+        }).fetchSemanticsNodes().size
+        assertThat(tiles).isLessThan(100)
+    }
+
     @Test fun editorScreenshot() {
         val st = state()
         rule.setContent { StudioTheme { IconEditorScreen(st, apps, onBack = {}, onApply = {}) } }

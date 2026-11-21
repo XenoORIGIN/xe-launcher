@@ -71,6 +71,13 @@ class ThemeProviderTest {
         assertThat(XeLink.applyIcons(ctx, p, store)).isEqualTo(ApplyResult.XE_MISSING)
     }
 
+    @Test fun applyRefusesARecipeItCannotRead() = runBlocking<Unit> {
+        installXe()
+        val p = store.create(ProjectKind.ICONS, "A", "{nope")
+        assertThat(XeLink.applyIcons(ctx, p, store)).isEqualTo(ApplyResult.CANT_OPEN)
+        assertThat(File(XeLink.appliedDir(ctx), "icons.json").exists()).isFalse()
+    }
+
     @Test fun applySendsBroadcastToXe() {
         applied()
         val sent = shadowOf(ctx).broadcastIntents.single { it.action == XeLink.ACTION_THEME_APPLIED }

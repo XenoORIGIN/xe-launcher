@@ -67,6 +67,12 @@ class IconRendererTest {
         assertThat(different).isGreaterThan(20)
     }
 
+    @Test fun sourceDrawableIsLeftUntouched() {
+        val src = android.graphics.drawable.GradientDrawable().apply { setColor(Color.RED); setBounds(1, 2, 3, 4) }
+        render(base, src = src)
+        assertThat(src.bounds).isEqualTo(android.graphics.Rect(1, 2, 3, 4))
+    }
+
     @Test fun overrideForOtherAppIgnored() {
         val r = base.copy(overrides = mapOf("other/x#0" to IconOverride.Letter("Z", Color.WHITE, Fill(listOf(Color.BLUE)))))
         assertThat(render(r).getPixel(size / 2, size / 2)).isEqualTo(Color.RED)

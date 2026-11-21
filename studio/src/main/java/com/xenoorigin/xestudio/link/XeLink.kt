@@ -10,7 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
-enum class ApplyResult { APPLIED, XE_MISSING }
+enum class ApplyResult { APPLIED, XE_MISSING, CANT_OPEN }
 
 /**
  * Hands themes to Xe Launcher. The applied theme is copied to filesDir/applied/, served by [ThemeProvider],
@@ -30,7 +30,7 @@ object XeLink {
 
     suspend fun applyIcons(ctx: Context, project: Project, store: ProjectStore): ApplyResult {
         if (!isXeInstalled(ctx)) return ApplyResult.XE_MISSING
-        val recipe = IconRecipe.decode(project.recipeJson) ?: IconRecipe()
+        val recipe = IconRecipe.decode(project.recipeJson) ?: return ApplyResult.CANT_OPEN
         withContext(Dispatchers.IO) {
             val dir = appliedDir(ctx).apply { mkdirs() }
             val images = File(dir, "images")

@@ -19,7 +19,12 @@ data class StoredTheme(val recipe: IconRecipe, val version: Long)
  * Xe's own copy of the icon theme applied in Xe Studio. Icons are always drawn from this copy, so the
  * theme keeps working if Studio is uninstalled; Studio is only asked for a new copy when it says so.
  */
-class StudioThemeStore(private val dir: File, private val resolver: ContentResolver) {
+class StudioThemeStore(
+    private val dir: File,
+    private val resolver: ContentResolver,
+    /** True only when the theme provider really belongs to Xe Studio signed with Xe's key. */
+    private val isTrusted: () -> Boolean = { true },
+) {
     private val _theme = MutableStateFlow(load())
     val theme: StateFlow<StoredTheme?> = _theme.asStateFlow()
     private val images = java.util.concurrent.ConcurrentHashMap<String, Bitmap>()
@@ -32,6 +37,7 @@ class StudioThemeStore(private val dir: File, private val resolver: ContentResol
 
     /** Copies the applied theme from Studio. False (and the old copy kept) when anything is missing or unreadable. */
     suspend fun pull(): Boolean = withContext(Dispatchers.IO) {
+        if (!isTrusted()) return@withContext false
         runCatching {
             val (json, version) = resolver.query(Uri.parse("content://$AUTHORITY/icons"), null, null, null, null)?.use { c ->
                 if (!c.moveToFirst()) null else c.getString(c.getColumnIndexOrThrow("recipe")) to c.getLong(c.getColumnIndexOrThrow("version"))
@@ -60,7 +66,17 @@ class StudioThemeStore(private val dir: File, private val resolver: ContentResol
     fun image(file: String): Bitmap? {
         if (!safeName(file)) return null
         images[file]?.let { return it }
-        return File(File(dir, "images"), file).takeIf { it.isFile }?.let { BitmapFactory.decodeFile(it.path) }?.also { images[file] = it }
+        val f = File(File(dir, "images"), file).takeIf { it.isFile } ?: return null
+        // Never decode a huge picture at full size on the home screen.
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }.also { BitmapFactory.decodeFile(f.path, it) }
+        var sample = 1
+        while (maxOf(bounds.outWidth, bounds.outHeight) / sample > MAX_IMAGE_SIDE) sample *= 2
+        val bmp = BitmapFactory.decodeFile(f.path, BitmapFactory.Options().apply { inSampleSize = sample }) ?: return null
+        val scaled = if (maxOf(bmp.width, bmp.height) > MAX_IMAGE_SIDE) {
+            val k = MAX_IMAGE_SIDE.toFloat() / maxOf(bmp.width, bmp.height)
+            Bitmap.createScaledBitmap(bmp, (bmp.width * k).toInt().coerceAtLeast(1), (bmp.height * k).toInt().coerceAtLeast(1), true)
+        } else bmp
+        return scaled.also { images[file] = it }
     }
 
     private fun safeName(f: String) = f.isNotEmpty() && !f.contains('/') && !f.contains('\\') && !f.startsWith(".")
@@ -72,6 +88,14 @@ class StudioThemeStore(private val dir: File, private val resolver: ContentResol
     }
 
     companion object {
+        const val MAX_IMAGE_SIDE = 512
+
+        /** The provider answering for [AUTHORITY] is Xe Studio, signed with the same key as Xe. */
+        fun studioIsGenuine(ctx: android.content.Context): Boolean = runCatching {
+            val owner = ctx.packageManager.resolveContentProvider(AUTHORITY, 0)?.packageName
+            owner == STUDIO_PACKAGE && ctx.packageManager.checkSignatures(ctx.packageName, STUDIO_PACKAGE) == android.content.pm.PackageManager.SIGNATURE_MATCH
+        }.getOrDefault(false)
+
         const val AUTHORITY = "com.xenoorigin.xestudio.themes"
         const val ACTION_THEME_APPLIED = "com.xenoorigin.xestudio.action.THEME_APPLIED"
         const val STUDIO_PACKAGE = "com.xenoorigin.xestudio"

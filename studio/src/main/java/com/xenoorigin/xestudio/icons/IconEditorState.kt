@@ -24,7 +24,11 @@ import java.util.UUID
  */
 class IconEditorState(project: Project, private val store: ProjectStore, private val scope: CoroutineScope) {
     private var project = project
-    private val _recipe = MutableStateFlow(IconRecipe.decode(project.recipeJson) ?: IconRecipe())
+    private val decoded = IconRecipe.decode(project.recipeJson)
+    /** Made by a newer Studio (or damaged): shown read-only and never saved over. */
+    val unreadable: Boolean = decoded == null
+    private val _recipe = MutableStateFlow(decoded ?: IconRecipe())
+    private val images = java.util.concurrent.ConcurrentHashMap<String, Bitmap>()
     val recipe: StateFlow<IconRecipe> = _recipe.asStateFlow()
     val name: String get() = project.name
     val projectId: String get() = project.id
@@ -34,6 +38,7 @@ class IconEditorState(project: Project, private val store: ProjectStore, private
     val imageVersion: StateFlow<Int> = _imageVersion.asStateFlow()
 
     fun update(f: (IconRecipe) -> IconRecipe) {
+        if (unreadable) return
         _recipe.value = f(_recipe.value)
         scheduleSave()
     }
@@ -41,7 +46,8 @@ class IconEditorState(project: Project, private val store: ProjectStore, private
     /** Sets or (with null) removes one app's override. A replaced picture is deleted from the phone. */
     fun setOverride(key: String, o: IconOverride?) {
         val old = _recipe.value.overrides[key]
-        if (old is IconOverride.Image && (o as? IconOverride.Image)?.file != old.file) File(store.imageDir(project.id), old.file).delete()
+        if (unreadable) return
+        if (old is IconOverride.Image && (o as? IconOverride.Image)?.file != old.file) { File(store.imageDir(project.id), old.file).delete(); images.remove(old.file) }
         update { r -> r.copy(overrides = if (o == null) r.overrides - key else r.overrides + (key to o)) }
         _imageVersion.value++
     }
@@ -53,13 +59,14 @@ class IconEditorState(project: Project, private val store: ProjectStore, private
         return name
     }
 
-    fun loadImage(file: String): Bitmap? =
-        File(store.imageDir(project.id), file).takeIf { it.isFile && !file.contains('/') }?.let { BitmapFactory.decodeFile(it.path) }
+    /** Decoded once and kept while the editor is open. */
+    fun loadImage(file: String): Bitmap? = images[file]
+        ?: File(store.imageDir(project.id), file).takeIf { it.isFile && !file.contains('/') }?.let { BitmapFactory.decodeFile(it.path) }?.also { images[file] = it }
 
     /** Saves right now (e.g. when leaving the editor). */
     suspend fun flush() {
         pending?.cancel()
-        save()
+        if (!unreadable) save()
     }
 
     private fun scheduleSave() {

@@ -37,4 +37,6 @@
     <string name="xe_missing_title">เครื่องนี้ยังไม่มี Xe Launcher</string>
     <string name="xe_missing_body">ธีมจาก Xe Studio ใช้ใน Xe Launcher ดาวน์โหลดฟรี แล้วกด "ใช้กับ Xe" อีกครั้ง</string>
     <string name="get_xe">โหลด Xe Launcher</string>
+    <string name="theme_unreadable">ธีมนี้สร้างจาก Xe Studio เวอร์ชันใหม่กว่า อัปเดต Xe Studio ก่อนจึงจะแก้หรือใช้ได้</string>
+    <string name="theme_unreadable_short">เปิดธีมนี้ไม่ได้</string>
 </resources>

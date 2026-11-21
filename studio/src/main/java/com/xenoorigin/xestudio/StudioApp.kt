@@ -247,16 +247,16 @@ private fun ApplyFeedback(graph: StudioGraph) {
     val result by graph.applyResult.collectAsState()
     val ctx = androidx.compose.ui.platform.LocalContext.current
     androidx.compose.runtime.LaunchedEffect(result) {
-        if (result == com.xenoorigin.xestudio.link.ApplyResult.APPLIED) { kotlinx.coroutines.delay(2200); graph.applyResult.value = null }
+        if (result == com.xenoorigin.xestudio.link.ApplyResult.APPLIED || result == com.xenoorigin.xestudio.link.ApplyResult.CANT_OPEN) { kotlinx.coroutines.delay(2200); graph.applyResult.value = null }
     }
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         AnimatedVisibility(
-            result == com.xenoorigin.xestudio.link.ApplyResult.APPLIED,
+            result == com.xenoorigin.xestudio.link.ApplyResult.APPLIED || result == com.xenoorigin.xestudio.link.ApplyResult.CANT_OPEN,
             enter = fadeIn(Motion.settle()) + scaleIn(Motion.settle(), initialScale = .7f),
             exit = fadeOut(Motion.snappy()) + scaleOut(Motion.snappy(), targetScale = .9f),
         ) {
             Box(Modifier.clip(RoundedCornerShape(30.dp)).background(Ink.White).padding(horizontal = 26.dp, vertical = 16.dp).testTag("xe_applied")) {
-                Text(stringResource(R.string.sent_to_xe), style = StudioType.Title.copy(color = Ink.Black))
+                Text(stringResource(if (result == com.xenoorigin.xestudio.link.ApplyResult.CANT_OPEN) R.string.theme_unreadable_short else R.string.sent_to_xe), style = StudioType.Title.copy(color = Ink.Black))
             }
         }
         AnimatedVisibility(

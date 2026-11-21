@@ -99,6 +99,29 @@ class StudioThemeStoreTest {
         assertThat(s.theme.value!!.version).isEqualTo(5L)
     }
 
+    @Test fun untrustedProviderIsIgnored() = runBlocking<Unit> {
+        val s = StudioThemeStore(dir, ctx.contentResolver, isTrusted = { false })
+        assertThat(s.pull()).isFalse()
+        assertThat(s.theme.value).isNull()
+    }
+
+    @Test fun hugeOverridePictureIsDecodedSmall() = runBlocking<Unit> {
+        val big = ByteArrayOutputStream().also {
+            Bitmap.createBitmap(4000, 4000, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.BLUE) }.compress(Bitmap.CompressFormat.PNG, 100, it)
+        }.toByteArray()
+        FakeStudioProvider.images = mapOf("o.png" to big)
+        val s = store(); s.pull()
+        val img = s.image("o.png")!!
+        assertThat(maxOf(img.width, img.height)).isAtMost(StudioThemeStore.MAX_IMAGE_SIDE)
+    }
+
+    @Test fun receiverOnlyAcceptsBroadcastsFromSameKeyApps() {
+        @Suppress("DEPRECATION")
+        val info = ctx.packageManager.getPackageInfo(ctx.packageName, android.content.pm.PackageManager.GET_RECEIVERS)
+        val r = info.receivers!!.single { it.name.endsWith(".studio.StudioThemeReceiver") }
+        assertThat(r.permission).isEqualTo("com.xenoorigin.xestudio.permission.READ_THEME")
+    }
+
     private fun repo(s: StudioThemeStore, custom: File? = null) = IconRepository(
         { ColorDrawable(Color.RED) }, File(dir, "cache-${System.nanoTime()}"), { custom },
         studioTheme = { s.theme.value }, studioImage = s::image,

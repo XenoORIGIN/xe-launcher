@@ -5,6 +5,7 @@
     <permission
         android:name="com.xenoorigin.xestudio.permission.READ_THEME"
         android:protectionLevel="signature" />
+    <uses-permission android:name="com.xenoorigin.xestudio.permission.READ_THEME" />
 
     <!-- The preview shows the phone's real apps. -->
     <queries>

@@ -27,6 +27,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -91,6 +96,8 @@ internal object Swatches {
     )
 }
 
+private const val RENDER_SETTLE_MS = 24L
+
 internal fun Fill.brush(): Brush = if (colors.size == 1) Brush.linearGradient(listOf(Color(colors[0]), Color(colors[0])))
 else Brush.linearGradient(colors.map { Color(it) })
 
@@ -106,10 +113,10 @@ fun IconEditorScreen(state: IconEditorState, apps: AppSource, onBack: () -> Unit
 
     Box(Modifier.fillMaxSize().background(Ink.Black)) {
         Column(Modifier.fillMaxSize().let { if (haze != null) it.hazeSource(haze) else it }) {
-            TopBar(state.name, onBack = { scope.launch { state.flush() }; onBack() }, onApply = { scope.launch { state.flush(); onApply() } })
+            TopBar(state.name, canApply = !state.unreadable, onBack = { scope.launch { state.flush() }; onBack() }, onApply = { scope.launch { state.flush(); onApply() } })
             // Live preview: the phone's real apps in the theme being made.
             PreviewGrid(list.orEmpty(), recipe, imageVersion, state, Modifier.fillMaxWidth().weight(1f)) { editing = it }
-            Controls(recipe, state::update, Modifier.fillMaxWidth().heightIn(max = 360.dp))
+            if (!state.unreadable) Controls(recipe, state::update, Modifier.fillMaxWidth().heightIn(max = 360.dp))
         }
         AnimatedVisibility(
             editing != null,
@@ -122,7 +129,7 @@ fun IconEditorScreen(state: IconEditorState, apps: AppSource, onBack: () -> Unit
 }
 
 @Composable
-private fun TopBar(name: String, onBack: () -> Unit, onApply: () -> Unit) {
+private fun TopBar(name: String, canApply: Boolean, onBack: () -> Unit, onApply: () -> Unit) {
     Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(
             Modifier.size(42.dp).pressSquish().clip(CircleShape).background(Ink.Card).clickable(onClick = onBack).testTag("editor_back"),
@@ -130,7 +137,7 @@ private fun TopBar(name: String, onBack: () -> Unit, onApply: () -> Unit) {
         ) { Text("‹", style = StudioType.Title) }
         Spacer(Modifier.width(12.dp))
         Text(name, style = StudioType.Title, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Box(
+        if (canApply) Box(
             Modifier.height(42.dp).pressSquish().clip(RoundedCornerShape(21.dp)).background(Ink.White)
                 .clickable(onClick = onApply).padding(horizontal = 18.dp).testTag("apply_xe"),
             contentAlignment = Alignment.Center,
@@ -143,15 +150,17 @@ private fun PreviewGrid(
     apps: List<InstalledApp>, recipe: IconRecipe, imageVersion: Int, state: IconEditorState,
     modifier: Modifier, onTap: (InstalledApp) -> Unit,
 ) {
-    Column(modifier.verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text(stringResource(R.string.tap_icon_hint), style = StudioType.Label)
-        apps.chunked(4).forEachIndexed { row, chunk ->
-            Row(Modifier.fillMaxWidth()) {
-                chunk.forEachIndexed { col, app ->
-                    IconTile(app, recipe, imageVersion, state, row * 4 + col, Modifier.weight(1f)) { onTap(app) }
-                }
-                repeat(4 - chunk.size) { Spacer(Modifier.weight(1f)) }
-            }
+    // Lazy, so a phone with hundreds of apps only draws the tiles on screen.
+    LazyVerticalGrid(
+        GridCells.Fixed(4), modifier,
+        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Text(stringResource(if (state.unreadable) R.string.theme_unreadable else R.string.tap_icon_hint), style = StudioType.Label)
+        }
+        itemsIndexed(apps, key = { _, a -> a.key }) { i, app ->
+            IconTile(app, recipe, imageVersion, state, i, Modifier) { if (!state.unreadable) onTap(app) }
         }
     }
 }
@@ -160,6 +169,8 @@ private fun PreviewGrid(
 private fun IconTile(app: InstalledApp, recipe: IconRecipe, imageVersion: Int, state: IconEditorState, index: Int, modifier: Modifier, onTap: () -> Unit) {
     val px = with(LocalDensity.current) { 60.dp.roundToPx() }
     val bmp by produceState<android.graphics.Bitmap?>(null, app.key, recipe, imageVersion) {
+        // A short wait lets a slider drag settle, so only the latest look is drawn.
+        delay(RENDER_SETTLE_MS)
         value = withContext(Dispatchers.Default) { IconRenderer.render(recipe, app.key, app.label, app.icon, px, state::loadImage) }
     }
     // Each change ripples across the grid: tiles pop in turn, top-left first.

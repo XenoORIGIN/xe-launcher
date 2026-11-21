@@ -71,7 +71,8 @@
         </service>
         <receiver
             android:name=".studio.StudioThemeReceiver"
-            android:exported="true">
+            android:exported="true"
+            android:permission="com.xenoorigin.xestudio.permission.READ_THEME">
             <intent-filter>
                 <action android:name="com.xenoorigin.xestudio.action.THEME_APPLIED" />
             </intent-filter>

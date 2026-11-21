@@ -49,14 +49,17 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-reports
-          path: app/build/reports/tests
+          path: |
+            app/build/reports/tests
+            studio/build/reports/tests
+            studio-core/build/reports/tests
 
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="v1.0.${{ github.run_number }}"
-          gh release create "$TAG" app/build/outputs/apk/release/xe-launcher.apk \
+          gh release create "$TAG" app/build/outputs/apk/release/xe-launcher.apk studio/build/outputs/apk/release/xe-studio.apk \
             --title "Xe Launcher $TAG" \
             --notes "Build ${{ github.run_number }} from ${GITHUB_SHA::7}" \
             --latest

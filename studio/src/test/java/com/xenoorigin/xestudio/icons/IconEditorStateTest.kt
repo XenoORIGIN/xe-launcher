@@ -14,8 +14,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.robolectric.annotation.Config
 import org.junit.rules.TemporaryFolder
 
+@RunWith(AndroidJUnit4::class)
+@Config(sdk = [34])
 class IconEditorStateTest {
     @get:Rule val tmp = TemporaryFolder()
 
@@ -31,6 +36,30 @@ class IconEditorStateTest {
         delay(600)
         assertThat(IconRecipe.decode(store.get(p.id)!!.recipeJson)!!.shape).isEqualTo(TileShape.CIRCLE)
         scope.cancel()
+    }
+
+    @Test fun unreadableRecipeIsNeverOverwritten() = runBlocking<Unit> {
+        val store = ProjectStore(tmp.root)
+        val newer = IconRecipe.encode(IconRecipe()).replace("\"schemaVersion\":1", "\"schemaVersion\":2")
+        val p = store.create(ProjectKind.ICONS, "A", newer)
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        val st = IconEditorState(p, store, scope)
+        assertThat(st.unreadable).isTrue()
+        st.update { it.copy(shape = TileShape.CIRCLE) }
+        st.flush()
+        assertThat(store.get(p.id)!!.recipeJson).isEqualTo(newer)
+        scope.cancel()
+    }
+
+    @Test fun overridePicturesAreDecodedOnce() = runBlocking<Unit> {
+        val store = ProjectStore(tmp.root)
+        val p = store.create(ProjectKind.ICONS, "A", IconRecipe.encode(IconRecipe()))
+        val st = IconEditorState(p, store, CoroutineScope(SupervisorJob() + Dispatchers.Default))
+        val bytes = java.io.ByteArrayOutputStream().also {
+            android.graphics.Bitmap.createBitmap(4, 4, android.graphics.Bitmap.Config.ARGB_8888).compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
+        }.toByteArray()
+        val f = st.saveImage(bytes)
+        assertThat(st.loadImage(f)).isSameInstanceAs(st.loadImage(f))
     }
 
     @Test fun overrideSetAndCleared() = runBlocking<Unit> {

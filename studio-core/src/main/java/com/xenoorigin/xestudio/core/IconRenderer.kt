@@ -84,8 +84,10 @@ object IconRenderer {
         val left = inset + (tile - glyph) / 2f
         val g = Bitmap.createBitmap(glyph.toInt().coerceAtLeast(1), glyph.toInt().coerceAtLeast(1), Bitmap.Config.ARGB_8888)
         val gc = Canvas(g)
-        val d = if (r.treatment != Treatment.ORIGINAL && source is AdaptiveIconDrawable) source.foreground ?: source else source
-        if (d is AdaptiveIconDrawable || (d !== source)) {
+        // Draw a private copy: the caller's drawable may be drawn by other renders at the same time.
+        val own = source.constantState?.newDrawable()?.mutate() ?: source
+        val d = if (r.treatment != Treatment.ORIGINAL && own is AdaptiveIconDrawable) own.foreground ?: own else own
+        if (d is AdaptiveIconDrawable || (d !== own)) {
             // Adaptive layers are 108dp with the symbol in the middle 72dp: draw larger so the symbol fills the glyph box.
             val extra = g.width * .25f
             d.setBounds((-extra).toInt(), (-extra).toInt(), (g.width + extra).toInt(), (g.height + extra).toInt())
