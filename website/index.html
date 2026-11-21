@@ -62,13 +62,16 @@
       <article class="glass card reveal"><i>☰</i><h3 data-i18n="f3t">หมวดแอปอัตโนมัติ</h3><p data-i18n="f3">ปัดขึ้นเพื่อดูแอปแยกหมวด จัดลำดับ ซ่อน เพิ่ม ลบ หรือให้ระบบจัดแอปใหม่ให้</p></article>
       <article class="glass card reveal"><i>◷</i><h3 data-i18n="f4t">Widget กระจก</h3><p data-i18n="f4">Widget ของ Xe 10 แบบ นาฬิกา ปฏิทิน ค้นหา รูปภาพ โน้ต แบตเตอรี่ และใช้ Widget ของแอปอื่นได้</p></article>
       <article class="glass card reveal"><i>✦</i><h3 data-i18n="f5t">วอลเปเปอร์ของคุณ</h3><p data-i18n="f5">นำเข้ารูป ลากและซูมให้พอดี ปรับความมืดและความเบลอ แล้วตั้งเป็นหน้าหลักหรือหน้าล็อก</p></article>
-      <article class="glass card reveal"><i>↻</i><h3 data-i18n="f6t">แจ้งเตือนอัปเดต</h3><p data-i18n="f6">มีเวอร์ชันใหม่ แอปแจ้งเตือนให้ แตะครั้งเดียวก็ดาวน์โหลดได้ ติดตั้งทับได้ การตั้งค่าไม่หาย</p></article>
+      <article class="glass card reveal"><i>↻</i><h3 data-i18n="f6t">แจ้งเตือนอัปเดต</h3><p data-i18n="f6">มีเวอร์ชันใหม่ แอปเด้งเตือนภายในไม่กี่นาที แตะครั้งเดียวก็ดาวน์โหลดได้ ติดตั้งทับได้ การตั้งค่าไม่หาย</p></article>
+      <article class="glass card reveal"><i>❖</i><h3 data-i18n="f7t">ธีมแตะเดียว</h3><p data-i18n="f7">10 ธีมในแอป เปลี่ยนวอลเปเปอร์ สไตล์ไอคอน และทรงไอคอนพร้อมกันในครั้งเดียว</p></article>
+      <article class="glass card reveal"><i>◉</i><h3 data-i18n="f8t">ลูกเล่นกระจก</h3><p data-i18n="f8">แสงบนกระจกขยับตามการเอียงมือถือ กดค้างที่ว่างบนหน้าโฮมแล้วลาก จะมีเลนส์กระจกตามนิ้ว</p></article>
+      <article class="glass card reveal"><i>✉</i><h3 data-i18n="f9t">แจ้งบัคในแอป</h3><p data-i18n="f9">เขียนบอกปัญหาแล้วส่งอีเมลได้จากในแอป ถ้าแอปปิดเอง ครั้งหน้าจะถามว่าจะส่งรายงานไหม</p></article>
     </div>
   </section>
 
   <section class="themes">
     <h2 class="reveal" data-i18n="themesTitle">ธีม</h2>
-    <p class="sub muted reveal" data-i18n="themesSub">10 ธีมที่มากับแอป แตะเพื่อลองบนมือถือด้านบน</p>
+    <p class="sub muted reveal" data-i18n="themesSub">10 ธีมเดียวกับในแอป (ตั้งค่า › ธีม) แตะเพื่อลองบนมือถือด้านบน</p>
     <div class="gallery" id="gallery"></div>
   </section>
 
@@ -85,6 +88,12 @@
     </div>
   </section>
 
+  <section class="news" id="news">
+    <h2 class="reveal" data-i18n="newsTitle">มีอะไรใหม่</h2>
+    <div class="timeline" id="timeline"></div>
+    <p class="center"><a class="more" href="https://github.com/XenoORIGIN/xe-launcher/releases" data-i18n="allVersions">ทุกเวอร์ชัน</a></p>
+  </section>
+
   <section class="install">
     <h2 class="reveal" data-i18n="installTitle">ติดตั้งบน Samsung</h2>
     <ol>
@@ -99,6 +108,25 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M7 11l5 5l5-5M12 4v12"/></svg>
         <span data-i18n="download">ดาวน์โหลด APK</span>
       </a>
+    </div>
+  </section>
+
+  <section class="faq">
+    <h2 class="reveal" data-i18n="faqTitle">คำถามที่พบบ่อย</h2>
+    <div class="qa">
+      <details class="glass card reveal"><summary data-i18n="q1">ติดตั้งแล้วมือถือเตือนว่าไม่ปลอดภัย?</summary><p data-i18n="a1">มือถือเตือนทุกแอปที่ไม่ได้มาจาก Play Store กด “ติดตั้งต่อ” ได้เลย Xe Launcher ไม่ขอสิทธิ์อ่านข้อมูลส่วนตัว และโค้ดทั้งหมดเปิดให้ดูบน GitHub</p></details>
+      <details class="glass card reveal"><summary data-i18n="q2">อัปเดตยังไง?</summary><p data-i18n="a2">มีเวอร์ชันใหม่ แอปจะเด้งแจ้งเตือน แตะแจ้งเตือนเพื่อดาวน์โหลด แล้วติดตั้งทับ ทุกอย่างอยู่ครบ หรือเข้า ตั้งค่า › เกี่ยวกับ › ตรวจหาอัปเดต</p></details>
+      <details class="glass card reveal"><summary data-i18n="q3">ใช้กับมือถือยี่ห้ออื่นได้ไหม?</summary><p data-i18n="a3">ได้ ใช้ได้กับ Android 10 ขึ้นไปทุกยี่ห้อที่ให้เปลี่ยนแอปหน้าหลักได้ เช่น Samsung, Xiaomi, OPPO, vivo, realme และ Pixel</p></details>
+      <details class="glass card reveal"><summary data-i18n="q4">อยากกลับไปใช้หน้าโฮมเดิม?</summary><p data-i18n="a4">ตั้งค่า › แอป › เลือกแอปเริ่มต้น › แอปหน้าหลัก แล้วเลือกหน้าโฮมเดิม (บน Samsung คือ One UI Home)</p></details>
+      <details class="glass card reveal"><summary data-i18n="q5">เปลืองแบตไหม?</summary><p data-i18n="a5">กระจกเบลอและลูกเล่นใช้แรงเครื่องบ้าง ถ้าอยากประหยัด ตั้งค่า › รูปลักษณ์ › คุณภาพกระจก › ประหยัด และปิดแสงตามการเอียงได้</p></details>
+    </div>
+  </section>
+
+  <section class="contact">
+    <div class="glass card reveal bug">
+      <h2 data-i18n="bugTitle">เจอบัค?</h2>
+      <p class="muted" data-i18n="bugText">ในแอป: ตั้งค่า › แจ้งบัค แอปจะแนบข้อมูลเครื่องให้เอง หรือส่งอีเมลมาที่</p>
+      <a class="glass pill" href="mailto:xenodevg@gmail.com?subject=Xe%20Launcher%20bug%20report">xenodevg@gmail.com</a>
     </div>
   </section>
 </main>

@@ -189,3 +189,31 @@ html.nova-on .b3{background:radial-gradient(circle,#b03dff,transparent 70%)}
   white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis;background:rgba(30,30,34,.72);transition:opacity .35s,transform .45s cubic-bezier(.2,.9,.3,1.2);pointer-events:none}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 .secret-hint{font-size:12px;opacity:.7}
+
+/* what's new */
+.timeline{display:grid;gap:12px;max-width:640px;margin:0 auto}
+.rel header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.rel header b{font-size:20px;letter-spacing:-.3px}
+.rel header span{font-size:13px}
+.rel header em{margin-left:auto;font-style:normal;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:#fff;color:#000}
+.rel ul{padding-left:20px;display:grid;gap:5px;color:rgba(255,255,255,.75);line-height:1.5;font-size:15px}
+.rel:not(.latest){opacity:.8}
+.more{display:inline-block;margin-top:16px;font-size:14px;text-decoration:underline;text-underline-offset:3px;color:rgba(255,255,255,.75)}
+/* faq */
+.qa{display:grid;gap:10px;max-width:640px;margin:0 auto}
+.qa details{padding:0;border-radius:22px}
+.qa summary{list-style:none;cursor:pointer;padding:18px 48px 18px 20px;font-weight:600;font-size:16px;position:relative;line-height:1.4}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary::after{content:"";position:absolute;right:20px;top:50%;width:9px;height:9px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-70%) rotate(45deg);transition:transform .3s cubic-bezier(.2,.9,.3,1.3);opacity:.7}
+.qa details[open] summary::after{transform:translateY(-30%) rotate(225deg)}
+.qa details p{padding:0 20px 18px;color:rgba(255,255,255,.72);line-height:1.6;font-size:15px}
+.qa details[open] p{animation:qa .35s ease}
+@keyframes qa{from{opacity:0;transform:translateY(-6px)}}
+/* contact */
+.bug{max-width:640px;margin:0 auto;text-align:center;padding:30px 22px}
+.bug h2{margin-bottom:10px}
+.bug p{line-height:1.6;margin-bottom:18px}
+.bug .pill{font-size:16px}
+/* top bar turns to glass once the page scrolls, so headings never show through */
+.top{transition:background .3s,box-shadow .3s,-webkit-backdrop-filter .3s,backdrop-filter .3s}
+.top.scrolled{background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(18px) saturate(170%);backdrop-filter:blur(18px) saturate(170%);box-shadow:0 1px 0 rgba(255,255,255,.08)}
