@@ -18,6 +18,8 @@ class ItemGestureCallbacks(
     val onDrag: (Offset) -> Unit,
     val onDragEnd: (Offset) -> Unit,
     val onDragCancel: () -> Unit,
+    /** The finger went down on this item (lets Home tell item presses from empty-space presses). */
+    val onDown: () -> Unit = {},
 )
 
 /**
@@ -30,6 +32,7 @@ class ItemGestureCallbacks(
 fun Modifier.homeItemGestures(key: Any?, editMode: () -> Boolean, callbacks: () -> ItemGestureCallbacks): Modifier = pointerInput(key) {
     awaitEachGesture {
         val down = awaitFirstDown(requireUnconsumed = false)
+        callbacks().onDown()
         val start = down.position
         val slop = viewConfiguration.touchSlop
 

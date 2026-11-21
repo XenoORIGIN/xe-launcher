@@ -1,8 +1,7 @@
 Android 10 or newer. Installs over earlier versions and keeps your settings.
 
-- Widgets no longer open their menu while you swipe pages
-- App names stay visible while arranging the Home screen
-- Category editor: hide, reorder, counts, auto-sort, reset, delete confirm
-- 7 new Xe glass widgets
-- Update notifications
-- Faster icon loading and new animations
+- Themes: 10 ready-made looks (wallpaper + icon style + shape) in Settings › Themes
+- Report a bug from Settings; if Xe closes unexpectedly it offers to send a report next time
+- Light on glass rims follows how you tilt the phone
+- Glass lens: hold an empty spot on Home, then drag
+- A secret hides in Settings › About

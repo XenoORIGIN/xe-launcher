@@ -78,6 +78,8 @@ fun SettingsHost(graph: AppGraph, start: String, onClose: () -> Unit) {
                 "pages/search" -> SearchPageScreen(settings, update, back)
                 "hidden" -> HiddenAppsScreen(graph, settings, update, back)
                 "about" -> AboutScreen(back, settings, update, graph.updates)
+                "themes" -> ThemesScreen(graph, settings, back)
+                "bugs" -> BugReportScreen(graph, settings, back)
                 else -> SettingsRoot(settings, ::push, onClose)
             }
         }

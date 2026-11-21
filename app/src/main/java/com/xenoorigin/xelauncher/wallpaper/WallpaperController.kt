@@ -46,7 +46,7 @@ class WallpaperController(
         val saved = if (file.exists()) BitmapFactory.decodeFile(file.path) else null
         if (saved != null) { show(saved); return@withContext }
         val (w, h) = screenSize()
-        val preset = XeCollection.byId(settings.current().wallpaperId) ?: XeCollection.first()
+        val preset = allWallpapers().byId(settings.current().wallpaperId) ?: XeCollection.first()
         val bmp = WallpaperRenderer.render(preset, w, h)
         save(bmp)
         show(bmp)

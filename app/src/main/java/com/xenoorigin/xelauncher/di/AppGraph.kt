@@ -57,6 +57,7 @@ class AppGraph(val context: Context) {
 
     /** Fires when the Home button is pressed while Xe is already in front. */
     val homePressed = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val crashes = com.xenoorigin.xelauncher.bugs.CrashStore(File(context.filesDir, "crashes"))
 
     fun categoryLabel(b: BuiltInCategory): String = context.getString(
         when (b) {

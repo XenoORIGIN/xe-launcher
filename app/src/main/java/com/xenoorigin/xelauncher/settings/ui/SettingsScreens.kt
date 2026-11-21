@@ -6,6 +6,11 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import android.widget.Toast
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -63,6 +68,7 @@ fun SettingsRoot(s: XeSettings, push: (String) -> Unit, onClose: () -> Unit, new
             NavRow(stringResource(R.string.update_banner, newVersion.removePrefix("v")), R.drawable.ti_download, RowColors.Green) { push("about") }
         }
         SettingsGroup {
+            NavRow(stringResource(R.string.themes), R.drawable.ti_sparkles, RowColors.Pink, subtitle = stringResource(R.string.themes_row_desc)) { push("themes") }
             NavRow(stringResource(R.string.wallpaper), R.drawable.ti_photo, RowColors.Green) { push("wallpaper") }
             NavRow(stringResource(R.string.appearance), R.drawable.ti_palette, RowColors.Orange) { push("appearance") }
             NavRow(stringResource(R.string.icons), R.drawable.ti_apps, RowColors.Blue) { push("icons") }
@@ -76,7 +82,10 @@ fun SettingsRoot(s: XeSettings, push: (String) -> Unit, onClose: () -> Unit, new
             NavRow(stringResource(R.string.app_page), R.drawable.ti_layout_grid, RowColors.Indigo, subtitle = stringResource(R.string.app_page_desc)) { push("pages/apps") }
             NavRow(stringResource(R.string.search_page), R.drawable.ti_search, RowColors.Cyan, subtitle = stringResource(R.string.search_page_desc)) { push("pages/search") }
         }
-        SettingsGroup { NavRow(stringResource(R.string.about), R.drawable.ti_info_circle, RowColors.Grey) { push("about") } }
+        SettingsGroup {
+            NavRow(stringResource(R.string.bug_report), R.drawable.ti_bug, RowColors.Red, subtitle = stringResource(R.string.bug_report_row_desc)) { push("bugs") }
+            NavRow(stringResource(R.string.about), R.drawable.ti_info_circle, RowColors.Grey) { push("about") }
+        }
     }
 }
 
@@ -107,6 +116,10 @@ fun AppearanceScreen(s: XeSettings, update: Update, back: () -> Unit) {
                 Triple(GlassQuality.NORMAL, R.string.glass_normal, R.string.glass_normal_desc),
                 Triple(GlassQuality.SAVER, R.string.glass_saver, R.string.glass_saver_desc),
             ).forEach { (q, l, d) -> ChoiceRow(stringResource(l), s.glassQuality == q, stringResource(d)) { update { it.copy(glassQuality = q) } } }
+        }
+        SettingsGroup(stringResource(R.string.effects)) {
+            XeRow(stringResource(R.string.tilt_shine), subtitle = stringResource(R.string.tilt_shine_desc)) { GlassSwitch(s.tiltShine, { v -> update { it.copy(tiltShine = v) } }) }
+            XeRow(stringResource(R.string.glass_lens), subtitle = stringResource(R.string.glass_lens_desc)) { GlassSwitch(s.glassLens, { v -> update { it.copy(glassLens = v) } }) }
         }
         SettingsGroup {
             SliderRow(stringResource(R.string.text_size), s.fontScale, .85f..1.3f, steps = 8, display = { "${(it * 100).roundToInt()}%" }) { v -> update { it.copy(fontScale = v) } }
@@ -290,9 +303,36 @@ fun AboutScreen(back: () -> Unit, s: XeSettings? = null, update: Update = {}, no
     val availableFmt = stringResource(R.string.update_available); val checking = stringResource(R.string.checking)
     val release = notifier?.available?.collectAsState()?.value
     fun open(url: String) = runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+    // Secret: tap the name 7 times quickly.
+    val counter = remember { com.xenoorigin.xelauncher.design.TapCounter(needed = 7, windowMs = 650) }
+    var burst by remember { mutableStateOf(0) }
+    var burstAt by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+    var nameCenter by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+    val spin = remember { androidx.compose.animation.core.Animatable(0f) }
+    val found = stringResource(R.string.nova_found); val again = stringResource(R.string.nova_again)
+    Box(Modifier.fillMaxSize()) {
     SettingsPage(stringResource(R.string.about), back) {
         Column(Modifier.fillMaxWidth().padding(vertical = 18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Xe Launcher", style = XeType.Title, color = LocalXeScheme.current.text)
+            Text(
+                "Xe Launcher", style = XeType.Title, color = LocalXeScheme.current.text,
+                modifier = Modifier
+                    .onGloballyPositioned { val b = it.boundsInRoot(); nameCenter = b.center }
+                    .graphicsLayer { rotationZ = spin.value; scaleX = 1f + spin.value / 1800f; scaleY = scaleX }
+                    .clickable(remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, null) {
+                        val hit = counter.tap(System.currentTimeMillis())
+                        if (hit) {
+                            val first = s?.novaUnlocked != true
+                            update { it.copy(novaUnlocked = true) }
+                            burstAt = nameCenter; burst++
+                            Toast.makeText(ctx, if (first) found else again, Toast.LENGTH_LONG).show()
+                        }
+                        scope.launch {
+                            spin.snapTo(0f)
+                            if (hit) spin.animateTo(360f, androidx.compose.animation.core.tween(700)) else { spin.animateTo(14f, androidx.compose.animation.core.tween(90)); spin.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = .4f, stiffness = 500f)) }
+                            spin.snapTo(0f)
+                        }
+                    },
+            )
             Text(stringResource(R.string.version, BuildConfig.VERSION_NAME), style = XeType.Caption, color = LocalXeScheme.current.textSecondary)
         }
         SettingsGroup {
@@ -312,6 +352,8 @@ fun AboutScreen(back: () -> Unit, s: XeSettings? = null, update: Update = {}, no
             NavRow(stringResource(R.string.website), R.drawable.ti_world_www, RowColors.Cyan) { open(UpdateChecker.WEBSITE) }
             NavRow(stringResource(R.string.licenses), R.drawable.ti_book, RowColors.Grey) { licences = true }
         }
+    }
+    GlassBurst(burst, burstAt)
     }
     GlassSheet(licences, { licences = false }) {
         val text = remember {

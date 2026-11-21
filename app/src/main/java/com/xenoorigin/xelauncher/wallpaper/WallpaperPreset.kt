@@ -33,4 +33,11 @@ val XeCollection: List<WallpaperPreset> = listOf(
     WallpaperPreset.Mesh("mint", "Mint", listOf(0xFFEFFFF8, 0xFF9DF0D2, 0xFFB8E6FF, 0xFFD9FFC2), seed = 113, grain = .02f),
 )
 
+/** Wallpapers unlocked by easter eggs; not shown in the wallpaper picker. */
+val SecretCollection: List<WallpaperPreset> = listOf(
+    WallpaperPreset.Mesh("supernova", "Supernova", listOf(0xFF0A0014, 0xFFFF3D7F, 0xFFFFB340, 0xFF3D8BFF, 0xFFB03DFF), seed = 127, glow = 1.1f),
+)
+
+fun allWallpapers(): List<WallpaperPreset> = XeCollection + SecretCollection
+
 fun List<WallpaperPreset>.byId(id: String): WallpaperPreset? = firstOrNull { it.id == id }

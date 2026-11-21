@@ -9,6 +9,9 @@ class XeApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        com.xenoorigin.xelauncher.bugs.CrashStore.install(
+            com.xenoorigin.xelauncher.bugs.CrashStore(java.io.File(filesDir, "crashes")), BuildConfig.VERSION_NAME,
+        )
         graph = AppGraph(this)
     }
 }

@@ -14,6 +14,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.Shader
+import androidx.compose.ui.graphics.ShaderBrush
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.geometry.Size
+import kotlin.math.roundToInt
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
@@ -80,22 +85,29 @@ fun Modifier.liquidGlass(shape: Shape, style: GlassStyle, haze: HazeState?): Mod
     return m.glassFilmAndRim(shape, style, drawFilm = haze == null || style.blurRadius == 0.dp)
 }
 
-/** Draws the film (when not blurred), inner glows and the bright rim. */
+private val RimStops = floatArrayOf(0f, .12f, .30f, .50f, .62f, .70f, .78f, 1f)
+private val RimColors = listOf(Color.White, Color(0xFFA0FFF0), Color.White, Color.White, Color(0xFFAAC8FF), Color.White, Color(0xFFFFAAE6), Color.White)
+private val RimAlphas = floatArrayOf(.10f, .30f, .55f, .10f, .35f, .95f, .30f, .10f)
+
+/** The bright rim, turned by [degrees] around the panel centre (sweep gradients can't rotate on their own). */
+private class RimBrush(private val rimAlpha: Float, private val degrees: Float) : ShaderBrush() {
+    override fun createShader(size: Size): Shader {
+        val colors = IntArray(RimColors.size) { i -> RimColors[i].copy(alpha = RimAlphas[i] * rimAlpha).toArgb() }
+        return android.graphics.SweepGradient(size.width / 2f, size.height / 2f, colors, RimStops).apply {
+            if (degrees != 0f) setLocalMatrix(android.graphics.Matrix().apply { setRotate(degrees, size.width / 2f, size.height / 2f) })
+        }
+    }
+}
+
+/** Rim rotation for the current tilt, in 3° steps so rims are only rebuilt when the change shows. */
+internal fun rimDegrees(tilt: Offset): Int = ((tilt.x * 70f + tilt.y * 20f) / 3f).roundToInt() * 3
+
+/** Draws the film (when not blurred), inner glows and the bright rim. Light on the rim follows [GlassTilt]. */
 fun Modifier.glassFilmAndRim(shape: Shape, style: GlassStyle, drawFilm: Boolean = false): Modifier =
     drawWithCache {
         val outline: Outline = shape.createOutline(size, layoutDirection, this)
         val stroke = 1.2.dp.toPx()
-        val rim = Brush.sweepGradient(
-            0.00f to Color.White.copy(alpha = .10f * style.rimAlpha),
-            0.12f to Color(0xFFA0FFF0).copy(alpha = .30f * style.rimAlpha),
-            0.30f to Color.White.copy(alpha = .55f * style.rimAlpha),
-            0.50f to Color.White.copy(alpha = .10f * style.rimAlpha),
-            0.62f to Color(0xFFAAC8FF).copy(alpha = .35f * style.rimAlpha),
-            0.70f to Color.White.copy(alpha = .95f * style.rimAlpha),
-            0.78f to Color(0xFFFFAAE6).copy(alpha = .30f * style.rimAlpha),
-            1.00f to Color.White.copy(alpha = .10f * style.rimAlpha),
-            center = Offset(size.width / 2f, size.height / 2f),
-        )
+        val rims = HashMap<Int, Brush>()
         val sheen = Brush.linearGradient(
             0f to Color.White.copy(alpha = if (style.dark) .16f else .28f),
             .35f to Color.White.copy(alpha = .03f),
@@ -108,9 +120,23 @@ fun Modifier.glassFilmAndRim(shape: Shape, style: GlassStyle, drawFilm: Boolean 
             .78f to Color.Transparent, 1f to Color.White.copy(alpha = .12f),
         )
         onDrawWithContent {
+            val tilt = GlassTilt.value.value
+            val deg = rimDegrees(tilt)
+            val rim = rims.getOrPut(deg) { RimBrush(style.rimAlpha, deg.toFloat()) }
             if (drawFilm) drawOutline(outline, style.tint)
             drawOutline(outline, sheen)
             drawOutline(outline, topGlow)
+            if (tilt != Offset.Zero) {
+                // A soft highlight that slides across the glass as the phone tilts.
+                drawOutline(
+                    outline,
+                    Brush.radialGradient(
+                        listOf(Color.White.copy(alpha = if (style.dark) .13f else .2f), Color.Transparent),
+                        center = Offset(size.width * (.5f + .45f * tilt.x), size.height * (.0f + .35f * tilt.y)),
+                        radius = maxOf(size.width, size.height) * .7f,
+                    ),
+                )
+            }
             drawContent()
             drawOutline(outline, rim, style = Stroke(width = stroke))
         }

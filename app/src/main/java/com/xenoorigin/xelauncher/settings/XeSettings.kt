@@ -62,4 +62,10 @@ data class XeSettings(
     val askedNotifications: Boolean = false,
     /** Text of each note widget, keyed by its Home item id. */
     val widgetNotes: Map<String, String> = emptyMap(),
+    /** Light on glass rims follows how the phone is tilted. */
+    val tiltShine: Boolean = true,
+    /** Hold an empty spot on Home and drag to move a glass lens over the wallpaper. */
+    val glassLens: Boolean = true,
+    /** Found the Supernova easter egg: its secret theme is listed. */
+    val novaUnlocked: Boolean = false,
 )

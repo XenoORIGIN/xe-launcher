@@ -11,6 +11,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.border
@@ -118,6 +120,7 @@ fun HomeScreen(
 ) {
     val density = LocalDensity.current
     val haptic = LocalHapticFeedback.current
+    val touch = remember { HomeTouch() }
     val scope = rememberCoroutineScope()
     var drag by remember { mutableStateOf<Drag?>(null) }
     var gridBounds by remember { mutableStateOf(Rect.Zero) }
@@ -183,12 +186,20 @@ fun HomeScreen(
         },
         onDragEnd = { p -> drag?.let { d -> dropFor(p, d.cell)?.let(cb.onDrop) }; drag = null; edgeSince = 0L },
         onDragCancel = { drag = null; edgeSince = 0L },
+        onDown = { touch.itemDown = true },
     )
 
+    val lens = LocalLens.current
     Box(
-        modifier.fillMaxSize().pointerInput(editMode) {
-            detectTapGestures(onLongPress = { cb.onEmptyLongPress() }, onDoubleTap = { cb.onDoubleTap() }, onTap = { cb.onEmptyTap() })
-        },
+        modifier.fillMaxSize().pointerInput(editMode, lens) {
+            detectTapGestures(
+                onLongPress = { p ->
+                    // With the lens on, Home's long-press action waits until the finger lifts without dragging.
+                    if (lens != null && !editMode && !touch.onItem) { haptic.performHapticFeedback(HapticFeedbackType.LongPress); lens.begin(p) } else cb.onEmptyLongPress()
+                },
+                onDoubleTap = { cb.onDoubleTap() }, onTap = { cb.onEmptyTap() },
+            )
+        }.then(if (lens != null) Modifier.lensDrag(lens, touch) { cb.onEmptyLongPress() } else Modifier),
     ) {
         // Edit mode shrinks the whole page (keeping every cell the same shape, labels included) to make room for the bar.
         val editScale by androidx.compose.animation.core.animateFloatAsState(
@@ -201,7 +212,7 @@ fun HomeScreen(
                     scaleX = editScale; scaleY = editScale
                     transformOrigin = androidx.compose.ui.graphics.TransformOrigin(.5f, 1f)
                 },
-                beyondViewportPageCount = 1, userScrollEnabled = drag == null,
+                beyondViewportPageCount = 1, userScrollEnabled = drag == null && lens?.active != true,
             ) { page ->
                 Box(Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 18.dp).onGloballyPositioned { if (page == pager.currentPage) gridBounds = it.boundsInRoot() }) {
                     PageGrid(layout.pages.getOrNull(page).orEmpty(), look, editMode, drag?.cell?.id, ::callbacksFor)
@@ -221,6 +232,42 @@ fun HomeScreen(
                     Box(Modifier.size(cwDp * wc.spanX - 12.dp, chDp * wc.spanY - 12.dp).glassTile(RoundedCornerShape(26.dp), LocalGlassStyle.current, Color.White.copy(alpha = .22f)))
                 } else CellContent(d.cell, look, label = look.labels)
             }
+        }
+        lens?.let { GlassLens(it) }
+    }
+}
+
+/**
+ * Moves [lens] with the finger once a long press on empty space started it. Lifting without dragging
+ * runs [onPlainLongPress] (Home's normal long-press action).
+ */
+/** Whether the current touch started on an item; items report their downs before Home sees them. */
+private class HomeTouch {
+    var itemDown = false
+    var onItem = false
+}
+
+private fun Modifier.lensDrag(lens: LensState, touch: HomeTouch, onPlainLongPress: () -> Unit): Modifier = pointerInput(lens) {
+    awaitEachGesture {
+        val down = awaitFirstDown(requireUnconsumed = false)
+        touch.onItem = touch.itemDown
+        touch.itemDown = false
+        var last = down.position
+        var travelled = 0f
+        while (true) {
+            val ev = awaitPointerEvent()
+            val c = ev.changes.firstOrNull { it.id == down.id } ?: break
+            if (lens.active) {
+                travelled += (c.position - last).getDistance()
+                lens.moveTo(c.position)
+                c.consume()
+            }
+            last = c.position
+            if (!c.pressed) break
+        }
+        if (lens.active) {
+            lens.end()
+            if (travelled < viewConfiguration.touchSlop) onPlainLongPress()
         }
     }
 }

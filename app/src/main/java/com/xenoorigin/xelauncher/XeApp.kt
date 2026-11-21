@@ -21,6 +21,8 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -253,6 +255,21 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     }
     var settingsRoute by remember { mutableStateOf<String?>(null) }
     var editMode by remember { mutableStateOf(false) }
+    var crashAsk by remember { mutableStateOf(graph.crashes.pending() != null) }
+
+    // Glass light follows the phone's tilt, only while Xe is on screen.
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    val tiltSensor = remember { com.xenoorigin.xelauncher.design.TiltSensor(ctx) }
+    val tiltOn = settings.tiltShine && speed != AnimationSpeed.OFF
+    androidx.compose.runtime.DisposableEffect(tiltOn, lifecycle) {
+        val obs = androidx.lifecycle.LifecycleEventObserver { _, e ->
+            if (e == androidx.lifecycle.Lifecycle.Event.ON_RESUME && tiltOn) tiltSensor.start()
+            if (e == androidx.lifecycle.Lifecycle.Event.ON_PAUSE) tiltSensor.stop()
+        }
+        lifecycle.addObserver(obs)
+        if (tiltOn && lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) tiltSensor.start()
+        onDispose { lifecycle.removeObserver(obs); tiltSensor.stop() }
+    }
 
     // Stable objects: they only change when settings do, so the drawer and home don't recompose every frame.
     val styleOf: (AppEntry) -> IconStyle = remember(settings.iconOverrides, settings.iconStyle) {
@@ -336,13 +353,17 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
         var totalDy by remember { mutableStateOf(0f) }
         var maxPointers by remember { mutableIntStateOf(1) }
 
-        com.xenoorigin.xelauncher.wallpaper.WallpaperLayer(graph.wallpaper, parallaxPx = {
+        val parallax: () -> Float = {
             if (!settings.wallpaperParallax) 0f else {
                 val count = (homePager.pageCount - 1).coerceAtLeast(1)
                 val f = (homePager.currentPage + homePager.currentPageOffsetFraction) / count
                 -(f - .5f) * with(density) { 24.dp.toPx() }
             }
-        })
+        }
+        com.xenoorigin.xelauncher.wallpaper.WallpaperLayer(graph.wallpaper, parallaxPx = parallax)
+        val lens = remember(settings.glassLens, settings.wallpaperParallax) {
+            if (settings.glassLens) com.xenoorigin.xelauncher.home.LensState({ graph.wallpaper.current.value }, parallax) else null
+        }
 
         // ---------- Home ----------
         CompositionLocalProvider(
@@ -363,6 +384,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                     editNote = { id -> if (!editMode) noteFor = id },
                 )
             },
+            com.xenoorigin.xelauncher.home.LocalLens provides lens,
             com.xenoorigin.xelauncher.home.LocalWidgetContent provides { cell ->
                 com.xenoorigin.xelauncher.widgets.WidgetContent(cell, host) { c, b -> if (!editMode && !homePager.isScrollInProgress) menu = MenuState(b, null, c, MenuSource.HOME) }
             },
@@ -676,6 +698,20 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                 onLater = { offerDefault = false; update { it.copy(firstRunDone = true) } },
                 modifier = Modifier.align(androidx.compose.ui.Alignment.Center),
             )
+        }
+
+        // The app crashed last time: offer to email a report.
+        com.xenoorigin.xelauncher.design.GlassSheet(crashAsk, { crashAsk = false }) {
+            val scheme = com.xenoorigin.xelauncher.design.LocalXeScheme.current
+            androidx.compose.material3.Text(stringResource(R.string.crash_title), style = com.xenoorigin.xelauncher.design.XeType.Title, color = scheme.text)
+            androidx.compose.material3.Text(stringResource(R.string.crash_body), style = com.xenoorigin.xelauncher.design.XeType.Body, color = scheme.textSecondary)
+            androidx.compose.foundation.layout.Row(
+                Modifier.fillMaxWidth().padding(top = 8.dp),
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp),
+            ) {
+                com.xenoorigin.xelauncher.design.GlassPillButton(stringResource(R.string.crash_skip), { graph.crashes.clear(); crashAsk = false }, Modifier.weight(1f))
+                com.xenoorigin.xelauncher.design.GlassPillButton(stringResource(R.string.crash_send), { crashAsk = false; settingsRoute = "bugs" }, Modifier.weight(1f), icon = R.drawable.ti_mail)
+            }
         }
 
         // Settings rise in over the home screen and sink away when closed.
