@@ -1,20 +1,21 @@
 (() => {
   const T = {
     en: {
-      eyebrow: "For Android · APK file", title: "A Liquid Glass Home screen",
-      lead: "Clean and minimal, with black-and-white glass icons, automatic app categories and smooth animation everywhere.",
+      eyebrow: "Android 10 or newer · APK file", title: "A Liquid Glass Home screen",
+      lead: "Clean and minimal, with dark glass icons, automatic app categories, glass widgets and smooth animation everywhere.",
       download: "Download APK", featuresTitle: "Made to look good",
       f1: "The dock, category bar, buttons and menus are blurred glass with bright rims that bend what's behind them.",
-      f2t: "Dark glass icons", f2: "Every app's real icon in black and white. Or pick colour glass, clear glass or the original.",
-      f3t: "Automatic categories", f3: "Swipe up to see apps by category. Move apps and add, delete or rename categories.",
-      f4t: "Smooth animation", f4: "A liquid bubble flows between categories, icons bounce in one by one, buttons squish when pressed.",
-      f5t: "Thai and English", f5: "Clean type in both languages. Switch language in Settings.",
-      f6: "Make your own wallpapers, icons and widgets — coming soon.",
+      f2t: "Icons your way", f2: "Dark glass, black and white, colour glass, clear glass or the original, in 5 shapes. Rename apps and use your own icon pictures.",
+      f3t: "Automatic categories", f3: "Swipe up to see apps by category. Reorder, hide, add or delete categories, or let Xe sort your apps again.",
+      f4t: "Glass widgets", f4: "10 Xe widgets: clocks, calendar, search, photo, note, battery and more. Widgets from other apps work too.",
+      f5t: "Your wallpaper", f5: "Import a picture, drag and pinch to fit, set dim and blur, then use it on the Home screen or lock screen.",
+      f6t: "Update alerts", f6: "Xe tells you when a new version is out. One tap downloads it, and it installs over the old one with your settings kept.",
+      shotsTitle: "Screenshots", allVersions: "All versions",
       installTitle: "Install on Samsung",
       s1: "Tap Download APK above", s2: "Open the file and allow your browser to “Install unknown apps”",
       s3: "Tap Install. New versions install over the old one and keep your settings",
       s4: "Settings › Apps › Choose default apps › Home app › Xe Launcher",
-      androidOnly: "Android 10 or newer only", version: "Latest: %s",
+      androidOnly: "Works on Android 10 or newer", version: "Latest: %s",
     },
     th: { version: "เวอร์ชันล่าสุด %s" },
   };
@@ -30,6 +31,12 @@
     btn.textContent = lang === "en" ? "ไทย" : "EN";
     verEl.textContent = ver ? (T[lang].version || T.en.version).replace("%s", ver) : "";
   }
+  const io = "IntersectionObserver" in window ? new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+  }), { rootMargin: "0px 0px -8% 0px" }) : null;
+  document.querySelectorAll(".reveal").forEach((el, i) => {
+    if (io) { el.style.transitionDelay = (el.closest(".grid,ol") ? (i % 3) * 70 : 0) + "ms"; io.observe(el); } else el.classList.add("in");
+  });
   btn.addEventListener("click", () => { lang = lang === "en" ? "th" : "en"; try { localStorage.setItem("xe-lang", lang); } catch (e) {} apply(); });
   apply();
   fetch("https://api.github.com/repos/XenoORIGIN/xe-launcher/releases/latest", { headers: { Accept: "application/vnd.github+json" } })
