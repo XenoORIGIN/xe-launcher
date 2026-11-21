@@ -83,8 +83,14 @@ class StudioGraph(context: Context) {
     val openProject = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
     fun open(id: String?) { openProject.value = id }
 
+    /** What happened the last time a theme was sent to Xe; the screen shows it, then clears it. */
+    val applyResult = kotlinx.coroutines.flow.MutableStateFlow<com.xenoorigin.xestudio.link.ApplyResult?>(null)
+
     /** Sends a project to Xe Launcher. */
-    fun applyToXe(id: String) {}
+    suspend fun applyToXe(id: String) {
+        val p = projects.get(id) ?: return
+        applyResult.value = com.xenoorigin.xestudio.link.XeLink.applyIcons(context, p, projects)
+    }
 }
 
 @Composable
@@ -117,9 +123,10 @@ fun StudioApp(graph: StudioGraph) {
                 val project = remember(openId) { openId?.let(graph.projects::get) }
                 if (project != null) {
                     val state = remember(project.id) { com.xenoorigin.xestudio.icons.IconEditorState(project, graph.projects, graph.scope) }
-                    com.xenoorigin.xestudio.icons.IconEditorScreen(state, graph.apps, onBack = { graph.open(null) }, onApply = { graph.applyToXe(project.id) })
+                    com.xenoorigin.xestudio.icons.IconEditorScreen(state, graph.apps, onBack = { graph.open(null) }, onApply = { graph.scope.launch(kotlinx.coroutines.Dispatchers.Main) { graph.applyToXe(project.id) } })
                 }
             }
+            ApplyFeedback(graph)
         }
     }
 }
@@ -231,5 +238,56 @@ private fun SoonScreen(title: Int, desc: Int) {
         Text(stringResource(desc), style = StudioType.Body, textAlign = TextAlign.Center)
         Spacer(Modifier.height(10.dp))
         Text(stringResource(R.string.coming_soon), style = StudioType.Label)
+    }
+}
+
+/** "Sent to Xe" pill, or a card explaining how to get Xe Launcher when it isn't installed. */
+@Composable
+private fun ApplyFeedback(graph: StudioGraph) {
+    val result by graph.applyResult.collectAsState()
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    androidx.compose.runtime.LaunchedEffect(result) {
+        if (result == com.xenoorigin.xestudio.link.ApplyResult.APPLIED) { kotlinx.coroutines.delay(2200); graph.applyResult.value = null }
+    }
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        AnimatedVisibility(
+            result == com.xenoorigin.xestudio.link.ApplyResult.APPLIED,
+            enter = fadeIn(Motion.settle()) + scaleIn(Motion.settle(), initialScale = .7f),
+            exit = fadeOut(Motion.snappy()) + scaleOut(Motion.snappy(), targetScale = .9f),
+        ) {
+            Box(Modifier.clip(RoundedCornerShape(30.dp)).background(Ink.White).padding(horizontal = 26.dp, vertical = 16.dp).testTag("xe_applied")) {
+                Text(stringResource(R.string.sent_to_xe), style = StudioType.Title.copy(color = Ink.Black))
+            }
+        }
+        AnimatedVisibility(
+            result == com.xenoorigin.xestudio.link.ApplyResult.XE_MISSING,
+            enter = fadeIn(Motion.settle()) + scaleIn(Motion.settle(), initialScale = .9f),
+            exit = fadeOut(Motion.snappy()),
+        ) {
+            Box(
+                Modifier.fillMaxSize().background(Ink.Black.copy(alpha = .6f))
+                    .clickable(remember { MutableInteractionSource() }, null) { graph.applyResult.value = null },
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    Modifier.padding(28.dp).clip(RoundedCornerShape(28.dp)).background(Ink.Card).padding(24.dp).testTag("xe_missing"),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(stringResource(R.string.xe_missing_title), style = StudioType.Title)
+                    Spacer(Modifier.height(8.dp))
+                    Text(stringResource(R.string.xe_missing_body), style = StudioType.Body, textAlign = TextAlign.Center)
+                    Spacer(Modifier.height(18.dp))
+                    Box(
+                        Modifier.fillMaxWidth().height(50.dp).pressSquish().clip(RoundedCornerShape(25.dp)).background(Ink.White).clickable {
+                            graph.applyResult.value = null
+                            runCatching {
+                                ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(com.xenoorigin.xestudio.link.XeLink.XE_WEBSITE)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                            }
+                        },
+                        contentAlignment = Alignment.Center,
+                    ) { Text(stringResource(R.string.get_xe), style = StudioType.Title.copy(color = Ink.Black)) }
+                }
+            }
+        }
     }
 }

@@ -33,4 +33,8 @@
     <string name="ov_save">บันทึก</string>
     <string name="ov_clear">ล้าง</string>
     <string name="untitled_theme">ธีมไอคอน %1$d</string>
+    <string name="sent_to_xe">ส่งไป Xe แล้ว</string>
+    <string name="xe_missing_title">เครื่องนี้ยังไม่มี Xe Launcher</string>
+    <string name="xe_missing_body">ธีมจาก Xe Studio ใช้ใน Xe Launcher ดาวน์โหลดฟรี แล้วกด "ใช้กับ Xe" อีกครั้ง</string>
+    <string name="get_xe">โหลด Xe Launcher</string>
 </resources>

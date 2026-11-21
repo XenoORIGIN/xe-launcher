@@ -20,6 +20,12 @@ class StudioAppTest {
     private val ctx = ApplicationProvider.getApplicationContext<android.content.Context>()
     private fun s(id: Int) = ctx.getString(id)
 
+    /** Lets work posted to the main thread (applying a theme) and the following animations finish. */
+    private fun settle() = repeat(20) {
+        org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+        rule.mainClock.advanceTimeBy(100); rule.waitForIdle()
+    }
+
     @Test fun fourTabsShowAndSwitch() {
         rule.setContent { StudioApp(StudioGraph(ctx)) }
         for (t in listOf("tab_create", "tab_store", "tab_mine", "tab_profile")) rule.onNodeWithTag(t).assertExists()
@@ -50,6 +56,19 @@ class StudioAppTest {
         rule.onNodeWithTag("apply_xe").assertExists()
         rule.onNodeWithTag("editor_back").performClick()
         rule.onNodeWithTag("tab_create").assertExists()
+    }
+
+    @Test fun applyWithoutXeExplainsHowToGetIt() {
+        val g = StudioGraph(ctx)
+        rule.setContent { StudioApp(g) }
+        rule.onNodeWithText(s(R.string.new_icon_theme)).performClick()
+        rule.waitUntil(3_000) { g.projects.projects.value.isNotEmpty() }
+        rule.onNodeWithTag("apply_xe").performClick()
+        settle()
+        org.junit.Assert.assertEquals(com.xenoorigin.xestudio.link.ApplyResult.XE_MISSING, g.applyResult.value)
+        settle()
+        rule.onNodeWithTag("xe_missing").assertExists()
+        rule.onNodeWithText(s(R.string.get_xe)).assertExists()
     }
 
     @Test fun shellScreenshot() {

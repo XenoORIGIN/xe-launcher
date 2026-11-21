@@ -34,4 +34,8 @@
     <string name="ov_save">Save</string>
     <string name="ov_clear">Clear</string>
     <string name="untitled_theme">Icon theme %1$d</string>
+    <string name="sent_to_xe">Sent to Xe</string>
+    <string name="xe_missing_title">Xe Launcher isn\'t on this phone</string>
+    <string name="xe_missing_body">Themes from Xe Studio show up in Xe Launcher. Get it free, then tap Use in Xe again.</string>
+    <string name="get_xe">Get Xe Launcher</string>
 </resources>
