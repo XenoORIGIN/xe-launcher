@@ -29,6 +29,14 @@ class StudioAppTest {
         rule.onNodeWithText(s(R.string.coming_soon)).assertExists()
     }
 
+    @Test fun mineListsProjects() {
+        val g = StudioGraph(ctx)
+        kotlinx.coroutines.runBlocking { g.projects.create(com.xenoorigin.xestudio.projects.ProjectKind.ICONS, "Midnight set", "{}") }
+        rule.setContent { StudioApp(g) }
+        rule.onNodeWithTag("tab_mine").performClick()
+        rule.onNodeWithText("Midnight set").assertExists()
+    }
+
     @Test fun createOffersIconTheme() {
         rule.setContent { StudioApp(StudioGraph(ctx)) }
         rule.onNodeWithText(s(R.string.new_icon_theme)).assertExists()

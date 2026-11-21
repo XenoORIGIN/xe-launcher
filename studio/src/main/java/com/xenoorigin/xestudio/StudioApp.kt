@@ -30,6 +30,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -60,6 +64,10 @@ enum class Tab(val label: Int, val tag: String) {
 /** Everything the screens need, made once per process. Later phases add stores here. */
 class StudioGraph(context: Context) {
     val context: Context = context.applicationContext
+    val projects = com.xenoorigin.xestudio.projects.ProjectStore(java.io.File(this.context.filesDir, "projects"))
+    /** The project open in an editor, if any. */
+    val openProject = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
+    fun open(id: String?) { openProject.value = id }
 }
 
 @Composable
@@ -77,7 +85,7 @@ fun StudioApp(graph: StudioGraph) {
                     when (t) {
                         Tab.CREATE -> CreateScreen()
                         Tab.STORE -> SoonScreen(R.string.tab_store, R.string.store_soon)
-                        Tab.MINE -> EmptyMine()
+                        Tab.MINE -> MineScreen(graph)
                         Tab.PROFILE -> SoonScreen(R.string.tab_profile, R.string.profile_soon)
                     }
                 }
@@ -153,9 +161,31 @@ internal fun CreateCard(title: String, desc: String, modifier: Modifier = Modifi
 }
 
 @Composable
-private fun EmptyMine() {
-    Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
-        Text(stringResource(R.string.mine_empty), style = StudioType.Body, textAlign = TextAlign.Center)
+private fun MineScreen(graph: StudioGraph) {
+    val projects by graph.projects.projects.collectAsState()
+    if (projects.isEmpty()) {
+        Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
+            Text(stringResource(R.string.mine_empty), style = StudioType.Body, textAlign = TextAlign.Center)
+        }
+        return
+    }
+    LazyColumn(
+        Modifier.fillMaxSize().statusBarsPadding(),
+        contentPadding = PaddingValues(start = 22.dp, end = 22.dp, top = 18.dp, bottom = 110.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        item { Text(stringResource(R.string.tab_mine), style = StudioType.Display, modifier = Modifier.padding(bottom = 12.dp)) }
+        items(projects, key = { it.id }) { p ->
+            Row(
+                Modifier.fillMaxWidth().animateItem().pressSquish().clip(RoundedCornerShape(22.dp)).background(Ink.Card)
+                    .clickable { graph.open(p.id) }.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(Ink.White))
+                Spacer(Modifier.width(14.dp))
+                Text(p.name, style = StudioType.Title)
+            }
+        }
     }
 }
 
