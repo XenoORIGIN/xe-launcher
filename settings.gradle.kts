@@ -13,4 +13,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "xe-launcher"
-include(":app")
+include(":app", ":studio-core")
