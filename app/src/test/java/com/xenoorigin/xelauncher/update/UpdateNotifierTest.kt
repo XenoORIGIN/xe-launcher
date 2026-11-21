@@ -36,7 +36,7 @@ class UpdateNotifierTest {
         val sc = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         val settings = SettingsStore(ctx, sc, "upd1-${System.nanoTime()}")
         val posted = mutableListOf<ReleaseInfo>()
-        val n = UpdateNotifier(settings, check = { UpdateResult.Available(rel) }, post = { posted += it })
+        val n = UpdateNotifier(settings, check = { UpdateResult.Available(rel) }, post = { posted += it; true })
         n.checkNow(); n.checkNow()
         assertThat(posted).containsExactly(rel)
         assertThat(n.available.value).isEqualTo(rel)
@@ -49,7 +49,7 @@ class UpdateNotifierTest {
         val settings = SettingsStore(ctx, sc, "upd2-${System.nanoTime()}")
         settings.update { it.copy(updateNotify = false) }
         val posted = mutableListOf<ReleaseInfo>()
-        val n = UpdateNotifier(settings, check = { UpdateResult.Available(rel) }, post = { posted += it })
+        val n = UpdateNotifier(settings, check = { UpdateResult.Available(rel) }, post = { posted += it; true })
         n.checkNow()
         assertThat(posted).isEmpty()
         assertThat(n.available.value).isEqualTo(rel)
@@ -60,11 +60,27 @@ class UpdateNotifierTest {
         val sc = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         val settings = SettingsStore(ctx, sc, "upd3-${System.nanoTime()}")
         var checks = 0
-        val n = UpdateNotifier(settings, check = { checks++; UpdateResult.UpToDate }, post = {})
+        val n = UpdateNotifier(settings, check = { checks++; UpdateResult.UpToDate }, post = { true })
         assertThat(n.checkIfDue(now = 0L)).isTrue()
         assertThat(n.checkIfDue(now = 9 * 60_000L)).isFalse()
         assertThat(n.checkIfDue(now = 11 * 60_000L)).isTrue()
         assertThat(checks).isEqualTo(2)
+        sc.cancel()
+    }
+
+    @Test fun blockedPostDoesNotMarkTagAsNotified() = runBlocking<Unit> {
+        val sc = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val settings = SettingsStore(ctx, sc, "upd4-${System.nanoTime()}")
+        val r99 = ReleaseInfo("v1.0.99", "https://x/xe-launcher.apk", "")
+        var allowed = false
+        val shown = mutableListOf<ReleaseInfo>()
+        val n = UpdateNotifier(settings, check = { UpdateResult.Available(r99) }, post = { if (allowed) { shown += it; true } else false })
+        n.checkNow()
+        assertThat(settings.settings.first().lastNotifiedTag).isEqualTo("")
+        allowed = true
+        n.checkNow(); n.checkNow()
+        assertThat(shown).containsExactly(r99)
+        assertThat(settings.settings.first().lastNotifiedTag).isEqualTo("v1.0.99")
         sc.cancel()
     }
 

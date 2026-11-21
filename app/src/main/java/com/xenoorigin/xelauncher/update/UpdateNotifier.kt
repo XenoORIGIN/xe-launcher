@@ -26,7 +26,8 @@ import kotlinx.coroutines.launch
 class UpdateNotifier(
     private val settings: SettingsStore,
     private val check: suspend () -> UpdateResult = { UpdateChecker.check(BuildConfig.VERSION_NAME) },
-    private val post: (ReleaseInfo) -> Unit,
+    /** Shows the alert; true only when it was really shown (false while Android blocks Xe's notifications). */
+    private val post: (ReleaseInfo) -> Boolean,
 ) {
     private val _available = MutableStateFlow<ReleaseInfo?>(null)
     val available: StateFlow<ReleaseInfo?> = _available.asStateFlow()
@@ -36,8 +37,8 @@ class UpdateNotifier(
         if (r is UpdateResult.Available) {
             _available.value = r.release
             val s = settings.settings.first()
-            if (s.updateNotify && s.lastNotifiedTag != r.release.tag) {
-                post(r.release)
+            // Remember the tag only once the alert was really shown, so blocked alerts are retried later.
+            if (s.updateNotify && s.lastNotifiedTag != r.release.tag && post(r.release)) {
                 settings.update { it.copy(lastNotifiedTag = r.release.tag) }
             }
         } else if (r is UpdateResult.UpToDate) _available.value = null
@@ -81,7 +82,7 @@ class UpdateNotifier(
         }
 
         /** Posts "Xe Launcher x.y.z is ready"; tapping it downloads the APK in the browser. */
-        fun systemPoster(context: Context): (ReleaseInfo) -> Unit = { r ->
+        fun systemPoster(context: Context): (ReleaseInfo) -> Boolean = { r ->
             val nm = context.getSystemService(NotificationManager::class.java)
             runCatching { nm.deleteNotificationChannel(OLD_CHANNEL) }
             nm.createNotificationChannel(NotificationChannel(CHANNEL, context.getString(R.string.updates_channel), NotificationManager.IMPORTANCE_HIGH))
@@ -98,7 +99,7 @@ class UpdateNotifier(
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_RECOMMENDATION)
                 .build()
-            if (NotificationManagerCompat.from(context).areNotificationsEnabled()) runCatching { nm.notify(7001, n) }
+            NotificationManagerCompat.from(context).areNotificationsEnabled() && runCatching { nm.notify(7001, n) }.isSuccess
         }
     }
 }
