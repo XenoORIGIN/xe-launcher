@@ -2,6 +2,10 @@ package com.xenoorigin.xestudio
 
 import android.content.Context
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.scaleOut
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -65,9 +69,22 @@ enum class Tab(val label: Int, val tag: String) {
 class StudioGraph(context: Context) {
     val context: Context = context.applicationContext
     val projects = com.xenoorigin.xestudio.projects.ProjectStore(java.io.File(this.context.filesDir, "projects"))
+    val apps: com.xenoorigin.xestudio.icons.AppSource = com.xenoorigin.xestudio.icons.LauncherAppSource(this.context)
+    /** Work that must finish even if the screen goes away (saving, applying). */
+    val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default)
+
+    /** Makes a new icon theme with the default style and opens it. */
+    suspend fun newIconTheme(name: String) {
+        val p = projects.create(com.xenoorigin.xestudio.projects.ProjectKind.ICONS, name, com.xenoorigin.xestudio.core.IconRecipe.encode(com.xenoorigin.xestudio.core.IconRecipe()))
+        open(p.id)
+    }
+
     /** The project open in an editor, if any. */
     val openProject = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
     fun open(id: String?) { openProject.value = id }
+
+    /** Sends a project to Xe Launcher. */
+    fun applyToXe(id: String) {}
 }
 
 @Composable
@@ -83,7 +100,7 @@ fun StudioApp(graph: StudioGraph) {
                     label = "tab",
                 ) { t ->
                     when (t) {
-                        Tab.CREATE -> CreateScreen()
+                        Tab.CREATE -> CreateScreen(graph)
                         Tab.STORE -> SoonScreen(R.string.tab_store, R.string.store_soon)
                         Tab.MINE -> MineScreen(graph)
                         Tab.PROFILE -> SoonScreen(R.string.tab_profile, R.string.profile_soon)
@@ -91,6 +108,18 @@ fun StudioApp(graph: StudioGraph) {
                 }
             }
             TabBar(tab, { tab = it }, haze, Modifier.align(Alignment.BottomCenter))
+            val openId by graph.openProject.collectAsState()
+            AnimatedVisibility(
+                openId != null,
+                enter = fadeIn(Motion.settle()) + scaleIn(Motion.settle(), initialScale = .92f),
+                exit = fadeOut(Motion.snappy()) + scaleOut(Motion.snappy(), targetScale = .96f),
+            ) {
+                val project = remember(openId) { openId?.let(graph.projects::get) }
+                if (project != null) {
+                    val state = remember(project.id) { com.xenoorigin.xestudio.icons.IconEditorState(project, graph.projects, graph.scope) }
+                    com.xenoorigin.xestudio.icons.IconEditorScreen(state, graph.apps, onBack = { graph.open(null) }, onApply = { graph.applyToXe(project.id) })
+                }
+            }
         }
     }
 }
@@ -127,11 +156,14 @@ private fun TabBar(current: Tab, onPick: (Tab) -> Unit, haze: HazeState, modifie
 }
 
 @Composable
-private fun CreateScreen() {
+private fun CreateScreen(graph: StudioGraph) {
+    val scope = rememberCoroutineScope()
+    val count = graph.projects.projects.collectAsState().value.size
+    val name = stringResource(R.string.untitled_theme, count + 1)
     Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 22.dp, vertical = 18.dp)) {
         Text(stringResource(R.string.create_title), style = StudioType.Display)
         Spacer(Modifier.height(22.dp))
-        CreateCard(stringResource(R.string.new_icon_theme), stringResource(R.string.new_icon_theme_desc), big = true) {}
+        CreateCard(stringResource(R.string.new_icon_theme), stringResource(R.string.new_icon_theme_desc), big = true) { scope.launch { graph.newIconTheme(name) } }
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             CreateCard(stringResource(R.string.new_wallpaper), stringResource(R.string.coming_soon), Modifier.weight(1f), enabled = false) {}

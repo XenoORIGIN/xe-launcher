@@ -42,6 +42,16 @@ class StudioAppTest {
         rule.onNodeWithText(s(R.string.new_icon_theme)).assertExists()
     }
 
+    @Test fun newIconThemeCreatesProjectAndOpensEditor() {
+        val g = StudioGraph(ctx)
+        rule.setContent { StudioApp(g) }
+        rule.onNodeWithText(s(R.string.new_icon_theme)).performClick()
+        rule.waitUntil(3_000) { g.projects.projects.value.isNotEmpty() }
+        rule.onNodeWithTag("apply_xe").assertExists()
+        rule.onNodeWithTag("editor_back").performClick()
+        rule.onNodeWithTag("tab_create").assertExists()
+    }
+
     @Test fun shellScreenshot() {
         rule.setContent { StudioApp(StudioGraph(ctx)) }
         rule.onRoot().captureRoboImage("src/test/screenshots/studio_shell.png")

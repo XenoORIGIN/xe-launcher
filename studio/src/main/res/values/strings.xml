@@ -14,4 +14,24 @@
     <string name="coming_soon">Coming soon</string>
     <string name="store_soon">Browse and share themes with everyone.</string>
     <string name="profile_soon">Sign in to save your work to the cloud.</string>
+    <string name="use_in_xe">Use in Xe</string>
+    <string name="tap_icon_hint">Tap an icon to change just that one</string>
+    <string name="ctl_shape">Shape</string>
+    <string name="ctl_background">Background</string>
+    <string name="ctl_treatment">Icon colour</string>
+    <string name="tr_original">Original</string>
+    <string name="tr_mono">Black &amp; white</string>
+    <string name="tr_tint">One colour</string>
+    <string name="tr_duotone">Two-tone</string>
+    <string name="ctl_tint">Colour</string>
+    <string name="ctl_glyph">Symbol size</string>
+    <string name="ctl_outline">Outline</string>
+    <string name="ctl_shadow">Shadow</string>
+    <string name="ov_image">Use a picture</string>
+    <string name="ov_letter">Letter or symbol</string>
+    <string name="ov_draw">Draw it</string>
+    <string name="ov_reset">Back to the theme style</string>
+    <string name="ov_save">Save</string>
+    <string name="ov_clear">Clear</string>
+    <string name="untitled_theme">Icon theme %1$d</string>
 </resources>

@@ -13,4 +13,24 @@
     <string name="coming_soon">เร็ว ๆ นี้</string>
     <string name="store_soon">ดูและแชร์ธีมกับทุกคน</string>
     <string name="profile_soon">ล็อกอินเพื่อเก็บงานไว้บนคลาวด์</string>
+    <string name="use_in_xe">ใช้กับ Xe</string>
+    <string name="tap_icon_hint">แตะไอคอนเพื่อแก้ทีละตัว</string>
+    <string name="ctl_shape">ทรง</string>
+    <string name="ctl_background">พื้นหลัง</string>
+    <string name="ctl_treatment">สีไอคอน</string>
+    <string name="tr_original">ตามต้นฉบับ</string>
+    <string name="tr_mono">ขาวดำ</string>
+    <string name="tr_tint">สีเดียว</string>
+    <string name="tr_duotone">สองโทน</string>
+    <string name="ctl_tint">สี</string>
+    <string name="ctl_glyph">ขนาดสัญลักษณ์</string>
+    <string name="ctl_outline">เส้นขอบ</string>
+    <string name="ctl_shadow">เงา</string>
+    <string name="ov_image">ใช้รูป</string>
+    <string name="ov_letter">ตัวอักษรหรือสัญลักษณ์</string>
+    <string name="ov_draw">วาดเอง</string>
+    <string name="ov_reset">คืนค่าเดิม</string>
+    <string name="ov_save">บันทึก</string>
+    <string name="ov_clear">ล้าง</string>
+    <string name="untitled_theme">ธีมไอคอน %1$d</string>
 </resources>
