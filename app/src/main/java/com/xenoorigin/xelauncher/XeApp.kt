@@ -305,7 +305,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
         // ---------- Home ----------
         CompositionLocalProvider(
             com.xenoorigin.xelauncher.home.LocalWidgetContent provides { cell ->
-                com.xenoorigin.xelauncher.widgets.WidgetContent(cell, host) { c, b -> if (!editMode) menu = MenuState(b, null, c, MenuSource.HOME) }
+                com.xenoorigin.xelauncher.widgets.WidgetContent(cell, host) { c, b -> if (!editMode && !homePager.isScrollInProgress) menu = MenuState(b, null, c, MenuSource.HOME) }
             },
         ) {
         HomeScreen(

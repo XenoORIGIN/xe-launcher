@@ -188,9 +188,19 @@ fun HomeScreen(
             detectTapGestures(onLongPress = { cb.onEmptyLongPress() }, onDoubleTap = { cb.onDoubleTap() }, onTap = { cb.onEmptyTap() })
         },
     ) {
-        val editInset by androidx.compose.animation.core.animateDpAsState(if (editMode) 64.dp else 0.dp, label = "editInset")
-        Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(top = editInset)) {
-            HorizontalPager(pager, Modifier.weight(1f).fillMaxWidth(), beyondViewportPageCount = 1, userScrollEnabled = drag == null) { page ->
+        // Edit mode shrinks the whole page (keeping every cell the same shape, labels included) to make room for the bar.
+        val editScale by androidx.compose.animation.core.animateFloatAsState(
+            if (editMode) .86f else 1f, com.xenoorigin.xelauncher.design.XeMotion.spring(com.xenoorigin.xelauncher.design.LocalAnimationSpeed.current, dampingRatio = .78f, stiffness = 380f), label = "editScale",
+        )
+        Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
+            HorizontalPager(
+                pager,
+                Modifier.weight(1f).fillMaxWidth().graphicsLayer {
+                    scaleX = editScale; scaleY = editScale
+                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin(.5f, 1f)
+                },
+                beyondViewportPageCount = 1, userScrollEnabled = drag == null,
+            ) { page ->
                 Box(Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 18.dp).onGloballyPositioned { if (page == pager.currentPage) gridBounds = it.boundsInRoot() }) {
                     PageGrid(layout.pages.getOrNull(page).orEmpty(), look, editMode, drag?.cell?.id, ::callbacksFor)
                 }
@@ -207,7 +217,7 @@ fun HomeScreen(
                     val cwDp = with(density) { (gridBounds.width / look.columns).toDp() }
                     val chDp = with(density) { (gridBounds.height / look.rows).toDp() }
                     Box(Modifier.size(cwDp * wc.spanX - 12.dp, chDp * wc.spanY - 12.dp).glassTile(RoundedCornerShape(26.dp), LocalGlassStyle.current, Color.White.copy(alpha = .22f)))
-                } else CellContent(d.cell, look, label = false)
+                } else CellContent(d.cell, look, label = look.labels)
             }
         }
     }

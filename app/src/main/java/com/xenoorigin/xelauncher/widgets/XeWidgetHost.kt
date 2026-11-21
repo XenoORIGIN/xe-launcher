@@ -57,22 +57,26 @@ class XeWidgetHostView(context: Context) : AppWidgetHostView(context) {
     private var downY = 0f
     private var longPressed = false
     private val slop = ViewConfiguration.get(context).scaledTouchSlop
+    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
     private val trigger = Runnable { longPressed = true; performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS); onLongPress?.invoke() }
 
     override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
         when (ev.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                longPressed = false; downX = ev.x; downY = ev.y
-                postDelayed(trigger, ViewConfiguration.getLongPressTimeout().toLong())
+                longPressed = false; downX = ev.rawX; downY = ev.rawY
+                handler.postDelayed(trigger, ViewConfiguration.getLongPressTimeout().toLong())
             }
-            MotionEvent.ACTION_MOVE -> if (abs(ev.x - downX) > slop || abs(ev.y - downY) > slop) removeCallbacks(trigger)
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> removeCallbacks(trigger)
+            // Screen coordinates: when the page scrolls, the widget moves with the finger, so its own coordinates stay still.
+            MotionEvent.ACTION_MOVE -> if (abs(ev.rawX - downX) > slop || abs(ev.rawY - downY) > slop) handler.removeCallbacks(trigger)
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> handler.removeCallbacks(trigger)
         }
         return longPressed
     }
 
+    override fun onDetachedFromWindow() { handler.removeCallbacks(trigger); super.onDetachedFromWindow() }
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (event.actionMasked == MotionEvent.ACTION_UP || event.actionMasked == MotionEvent.ACTION_CANCEL) { removeCallbacks(trigger); longPressed = false }
+        if (event.actionMasked == MotionEvent.ACTION_UP || event.actionMasked == MotionEvent.ACTION_CANCEL) { handler.removeCallbacks(trigger); longPressed = false }
         return longPressed || super.onTouchEvent(event)
     }
 
