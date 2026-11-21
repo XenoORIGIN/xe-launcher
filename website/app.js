@@ -56,6 +56,8 @@
     if (io) { if (el.closest(".grid,ol")) el.style.transitionDelay = (i % 3) * 90 + "ms"; io.observe(el); } else el.classList.add("in");
   });
   const NEWS = [
+    { v: "1.0.11", d: "2026-11-21", th: ["หน้าลิ้นชักแอปแบบ Bento: แอปที่ใช้บ่อยสุดได้การ์ดกระจกใหญ่ ที่ใช้บ่อยรองลงมาได้การ์ดกว้าง", "เปลี่ยนกลับเป็นตารางได้ในตั้งค่า"],
+      en: ["Bento app pages: your most used app gets a big glass card, the next ones wide cards", "Switch back to the grid in Settings"] },
     { v: "1.0.10", d: "2026-11-21", th: ["หน้าลิ้นชักใหม่: หมวดที่มีแอปน้อยได้ไอคอนใหญ่ จำนวนแอปใต้ชื่อหมวด และแสงสีประจำหมวด", "ลูกเล่นใหม่: ไอคอนมีแรงโน้มถ่วง เขย่าแล้วกระจาย บ่อน้ำมีฟองให้จิ้ม และแอปไม่ได้ใช้นานมีฝุ่นเกาะให้ถู", "แตะสองครั้งที่โฮมแล้ววาดตัวอักษรเพื่อเปิดแอป", "ลากนิ้วบนแถบหมวดเพื่อไล่หมวด ไอคอนขยายตามนิ้ว", "วอลเปเปอร์ท้องฟ้าสดตามเวลาจริง และเกมลับในหน้าเกี่ยวกับ"],
       en: ["New drawer page: sparse categories get big icons, an app count and their own colour glow", "New toys: gravity icons that scatter when shaken, a pond with bubbles to pop, and dust on apps you never open", "Double tap Home and draw a letter to open an app", "Drag along the category bar to scrub, icons swell under your finger", "Live Sky wallpaper that follows the time of day, and a secret game in About"] },
     { v: "1.0.9", d: "2026-11-21", th: ["แก้เลือกหมวดในลิ้นชักแอปแล้วไอคอนโหลดสองรอบ"], en: ["Picking a drawer category no longer loads the icons twice"] },

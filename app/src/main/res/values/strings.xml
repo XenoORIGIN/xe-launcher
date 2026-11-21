@@ -317,4 +317,8 @@
     <string name="game_over">Time\'s up!</string>
     <string name="game_record">New record!</string>
     <string name="game_again">Play again</string>
+    <string name="bento_most_used">Most used</string>
+    <string name="drawer_layout">Layout</string>
+    <string name="layout_bento">Bento: big tiles for the apps you use most</string>
+    <string name="layout_grid">Grid: every app the same size</string>
 </resources>

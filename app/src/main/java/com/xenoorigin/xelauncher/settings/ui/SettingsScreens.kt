@@ -298,6 +298,10 @@ fun AppPageScreen(s: XeSettings, update: Update, push: (String) -> Unit, back: (
         SettingsGroup {
             XeRow(stringResource(R.string.category_bar), icon = R.drawable.ti_layout_grid) { GlassSwitch(s.categoryBar, { v -> update { it.copy(categoryBar = v) } }) }
         }
+        SettingsGroup(stringResource(R.string.drawer_layout)) {
+            listOf(com.xenoorigin.xelauncher.settings.DrawerLayout.BENTO to R.string.layout_bento, com.xenoorigin.xelauncher.settings.DrawerLayout.GRID to R.string.layout_grid)
+                .forEach { (lo, l) -> ChoiceRow(stringResource(l), s.drawerLayout == lo) { update { it.copy(drawerLayout = lo) } } }
+        }
         SettingsGroup(stringResource(R.string.sorting)) {
             listOf(DrawerSort.ALPHABETICAL to R.string.sort_alpha, DrawerSort.MOST_USED to R.string.sort_most_used, DrawerSort.RECENTLY_INSTALLED to R.string.sort_recent)
                 .forEach { (so, l) -> ChoiceRow(stringResource(l), s.drawerSort == so) { update { it.copy(drawerSort = so) } } }

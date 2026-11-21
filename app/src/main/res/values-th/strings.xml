@@ -316,4 +316,8 @@
     <string name="game_over">หมดเวลา!</string>
     <string name="game_record">สถิติใหม่!</string>
     <string name="game_again">เล่นอีกครั้ง</string>
+    <string name="bento_most_used">ใช้บ่อยสุด</string>
+    <string name="drawer_layout">รูปแบบ</string>
+    <string name="layout_bento">Bento: แอปที่ใช้บ่อยได้ช่องใหญ่</string>
+    <string name="layout_grid">ตาราง: ทุกแอปขนาดเท่ากัน</string>
 </resources>

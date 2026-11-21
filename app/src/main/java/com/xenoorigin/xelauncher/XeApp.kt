@@ -295,7 +295,10 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
         { a -> settings.iconOverrides[a.key.encode()] ?: settings.iconStyle }
     }
     val homeLook = remember(settings, styleOf) { HomeLook(settings.homeColumns, settings.homeRows, settings.dockSize, settings.iconSizeDp, settings.showLabels, settings.iconShape, styleOf) }
-    val drawerLook = remember(settings, styleOf) { DrawerLook(styleOf, settings.iconShape, settings.iconSizeDp, settings.showLabels, settings.categoryBar) }
+    val useCounts = remember(launchStats) { launchStats.associate { it.appKey to it.count } }
+    val drawerLook = remember(settings, styleOf, useCounts) {
+        DrawerLook(styleOf, settings.iconShape, settings.iconSizeDp, settings.showLabels, settings.categoryBar, settings.drawerLayout, { a -> useCounts[a.key.encode()] ?: 0 })
+    }
     // Read the animated drawer position only through these, never directly in composition.
     val drawerShown by remember { derivedStateOf { drawer.value > 0f } }
     val drawerFull by remember { derivedStateOf { drawer.value >= 1f } }
