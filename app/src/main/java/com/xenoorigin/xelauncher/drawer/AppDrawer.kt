@@ -101,11 +101,8 @@ fun AppDrawer(
         }
         HorizontalPager(state.pager, Modifier.weight(1f).fillMaxWidth(), beyondViewportPageCount = 1, key = { pages.getOrNull(it)?.id ?: it }) { page ->
             val cat = pages.getOrNull(page) ?: return@HorizontalPager
-            var trigger by remember { mutableIntStateOf(0) }
-            LaunchedEffect(page) {
-                snapshotFlow { state.pager.settledPage }.collect { if (it == page) trigger++ }
-            }
-            AppGrid(cat.apps, look, trigger, speed, onLaunch, onLongPress)
+            // The page slides in with its icons already drawn, so they don't play an entrance again when it settles.
+            AppGrid(cat.apps, look, speed, onLaunch, onLongPress)
         }
         if (look.categoryBar && pages.size > 1) {
             CategoryBar(pages, state, onSelect = { scope.launch { state.animateTo(it, speed) } },
@@ -120,7 +117,7 @@ val LocalDrawerProgress = androidx.compose.runtime.staticCompositionLocalOf<() -
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun AppGrid(
-    apps: List<AppEntry>, look: DrawerLook, trigger: Int, speed: AnimationSpeed,
+    apps: List<AppEntry>, look: DrawerLook, speed: AnimationSpeed,
     onLaunch: (AppEntry, Rect) -> Unit, onLongPress: (AppEntry, Rect) -> Unit,
 ) {
     LazyVerticalGrid(
@@ -130,13 +127,6 @@ private fun AppGrid(
     ) {
         itemsIndexed(apps, key = { _, a -> a.key.encode() }) { i, app ->
             val drawerProgress = LocalDrawerProgress.current
-            val anim = remember { Animatable(1f) }
-            LaunchedEffect(trigger) {
-                if (trigger == 0 || speed == AnimationSpeed.OFF || i > 23) { anim.snapTo(1f); return@LaunchedEffect }
-                anim.snapTo(0f)
-                delay((i * XeMotion.staggerStepMs * speed.scale).toLong())
-                anim.animateTo(1f, XeMotion.spring(speed, dampingRatio = .7f, stiffness = 380f))
-            }
             var bounds = remember { Rect.Zero }
             val src = remember { MutableInteractionSource() }
             val density = LocalDensity.current
@@ -145,13 +135,12 @@ private fun AppGrid(
                     app, look.iconSize.dp, look.iconStyle(app), look.iconShape, look.labels,
                     Modifier
                         .graphicsLayer {
-                            val v = anim.value
                             // Rows rise in one after another as the drawer opens (and follow the finger back down).
                             val row = i / 4
                             val c = if (speed == AnimationSpeed.OFF) 1f else com.xenoorigin.xelauncher.design.drawerCascade(drawerProgress(), row)
-                            alpha = v.coerceIn(0f, 1f) * c
-                            val sc = (.86f + .14f * v) * (.88f + .12f * c); scaleX = sc; scaleY = sc
-                            translationY = (1f - v) * with(density) { 10.dp.toPx() } + (1f - c) * with(density) { (36 + row * 12).dp.toPx() }
+                            alpha = c
+                            val sc = .88f + .12f * c; scaleX = sc; scaleY = sc
+                            translationY = (1f - c) * with(density) { (36 + row * 12).dp.toPx() }
                             rotationX = (1f - c) * 30f
                             cameraDistance = 12f * density.density
                         }
