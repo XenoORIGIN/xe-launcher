@@ -17,7 +17,7 @@
       faqTitle: "Questions",
       q1: "My phone warns the app isn't safe?", a1: "Phones warn about every app that isn't from the Play Store. Tap “Install anyway”. Xe Launcher doesn't ask for access to your personal data, and all of its code is open on GitHub.",
       q2: "How do I update?", a2: "When a new version is out, Xe shows a notification. Tap it to download, then install over the old one. Everything stays. Or go to Settings › About › Check for updates.",
-      q3: "Does it work on other phones?", a3: "Yes, on Android 10 or newer from any brand that lets you change the Home app, such as Samsung, Xiaomi, OPPO, vivo, realme and Pixel.",
+      q3: "Does it work on other phones?", a3: "It should work on Android 10 or newer from any brand that lets you change the Home app, such as Samsung, Xiaomi, OPPO, vivo, realme and Pixel. So far it has only been tested on a real Samsung Galaxy A16 5G; if something looks wrong on your phone, please send a bug report.",
       q4: "How do I go back to my old Home screen?", a4: "Settings › Apps › Choose default apps › Home app, then pick your old one (on Samsung it's One UI Home).",
       q5: "Does it use a lot of battery?", a5: "Blur and effects use some power. To save battery, set Settings › Appearance › Glass quality › Saver and turn off tilt light.",
       bugTitle: "Found a bug?", bugText: "In the app: Settings › Report a bug, which attaches your phone's details for you. Or email",
@@ -31,7 +31,7 @@
       s1: "Tap Download APK above", s2: "Open the file and allow your browser to “Install unknown apps”",
       s3: "Tap Install. New versions install over the old one and keep your settings",
       s4: "Settings › Apps › Choose default apps › Home app › Xe Launcher",
-      androidOnly: "Works on Android 10 or newer", version: "Latest: %s",
+      androidOnly: "Works on Android 10 or newer · tested on a real Samsung Galaxy A16 5G", version: "Latest: %s",
     },
     th: { version: "เวอร์ชันล่าสุด %s" },
   };
@@ -56,6 +56,8 @@
     if (io) { el.style.transitionDelay = (el.closest(".grid,ol") ? (i % 3) * 70 : 0) + "ms"; io.observe(el); } else el.classList.add("in");
   });
   const NEWS = [
+    { v: "1.0.7", d: "2026-11-21", th: ["แก้ปัดบน Widget แล้วเปิดเมนูหรือเปิดแอปของ Widget เอง", "ไอคอนที่อยู่บนจอขึ้นก่อน ไม่ต้องรอทั้งเครื่อง และเลื่อนลื่นขึ้นตอนกำลังโหลด"],
+      en: ["Swiping over a widget no longer opens its menu or the widget's app", "Icons on screen load first, and scrolling stays smooth while icons load"] },
     { v: "1.0.6", d: "2026-11-21", th: ["แจ้งเตือนอัปเดตมาเร็วขึ้น เช็กตอนเปิดแอป ตอนกลับหน้าโฮม และทุก 30 นาที", "แจ้งเตือนเด้งขึ้นบนจอ"],
       en: ["Update alerts arrive much sooner: on start, on returning Home and every 30 minutes", "Alerts pop up on screen"] },
     { v: "1.0.5", d: "2026-11-21", th: ["ธีม 10 แบบ แตะเดียวเปลี่ยนทั้งหน้า", "แจ้งบัคในแอป และถามส่งรายงานเมื่อแอปปิดเอง", "แสงบนกระจกขยับตามการเอียง", "เลนส์กระจกตามนิ้วบนหน้าโฮม", "ความลับในหน้าเกี่ยวกับ"],

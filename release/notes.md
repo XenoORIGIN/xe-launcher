@@ -1,3 +1,7 @@
-Android 10 or newer. Installs over earlier versions and keeps your settings.
+## Xe Launcher 1.0.7
 
-- Update alerts now pop up on screen and arrive much sooner: Xe checks a few seconds after start, every time you come back to Home (at most every 10 minutes) and every 30 minutes
+- แก้: ปัดบน Widget แล้วเปิดเมนู Widget หรือเปิดแอปของ Widget เอง
+- ไอคอนที่อยู่บนจอโหลดก่อน ไม่ต้องรอทุกแอปในเครื่อง และเลื่อนลื่นขึ้นตอนไอคอนกำลังโหลด
+
+- Fix: swiping over a widget opened its menu or the widget's own app
+- Icons on screen load first, and scrolling stays smooth while icons load

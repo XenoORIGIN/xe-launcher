@@ -10,11 +10,11 @@ import com.xenoorigin.xelauncher.apps.AppKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.asCoroutineDispatcher
 import java.io.File
 import java.security.MessageDigest
 
@@ -31,11 +31,15 @@ class IconRepository(
     /** Optional custom icon image per app (user picked); takes priority over the app's own icon. */
     private val customIcon: (AppKey) -> File? = { null },
     private val customVersion: (AppKey) -> String? = { k -> customIcon(k)?.let { "1" } },
+    /** CPU cores to plan for (tests pin it to a phone's count). */
+    processors: Int = Runtime.getRuntime().availableProcessors(),
+    /** Where icons are drawn; by default a few low-priority threads, so scrolling and animations stay smooth. */
+    private val renderDispatcher: kotlinx.coroutines.CoroutineDispatcher = backgroundPool((processors - 1).coerceIn(2, 6)),
 ) {
     private val memory = object : LruCache<String, RenderedIcon>(40 * 1024 * 1024) {
         override fun sizeOf(key: String, value: RenderedIcon) = value.bitmap.width * value.bitmap.height * 4
     }
-    private val renderGate = Semaphore((Runtime.getRuntime().availableProcessors() - 1).coerceIn(2, 6))
+    private val renderGate = Semaphore((processors - 1).coerceIn(2, 6))
     /** Renders in progress, so a tile and the pre-warmer asking for the same icon share one render. */
     private val inFlight = java.util.concurrent.ConcurrentHashMap<String, kotlinx.coroutines.Deferred<RenderedIcon?>>()
     /** Disk writes happen off the render path; the icon is on screen before its PNG is saved. */
@@ -70,7 +74,7 @@ class IconRepository(
         val ck = cacheKey(key, v, sizePx, contrast)
         memory.get(ck)?.let { return it }
         val job = inFlight.computeIfAbsent(ck) {
-            diskScope.async(Dispatchers.Default, start = kotlinx.coroutines.CoroutineStart.LAZY) {
+            diskScope.async(renderDispatcher, start = kotlinx.coroutines.CoroutineStart.LAZY) {
                 try { render(key, v, ck, sizePx, contrast) } finally { inFlight.remove(ck) }
             }
         }
@@ -124,10 +128,33 @@ class IconRepository(
             out
         }
 
-    /** Renders icons ahead of time so the drawer opens with every icon already in place. */
+    /**
+     * Renders icons ahead of time, in [keys] order, so the drawer opens with icons already in place. Only
+     * [PREWARM_WORKERS] at a time: the rest of the render slots stay free, so an icon that is on screen right
+     * now starts at once instead of waiting behind every app on the phone.
+     */
     suspend fun prewarm(keys: List<AppKey>, styleOf: (AppKey) -> IconStyle, sizePx: Int, contrast: Float) = coroutineScope {
-        keys.map { k -> async(Dispatchers.Default) { runCatching { icon(k, styleOf(k), sizePx, contrast) } } }.awaitAll()
-        Unit
+        val next = java.util.concurrent.atomic.AtomicInteger()
+        repeat(PREWARM_WORKERS) {
+            launch {
+                while (true) {
+                    val k = keys.getOrNull(next.getAndIncrement()) ?: break
+                    runCatching { icon(k, styleOf(k), sizePx, contrast) }
+                }
+            }
+        }
+    }
+
+    companion object {
+        const val PREWARM_WORKERS = 2
+
+        /** Fixed threads at background priority (as the stock launcher's loader), so drawing icons never steals frames. */
+        fun backgroundPool(threads: Int): kotlinx.coroutines.CoroutineDispatcher {
+            val n = java.util.concurrent.atomic.AtomicInteger()
+            return java.util.concurrent.Executors.newFixedThreadPool(threads) { r ->
+                Thread({ android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND); r.run() }, "xe-icons-${n.incrementAndGet()}").apply { isDaemon = true }
+            }.asCoroutineDispatcher()
+        }
     }
 
     /** Waits for queued disk writes (tests, and before clearing the cache). */

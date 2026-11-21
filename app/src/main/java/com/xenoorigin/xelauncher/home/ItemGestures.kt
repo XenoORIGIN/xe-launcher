@@ -70,7 +70,14 @@ fun Modifier.homeItemGestures(key: Any?, editMode: () -> Boolean, callbacks: () 
                 val ev = awaitPointerEvent()
                 val c = ev.changes.firstOrNull { it.id == down.id } ?: return@withTimeoutOrNull "gone"
                 if (c.changedToUp()) return@withTimeoutOrNull "up"
-                if ((c.position - start).getDistance() > slop || c.isConsumed) return@withTimeoutOrNull "moved"
+                if (c.isConsumed) return@withTimeoutOrNull "moved"
+                if ((c.position - start).getDistance() > slop) {
+                    // Like a launcher's workspace: once the finger travels, the swipe is Home's, so a widget
+                    // underneath gets cancelled instead of reading the lift as a tap. Consumed in the Final
+                    // pass, after the pager and drawer have already seen this move.
+                    awaitPointerEvent(PointerEventPass.Final).changes.firstOrNull { it.id == down.id }?.consume()
+                    return@withTimeoutOrNull "moved"
+                }
             }
             @Suppress("UNREACHABLE_CODE") "gone"
         }

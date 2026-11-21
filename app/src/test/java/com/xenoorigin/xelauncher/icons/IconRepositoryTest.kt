@@ -11,6 +11,9 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import kotlinx.coroutines.async
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.asCoroutineDispatcher
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
@@ -76,5 +79,37 @@ class IconRepositoryTest {
         assertThat(repo.peek(key, IconStyle.GLASS_DARK, 64, 1f)).isNotNull()
         repo.flushDisk()
         assertThat(dir.listFiles()!!.any { it.name.endsWith(".png") }).isTrue()
+    }
+
+    /** Eight worker threads, like the Galaxy A16 (this test machine may have fewer). */
+    private val phone = java.util.concurrent.Executors.newFixedThreadPool(8).asCoroutineDispatcher()
+
+    private fun keyN(i: Int) = AppKey("com.test.app$i", "com.test.app$i.Main", 0)
+
+    /** Opening the drawer while every icon is still being prepared: the one on screen must not wait its turn. */
+    @Test fun iconOnScreen_isNotStuckBehindPrewarm() = runBlocking<Unit> {
+        val order = java.util.Collections.synchronizedList(mutableListOf<String>())
+        val slow: (AppKey) -> Drawable? = { k -> order += k.packageName; Thread.sleep(40); ColorDrawable(Color.RED) }
+        val repo = IconRepository(slow, dir, processors = 8, renderDispatcher = phone)
+        val keys = (0 until 60).map(::keyN)
+        val warm = launch(Dispatchers.Default) { repo.prewarm(keys, { IconStyle.GLASS_DARK }, 64, 1f) }
+        delay(60)
+        val last = keys.last()
+        assertThat(repo.icon(last, IconStyle.GLASS_DARK, 64, 1f)).isNotNull()
+        assertThat(order.indexOf(last.packageName)).isLessThan(8)
+        warm.join()
+    }
+
+    /** Pre-rendering every app shares the phone with scrolling and animations, so it only uses a little of it. */
+    @Test fun prewarm_rendersAtMostTwoAtATime() = runBlocking<Unit> {
+        val now = java.util.concurrent.atomic.AtomicInteger(); var peak = 0
+        val slow: (AppKey) -> Drawable? = {
+            val n = now.incrementAndGet(); synchronized(this@IconRepositoryTest) { peak = maxOf(peak, n) }
+            Thread.sleep(30); now.decrementAndGet(); ColorDrawable(Color.RED)
+        }
+        val repo = IconRepository(slow, dir, processors = 8, renderDispatcher = phone)
+        repo.prewarm((0 until 20).map(::keyN), { IconStyle.GLASS_DARK }, 64, 1f)
+        assertThat(peak).isAtMost(2)
+        assertThat((0 until 20).all { repo.peek(keyN(it), IconStyle.GLASS_DARK, 64, 1f) != null }).isTrue()
     }
 }

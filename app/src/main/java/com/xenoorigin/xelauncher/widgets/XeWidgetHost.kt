@@ -8,8 +8,6 @@ import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.util.SizeF
-import android.view.MotionEvent
-import android.view.ViewConfiguration
 import kotlin.math.abs
 
 /** Hosts other apps' widgets on Xe's home screen. One instance for the whole app. */
@@ -50,36 +48,12 @@ class XeWidgetHost(context: Context) : AppWidgetHost(context.applicationContext,
     }
 }
 
-/** A widget view that reports a long press (to open Xe's menu) without breaking the widget's own taps. */
+/**
+ * Another app's widget on Home. Long press is handled by Home's own gesture (as for icons), never here:
+ * a view only hears the rest of a gesture when it took the first touch, so a timer started here can't
+ * tell a hold from a swipe and used to open the menu in the middle of swipes.
+ */
 class XeWidgetHostView(context: Context) : AppWidgetHostView(context) {
-    var onLongPress: (() -> Unit)? = null
-    private var downX = 0f
-    private var downY = 0f
-    private var longPressed = false
-    private val slop = ViewConfiguration.get(context).scaledTouchSlop
-    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
-    private val trigger = Runnable { longPressed = true; performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS); onLongPress?.invoke() }
-
-    override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
-        when (ev.actionMasked) {
-            MotionEvent.ACTION_DOWN -> {
-                longPressed = false; downX = ev.rawX; downY = ev.rawY
-                handler.postDelayed(trigger, ViewConfiguration.getLongPressTimeout().toLong())
-            }
-            // Screen coordinates: when the page scrolls, the widget moves with the finger, so its own coordinates stay still.
-            MotionEvent.ACTION_MOVE -> if (abs(ev.rawX - downX) > slop || abs(ev.rawY - downY) > slop) handler.removeCallbacks(trigger)
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> handler.removeCallbacks(trigger)
-        }
-        return longPressed
-    }
-
-    override fun onDetachedFromWindow() { handler.removeCallbacks(trigger); super.onDetachedFromWindow() }
-
-    override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (event.actionMasked == MotionEvent.ACTION_UP || event.actionMasked == MotionEvent.ACTION_CANCEL) { handler.removeCallbacks(trigger); longPressed = false }
-        return longPressed || super.onTouchEvent(event)
-    }
-
     /** Tells the widget how big it is drawn (in dp) so it can pick its layout. */
     private var lastSize = 0f to 0f
 

@@ -37,7 +37,7 @@ import com.xenoorigin.xelauncher.home.WidgetCell
 
 /** Shows one home-screen widget: Xe glass widget, or another app's widget through the host. */
 @Composable
-fun WidgetContent(cell: WidgetCell, host: XeWidgetHost, onLongPress: (WidgetCell, Rect) -> Unit) {
+fun WidgetContent(cell: WidgetCell, host: XeWidgetHost) {
     val kind = GlassWidgetKind.of(cell.kind)
     var bounds by remember { mutableStateOf(Rect.Zero) }
     val density = LocalDensity.current
@@ -52,7 +52,6 @@ fun WidgetContent(cell: WidgetCell, host: XeWidgetHost, onLongPress: (WidgetCell
         },
         update = { v ->
             (v as? XeWidgetHostView)?.let { hv ->
-                hv.onLongPress = { onLongPress(cell, bounds) }
                 if (bounds.width > 0) with(density) { hv.setSizeDp(bounds.width.toDp().value, bounds.height.toDp().value) }
             }
         },
