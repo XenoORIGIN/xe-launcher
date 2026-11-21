@@ -44,21 +44,37 @@ class UpdateNotifier(
         return r
     }
 
+    private val lastCheck = java.util.concurrent.atomic.AtomicLong(Long.MIN_VALUE / 2)
+
+    /** Checks unless one ran in the last [MIN_GAP_MS]; true when it checked. Called whenever Home comes back. */
+    suspend fun checkIfDue(now: Long = android.os.SystemClock.elapsedRealtime()): Boolean {
+        val last = lastCheck.get()
+        if (now - last < MIN_GAP_MS || !lastCheck.compareAndSet(last, now)) return false
+        runCatching { checkNow() }
+        return true
+    }
+
     fun start(scope: CoroutineScope) = scope.launch {
-        delay(20_000) // let the launcher settle after boot
+        delay(FIRST_CHECK_MS)
         while (true) {
-            runCatching { checkNow() }
-            delay(6 * 60 * 60 * 1000L)
+            checkIfDue()
+            delay(INTERVAL_MS)
         }
     }
 
     companion object {
-        private const val CHANNEL = "updates"
+        const val FIRST_CHECK_MS = 3_000L
+        const val INTERVAL_MS = 30 * 60_000L
+        const val MIN_GAP_MS = 10 * 60_000L
+        // High importance so the alert pops up on screen. (A channel's importance can't change once made, hence a new id.)
+        private const val CHANNEL = "updates_alert"
+        private const val OLD_CHANNEL = "updates"
 
         /** Posts "Xe Launcher x.y.z is ready"; tapping it downloads the APK in the browser. */
         fun systemPoster(context: Context): (ReleaseInfo) -> Unit = { r ->
             val nm = context.getSystemService(NotificationManager::class.java)
-            nm.createNotificationChannel(NotificationChannel(CHANNEL, context.getString(R.string.updates_channel), NotificationManager.IMPORTANCE_DEFAULT))
+            runCatching { nm.deleteNotificationChannel(OLD_CHANNEL) }
+            nm.createNotificationChannel(NotificationChannel(CHANNEL, context.getString(R.string.updates_channel), NotificationManager.IMPORTANCE_HIGH))
             val open = PendingIntent.getActivity(
                 context, 1, Intent(Intent.ACTION_VIEW, Uri.parse(r.apkUrl)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
@@ -69,6 +85,8 @@ class UpdateNotifier(
                 .setContentText(context.getString(R.string.update_notif_text))
                 .setContentIntent(open)
                 .setAutoCancel(true)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_RECOMMENDATION)
                 .build()
             if (NotificationManagerCompat.from(context).areNotificationsEnabled()) runCatching { nm.notify(7001, n) }
         }

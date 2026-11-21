@@ -43,4 +43,22 @@ class UpdateNotifierTest {
         assertThat(n.available.value).isEqualTo(rel)
         sc.cancel()
     }
+
+    @Test fun returningHome_checksRightAway_butNotMoreThanEveryTenMinutes() = runBlocking<Unit> {
+        val sc = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val settings = SettingsStore(ctx, sc, "upd3-${System.nanoTime()}")
+        var checks = 0
+        val n = UpdateNotifier(settings, check = { checks++; UpdateResult.UpToDate }, post = {})
+        assertThat(n.checkIfDue(now = 0L)).isTrue()
+        assertThat(n.checkIfDue(now = 9 * 60_000L)).isFalse()
+        assertThat(n.checkIfDue(now = 11 * 60_000L)).isTrue()
+        assertThat(checks).isEqualTo(2)
+        sc.cancel()
+    }
+
+    @Test fun checksOftenEnoughToFeelInstant() {
+        assertThat(UpdateNotifier.FIRST_CHECK_MS).isAtMost(5_000L)
+        assertThat(UpdateNotifier.INTERVAL_MS).isAtMost(30 * 60_000L)
+        assertThat(UpdateNotifier.MIN_GAP_MS).isAtLeast(5 * 60_000L) // stay well inside GitHub's 60 requests/hour
+    }
 }

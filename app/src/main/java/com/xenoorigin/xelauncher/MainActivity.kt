@@ -6,6 +6,7 @@ import androidx.activity.addCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -19,6 +20,8 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         runCatching { xeGraph.widgetHost.startListening() }
+        // Coming back to Home is a good moment to look for a new version (at most every 10 minutes).
+        xeGraph.scope.launch { xeGraph.updates.checkIfDue() }
     }
 
     override fun onStop() {
