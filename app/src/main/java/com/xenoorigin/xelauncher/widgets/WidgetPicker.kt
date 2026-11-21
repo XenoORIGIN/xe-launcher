@@ -23,6 +23,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -73,13 +75,27 @@ fun WidgetPicker(host: XeWidgetHost, cellSize: (AppWidgetProviderInfo) -> Pair<I
             }
             LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 item { Text(stringResource(R.string.xe_widgets), style = XeType.Label, color = scheme.textSecondary) }
-                item {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        GlassWidgetKind.entries.forEach { k ->
-                            Column(Modifier.weight(1f).clickable { onPick(WidgetChoice.Glass(k)) }, horizontalAlignment = Alignment.CenterHorizontally) {
-                                Box(Modifier.fillMaxWidth().aspectRatio(1f)) { GlassWidget(k) }
-                                Text(stringResource(k.title), style = XeType.Label, color = scheme.text, modifier = Modifier.padding(top = 4.dp))
+                // Previews at their real proportions: wide widgets on their own row, small ones in pairs.
+                val rows = buildList<List<GlassWidgetKind>> {
+                    val small = ArrayList<GlassWidgetKind>()
+                    GlassWidgetKind.entries.forEach { k -> if (k.spanX >= 4) add(listOf(k)) else { small += k; if (small.size == 2) { add(small.toList()); small.clear() } } }
+                    if (small.isNotEmpty()) add(small.toList())
+                }
+                rows.forEachIndexed { index, row ->
+                    item(key = "xe$index") {
+                        val appear = remember { androidx.compose.animation.core.Animatable(0f) }
+                        LaunchedEffect(Unit) { kotlinx.coroutines.delay(index * 45L); appear.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = .7f, stiffness = 300f)) }
+                        Row(
+                            Modifier.fillMaxWidth().graphicsLayer { alpha = appear.value; translationY = (1f - appear.value) * 60f },
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            row.forEach { k ->
+                                Column(Modifier.weight(k.spanX.toFloat()).clickable { onPick(WidgetChoice.Glass(k)) }) {
+                                    Box(Modifier.fillMaxWidth().aspectRatio(k.spanX / (k.spanY * 1.05f))) { GlassWidget(k) }
+                                    Text(stringResource(k.title), style = XeType.Label, color = scheme.text, modifier = Modifier.padding(top = 6.dp, start = 6.dp))
+                                }
                             }
+                            if (row.size == 1 && row[0].spanX < 4) Box(Modifier.weight(2f))
                         }
                     }
                 }

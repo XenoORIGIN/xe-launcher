@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.heightIn
+import com.xenoorigin.xelauncher.design.glassTile
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,7 +42,7 @@ fun WidgetContent(cell: WidgetCell, host: XeWidgetHost, onLongPress: (WidgetCell
     var bounds by remember { mutableStateOf(Rect.Zero) }
     val density = LocalDensity.current
     if (kind != null) {
-        GlassWidget(kind)
+        GlassWidget(kind, cell.id)
         return
     }
     AndroidView(
@@ -78,5 +80,26 @@ fun WidgetResizeSheet(cell: WidgetCell?, columns: Int, rows: Int, onResize: (Int
         Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             GlassPillButton(stringResource(R.string.done), onDismiss, Modifier.weight(1f), icon = R.drawable.ti_check)
         }
+    }
+}
+
+/** Write or change the text of a note widget. */
+@Composable
+fun NoteSheet(initial: String?, visible: Boolean, onSave: (String) -> Unit, onDismiss: () -> Unit) {
+    val scheme = LocalXeScheme.current
+    var text by remember(visible) { mutableStateOf(initial.orEmpty()) }
+    GlassSheet(visible, onDismiss) {
+        Text(stringResource(R.string.edit_note), style = XeType.Title, color = scheme.text, modifier = Modifier.padding(vertical = 8.dp))
+        Box(
+            Modifier.fillMaxWidth().padding(vertical = 8.dp).heightIn(min = 140.dp)
+                .glassTile(RoundedCornerShape(18.dp), com.xenoorigin.xelauncher.design.LocalGlassStyle.current, androidx.compose.ui.graphics.Color.White.copy(alpha = .08f))
+                .padding(16.dp),
+        ) {
+            androidx.compose.foundation.text.BasicTextField(
+                text, { text = it.take(400) }, Modifier.fillMaxWidth(),
+                textStyle = XeType.Body.copy(color = scheme.text), cursorBrush = androidx.compose.ui.graphics.SolidColor(scheme.text),
+            )
+        }
+        GlassPillButton(stringResource(R.string.save), { onSave(text.trim()) }, Modifier.fillMaxWidth().padding(vertical = 10.dp), icon = R.drawable.ti_check)
     }
 }

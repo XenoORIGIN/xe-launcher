@@ -60,4 +60,6 @@ data class XeSettings(
     val lastNotifiedTag: String = "",
     /** Whether Xe already asked for the notification permission (Android 13+). */
     val askedNotifications: Boolean = false,
+    /** Text of each note widget, keyed by its Home item id. */
+    val widgetNotes: Map<String, String> = emptyMap(),
 )

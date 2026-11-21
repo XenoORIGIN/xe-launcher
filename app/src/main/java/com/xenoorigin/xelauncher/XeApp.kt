@@ -148,6 +148,28 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     var arrange by remember { mutableStateOf<com.xenoorigin.xelauncher.categories.CategoryWithApps?>(null) }
     var bulkIcons by remember { mutableStateOf(false) }
     var manageCategory by remember { mutableStateOf<Long?>(null) }
+    var noteFor by remember { mutableStateOf<Long?>(null) }
+    var photoFor by remember { mutableStateOf<Long?>(null) }
+    var photoVersion by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    val launchStats by graph.db.launches().observe().collectAsState(initial = emptyList())
+    val photoDir = remember { java.io.File(ctx.filesDir, "widget_photos") }
+    val photoPicker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()) { uri ->
+        val id = photoFor; photoFor = null
+        if (uri != null && id != null) scope.launch {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching {
+                    val bmp = android.graphics.ImageDecoder.decodeBitmap(android.graphics.ImageDecoder.createSource(ctx.contentResolver, uri)) { d, info, _ ->
+                        d.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
+                        val big = maxOf(info.size.width, info.size.height)
+                        if (big > 1200) { val f = 1200f / big; d.setTargetSize((info.size.width * f).toInt().coerceAtLeast(1), (info.size.height * f).toInt().coerceAtLeast(1)) }
+                    }
+                    photoDir.mkdirs()
+                    java.io.File(photoDir, "$id.jpg").outputStream().use { bmp.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, it) }
+                }
+            }
+            photoVersion++
+        }
+    }
     var widgetPicker by remember { mutableStateOf(false) }
     var resizeId by remember { mutableStateOf<Long?>(null) }
     var pendingWidget by remember { mutableStateOf<Pair<Int, android.appwidget.AppWidgetProviderInfo>?>(null) }
@@ -270,7 +292,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     }
     fun closeAll() {
         menu = null; openFolder = null; drawerMenu = false; editor = null; moveFor = null; editFor = null; arrange = null; bulkIcons = false
-        widgetPicker = false; resizeId = null; manageCategory = null
+        widgetPicker = false; resizeId = null; manageCategory = null; noteFor = null
         searchOpen = false; settingsRoute = null; editMode = false
     }
 
@@ -297,7 +319,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     LaunchedEffect(Unit) {
         graph.homePressed.collect {
             val anyOverlay = menu != null || openFolder != null || drawerMenu || editor != null || moveFor != null ||
-                editFor != null || arrange != null || manageCategory != null || bulkIcons || widgetPicker || resizeId != null || searchOpen || settingsRoute != null || editMode
+                editFor != null || arrange != null || manageCategory != null || noteFor != null || bulkIcons || widgetPicker || resizeId != null || searchOpen || settingsRoute != null || editMode
             if (anyOverlay) closeAll()
             else if (drawerShown) settleDrawer(false)
             else homePager.animateScrollToPage(0)
@@ -323,6 +345,23 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
 
         // ---------- Home ----------
         CompositionLocalProvider(
+            com.xenoorigin.xelauncher.widgets.LocalWidgetActions provides remember(photoVersion, settings.widgetNotes, launchStats, apps, styleOf, settings.iconShape) {
+                com.xenoorigin.xelauncher.widgets.WidgetActions(
+                    openSearch = { searchOpen = true },
+                    launch = { a -> launch(a, Rect.Zero) },
+                    suggested = {
+                        val byKey = apps.associateBy { it.key.encode() }
+                        launchStats.sortedByDescending { it.count }.mapNotNull { byKey[it.appKey] }.filter { it.key.encode() !in settings.hiddenApps }
+                    },
+                    style = styleOf, shape = settings.iconShape,
+                    photo = { id -> java.io.File(photoDir, "$id.jpg").takeIf { it.exists() } },
+                    pickPhoto = { id ->
+                        if (!editMode) { photoFor = id; photoPicker.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+                    },
+                    note = { id -> settings.widgetNotes[id.toString()].orEmpty() },
+                    editNote = { id -> if (!editMode) noteFor = id },
+                )
+            },
             com.xenoorigin.xelauncher.home.LocalWidgetContent provides { cell ->
                 com.xenoorigin.xelauncher.widgets.WidgetContent(cell, host) { c, b -> if (!editMode && !homePager.isScrollInProgress) menu = MenuState(b, null, c, MenuSource.HOME) }
             },
@@ -562,6 +601,11 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
 
         if (widgetPicker) com.xenoorigin.xelauncher.widgets.WidgetPicker(host, ::spanOf, onPick = ::addWidget, onClose = { widgetPicker = false })
         val resizing = resizeId?.let { id -> layout.pages.flatten().filterIsInstance<com.xenoorigin.xelauncher.home.WidgetCell>().firstOrNull { it.id == id } }
+        com.xenoorigin.xelauncher.widgets.NoteSheet(
+            noteFor?.let { settings.widgetNotes[it.toString()].orEmpty() }, visible = noteFor != null,
+            onSave = { text -> noteFor?.let { id -> update { st -> st.copy(widgetNotes = st.widgetNotes + (id.toString() to text)) } }; noteFor = null },
+            onDismiss = { noteFor = null },
+        )
         com.xenoorigin.xelauncher.widgets.WidgetResizeSheet(
             resizing, settings.homeColumns, settings.homeRows,
             onResize = { w, h ->
@@ -582,7 +626,11 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                         add(MenuAction(R.drawable.ti_arrows_diagonal, stringResource(R.string.widget_resize)) { resizeId = wc.id; menu = null })
                         add(MenuAction(R.drawable.ti_arrows_move, stringResource(R.string.widget_move)) { editMode = true; menu = null })
                         add(MenuAction(R.drawable.ti_trash, stringResource(R.string.widget_remove)) {
-                            scope.launch { val hid = graph.home.removeWidget(wc.id); if (hid > 0) host.release(hid) }
+                            scope.launch {
+                                val hid = graph.home.removeWidget(wc.id); if (hid > 0) host.release(hid)
+                                java.io.File(photoDir, "${wc.id}.jpg").delete()
+                                if (settings.widgetNotes.containsKey(wc.id.toString())) update { st -> st.copy(widgetNotes = st.widgetNotes - wc.id.toString()) }
+                            }
                             menu = null
                         })
                     } else m.cell?.let { cell ->

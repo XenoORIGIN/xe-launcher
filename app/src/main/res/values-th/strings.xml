@@ -231,4 +231,15 @@
     <string name="update_banner">มีเวอร์ชัน %1$s แล้ว · แตะเพื่อดาวน์โหลด</string>
     <string name="download_update">ดาวน์โหลดอัปเดต</string>
     <string name="checking">กำลังตรวจสอบ…</string>
+    <string name="widget_analog">นาฬิกาเข็ม</string>
+    <string name="widget_month">ปฏิทินเดือน</string>
+    <string name="widget_search">แถบค้นหา</string>
+    <string name="widget_suggested">แอปที่ใช้บ่อย</string>
+    <string name="widget_photo">รูปภาพ</string>
+    <string name="widget_note">โน้ต</string>
+    <string name="widget_storage">พื้นที่เก็บข้อมูล</string>
+    <string name="suggested_empty">เปิดแอปสักพัก แล้วแอปที่ใช้บ่อยจะขึ้นตรงนี้</string>
+    <string name="widget_photo_pick">แตะเพื่อเลือกรูป</string>
+    <string name="widget_note_empty">แตะเพื่อเขียนโน้ต</string>
+    <string name="edit_note">แก้ไขโน้ต</string>
 </resources>
