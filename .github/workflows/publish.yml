@@ -1,6 +1,6 @@
 name: Publish release
 
-# Publishes the signed APK in release/ as a GitHub release.
+# Publishes the signed APKs in release/ (Xe Launcher, and Xe Studio when present) as a GitHub release.
 # The APK is built and signed outside CI; bump release/version.txt with each new APK.
 on:
   push:
@@ -21,9 +21,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="v$(tr -d '[:space:]' < release/version.txt)"
+          # Xe Studio ships in the same release, when its APK is there.
+          FILES="release/xe-launcher.apk"
+          [ -f release/xe-studio.apk ] && FILES="$FILES release/xe-studio.apk"
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" release/xe-launcher.apk --clobber
+            gh release upload "$TAG" $FILES --clobber
           else
-            gh release create "$TAG" release/xe-launcher.apk \
+            gh release create "$TAG" $FILES \
               --title "Xe Launcher $TAG" --notes-file release/notes.md --latest
           fi

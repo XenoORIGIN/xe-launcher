@@ -3,7 +3,7 @@
     en: {
       eyebrow: "Android 10 or newer · APK file", title: "A Liquid Glass Home screen",
       lead: "Clean and minimal, with dark glass icons, automatic app categories, glass widgets and smooth animation everywhere.",
-      download: "Download APK", featuresTitle: "Made to look good",
+      download: "Download APK", studioDl: "Get Xe Studio", featuresTitle: "Made to look good",
       f1: "The dock, category bar, buttons and menus are blurred glass with bright rims that bend what's behind them.",
       f2t: "Icons your way", f2: "Dark glass, black and white, colour glass, clear glass or the original, in 5 shapes. Rename apps and use your own icon pictures.",
       f3t: "Automatic categories", f3: "Swipe up to see apps by category. Reorder, hide, add or delete categories, or let Xe sort your apps again.",
@@ -56,6 +56,8 @@
     if (io) { if (el.closest(".grid,ol")) el.style.transitionDelay = (i % 3) * 90 + "ms"; io.observe(el); } else el.classList.add("in");
   });
   const NEWS = [
+    { v: "1.0.13", d: "2026-11-21", th: ["แอปใหม่ Xe Studio: สร้างธีมไอคอนเอง แต่งทั้งชุดด้วยทรง สี เส้นขอบ เงา แล้วแตะแก้ทีละไอคอนด้วยรูป ตัวอักษร หรือวาดเอง", "กด \"ใช้กับ Xe\" ไอคอนใน Xe เปลี่ยนทันที และยังอยู่แม้ลบ Studio", "แก้แจ้งเตือนอัปเดตที่ไม่ขึ้น ถ้าตอนนั้นการแจ้งเตือนถูกปิดอยู่"],
+      en: ["New app Xe Studio: make your own icon theme. Style every icon by shape, colour, outline and shadow, then change any one with a picture, a letter or a drawing", "Tap Use in Xe and Xe's icons change at once, and stay even if Studio is removed", "Fixed update alerts that never came if notifications were off at the time"] },
     { v: "1.0.12", d: "2026-11-21", th: ["ตัวเลขข้อความที่ยังไม่ได้อ่านบนไอคอน เช่น LINE ทั้งหน้าโฮม ลิ้นชัก และโฟลเดอร์", "เลือกป้ายได้ 3 แบบ: แดงคลาสสิก กระจกขาว จุดเล็ก", "ปุ่มส่งแจ้งเตือนทดสอบในหน้าเกี่ยวกับ"],
       en: ["Unread counts on icons, e.g. LINE, on Home, in the drawer and on folders", "Three badge styles: classic red, white glass, small dot", "Send a test alert from About"] },
     { v: "1.0.11", d: "2026-11-21", th: ["หน้าลิ้นชักแอปแบบ Bento: แอปที่ใช้บ่อยสุดได้การ์ดกระจกใหญ่ ที่ใช้บ่อยรองลงมาได้การ์ดกว้าง", "เปลี่ยนกลับเป็นตารางได้ในตั้งค่า"],
