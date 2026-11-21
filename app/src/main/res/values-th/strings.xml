@@ -337,4 +337,8 @@
     <string name="badges_note">ตัวเลขมาจากแจ้งเตือนของแต่ละแอป อาจไม่ตรงกับในแอปเป๊ะ เมื่ออ่านหรือปัดแจ้งเตือนทิ้ง ตัวเลขจะหายไปเอง</string>
     <string name="style_studio">จาก Xe Studio</string>
     <string name="style_studio_desc">ธีมไอคอนที่คุณสร้างใน Xe Studio แก้ได้ในแอปนั้นแล้วกด \"ใช้กับ Xe\"</string>
+    <string name="open_studio_app">เปิดแอป Xe Studio</string>
+    <string name="open_studio_app_desc">สร้างธีมไอคอนแล้วส่งมาใช้ใน Xe</string>
+    <string name="get_studio_app_desc">แอปคู่หูสำหรับสร้างธีม ฟรี แตะเพื่อโหลด</string>
+    <string name="studio_icons_moved">ย้ายไป Xe Studio แล้ว แตะเพื่อเปิด</string>
 </resources>

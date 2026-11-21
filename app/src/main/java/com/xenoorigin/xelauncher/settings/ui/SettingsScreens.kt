@@ -1,5 +1,6 @@
 package com.xenoorigin.xelauncher.settings.ui
 
+import androidx.compose.ui.platform.testTag
 import com.xenoorigin.xelauncher.design.glassTile
 import com.xenoorigin.xelauncher.design.LocalGlassStyle
 import androidx.compose.material3.Icon
@@ -191,10 +192,25 @@ fun IconsScreen(s: XeSettings, update: Update, back: () -> Unit, sample: com.xen
 /** Xe Studio: one place for every creative tool. */
 @Composable
 fun StudioScreen(push: (String) -> Unit, back: () -> Unit) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val hasStudio = remember { com.xenoorigin.xelauncher.studio.StudioLink.isInstalled(ctx) }
     SettingsPage(stringResource(R.string.xe_studio), back) {
         SettingsGroup {
+            // The new Xe Studio app: icon themes now, wallpapers and widgets moving there next.
+            Box(Modifier.testTag("open_studio")) {
+                NavRow(
+                    stringResource(R.string.open_studio_app), R.drawable.ti_brush, RowColors.Purple,
+                    subtitle = stringResource(if (hasStudio) R.string.open_studio_app_desc else R.string.get_studio_app_desc),
+                ) { com.xenoorigin.xelauncher.studio.StudioLink.open(ctx) }
+            }
+        }
+        SettingsGroup {
             NavRow(stringResource(R.string.studio_wallpaper), R.drawable.ti_wallpaper, RowColors.Green, subtitle = stringResource(R.string.studio_wallpaper_desc)) { push("wallpaper") }
-            NavRow(stringResource(R.string.studio_icons), R.drawable.ti_palette, RowColors.Pink, subtitle = stringResource(R.string.studio_icons_desc)) { push("icons") }
+            if (hasStudio) {
+                NavRow(stringResource(R.string.studio_icons), R.drawable.ti_palette, RowColors.Pink, subtitle = stringResource(R.string.studio_icons_moved)) { com.xenoorigin.xelauncher.studio.StudioLink.open(ctx) }
+            } else {
+                NavRow(stringResource(R.string.studio_icons), R.drawable.ti_palette, RowColors.Pink, subtitle = stringResource(R.string.studio_icons_desc)) { push("icons") }
+            }
             NavRow(stringResource(R.string.bulk_icons), R.drawable.ti_apps, RowColors.Blue, subtitle = stringResource(R.string.bulk_icons_desc)) { push("bulk") }
             NavRow(stringResource(R.string.studio_widgets), R.drawable.ti_layout_grid_add, RowColors.Orange, subtitle = stringResource(R.string.studio_widgets_desc)) { push("widgets_help") }
         }

@@ -338,4 +338,8 @@
     <string name="badges_note">Numbers come from each app\'s notifications, so they can differ a little from the count inside the app. Reading or clearing the notification clears the badge.</string>
     <string name="style_studio">From Xe Studio</string>
     <string name="style_studio_desc">The icon theme you made in Xe Studio. Change it there and tap Use in Xe.</string>
+    <string name="open_studio_app">Open Xe Studio</string>
+    <string name="open_studio_app_desc">Make icon themes and send them to Xe</string>
+    <string name="get_studio_app_desc">Free companion app for making themes. Tap to download</string>
+    <string name="studio_icons_moved">Moved to Xe Studio. Tap to open</string>
 </resources>
