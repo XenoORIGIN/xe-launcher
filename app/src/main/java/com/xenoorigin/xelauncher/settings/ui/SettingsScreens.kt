@@ -350,6 +350,7 @@ fun AboutScreen(back: () -> Unit, s: XeSettings? = null, update: Update = {}, no
             release?.let { r -> XeRow(stringResource(R.string.download_update), icon = R.drawable.ti_download, iconTint = RowColors.Green, onClick = { open(r.apkUrl) }) }
             if (s != null) XeRow(stringResource(R.string.update_notify)) { GlassSwitch(s.updateNotify, { v -> update { it.copy(updateNotify = v) } }) }
             NavRow(stringResource(R.string.website), R.drawable.ti_world_www, RowColors.Cyan) { open(UpdateChecker.WEBSITE) }
+            NavRow(stringResource(R.string.replay_intro), R.drawable.ti_sparkles, RowColors.Purple) { update { it.copy(onboarding = com.xenoorigin.xelauncher.settings.OnboardingStage.INTRO) } }
             NavRow(stringResource(R.string.licenses), R.drawable.ti_book, RowColors.Grey) { licences = true }
         }
     }

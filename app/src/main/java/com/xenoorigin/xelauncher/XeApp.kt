@@ -37,6 +37,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
@@ -687,19 +689,6 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
             )
         }
 
-        // First run: offer to become the Home app.
-        var offerDefault by remember { mutableStateOf(com.xenoorigin.xelauncher.onboarding.shouldOfferDefaultHome(com.xenoorigin.xelauncher.onboarding.isDefaultHome(ctx), settings.firstRunDone)) }
-        if (offerDefault && !drawerShown && !editMode) {
-            com.xenoorigin.xelauncher.onboarding.SetDefaultHomeCard(
-                onRequest = {
-                    offerDefault = false; update { it.copy(firstRunDone = true) }
-                    runCatching { (ctx as? android.app.Activity)?.startActivityForResult(com.xenoorigin.xelauncher.onboarding.requestDefaultHomeIntent(ctx), 7) }
-                },
-                onLater = { offerDefault = false; update { it.copy(firstRunDone = true) } },
-                modifier = Modifier.align(androidx.compose.ui.Alignment.Center),
-            )
-        }
-
         // The app crashed last time: offer to email a report.
         com.xenoorigin.xelauncher.design.GlassSheet(crashAsk, { crashAsk = false }) {
             val scheme = com.xenoorigin.xelauncher.design.LocalXeScheme.current
@@ -723,6 +712,55 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
             exit = fadeOut(androidx.compose.animation.core.tween(180)) + scaleOut(targetScale = .96f),
         ) {
             key(lastRoute) { SettingsHost(graph, lastRoute, onClose = { settingsRoute = null }) }
+        }
+
+        // ---------- First-run welcome: intro, language, default Home, tutorial, practice ----------
+        val stage = settings.onboarding
+        fun goTo(next: com.xenoorigin.xelauncher.settings.OnboardingStage, extra: (XeSettings) -> XeSettings = { it }) =
+            scope.launch { graph.settings.update { extra(it).copy(onboarding = next) } }
+        val isDefault = { com.xenoorigin.xelauncher.onboarding.isDefaultHome(ctx) }
+        // "Show the welcome tour again" in Settings starts over from the intro.
+        LaunchedEffect(stage) { if (stage == com.xenoorigin.xelauncher.settings.OnboardingStage.INTRO) { settingsRoute = null; menu = null; editMode = false } }
+        if (stage == com.xenoorigin.xelauncher.settings.OnboardingStage.PRACTICE) {
+            val steps = remember(settings.layoutLocked) { com.xenoorigin.xelauncher.onboarding.practiceSteps(!settings.layoutLocked) }
+            var index by remember { mutableStateOf(0) }
+            var burst by remember { mutableStateOf(0) }
+            LaunchedEffect(steps) {
+                androidx.compose.runtime.snapshotFlow { com.xenoorigin.xelauncher.onboarding.HomeState(drawer.value, menu != null, editMode) }
+                    .collect { st -> index = com.xenoorigin.xelauncher.onboarding.advancePractice(steps, index, st) }
+            }
+            val finished = index >= steps.size
+            LaunchedEffect(finished) {
+                if (finished) { burst++; kotlinx.coroutines.delay(2400); goTo(com.xenoorigin.xelauncher.settings.OnboardingStage.DONE) }
+            }
+            val step = steps.getOrNull(index)
+            val atBottom = step == com.xenoorigin.xelauncher.onboarding.PracticeStep.EXIT_EDIT || step == com.xenoorigin.xelauncher.onboarding.PracticeStep.HOLD_ICON
+            com.xenoorigin.xelauncher.onboarding.PracticeOverlay(
+                step, index, steps.size, finished, onSkip = { goTo(com.xenoorigin.xelauncher.settings.OnboardingStage.DONE) },
+                modifier = Modifier.align(if (atBottom) androidx.compose.ui.Alignment.BottomCenter else androidx.compose.ui.Alignment.TopCenter)
+                    .windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets.Companion.safeDrawing).padding(vertical = if (atBottom) 150.dp else 70.dp),
+            )
+            com.xenoorigin.xelauncher.settings.ui.GlassBurst(burst, androidx.compose.ui.geometry.Offset(with(density) { maxWidth.toPx() } / 2f, heightPx * .25f))
+        }
+        if (stage < com.xenoorigin.xelauncher.settings.OnboardingStage.PRACTICE) {
+            com.xenoorigin.xelauncher.onboarding.OnboardingHost(
+                stage,
+                onIntroDone = { goTo(com.xenoorigin.xelauncher.settings.OnboardingStage.LANGUAGE) },
+                onLanguage = { lang ->
+                    scope.launch {
+                        graph.settings.update { it.copy(language = lang, onboarding = com.xenoorigin.xelauncher.onboarding.nextStage(com.xenoorigin.xelauncher.settings.OnboardingStage.LANGUAGE, isDefault())) }
+                        // Switching language rebuilds the screen; the stage is already saved, so the welcome carries on.
+                        androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(androidx.core.os.LocaleListCompat.forLanguageTags(if (lang == com.xenoorigin.xelauncher.settings.AppLanguage.EN) "en" else "th"))
+                    }
+                },
+                onSetDefault = {
+                    goTo(com.xenoorigin.xelauncher.settings.OnboardingStage.SLIDES) { it.copy(firstRunDone = true) }
+                    runCatching { (ctx as? android.app.Activity)?.startActivityForResult(com.xenoorigin.xelauncher.onboarding.requestDefaultHomeIntent(ctx), 7) }
+                },
+                onDefaultLater = { goTo(com.xenoorigin.xelauncher.settings.OnboardingStage.SLIDES) { it.copy(firstRunDone = true) } },
+                onPractice = { goTo(com.xenoorigin.xelauncher.settings.OnboardingStage.PRACTICE) },
+                onSkipTutorial = { goTo(com.xenoorigin.xelauncher.settings.OnboardingStage.DONE) },
+            )
         }
     }
 }

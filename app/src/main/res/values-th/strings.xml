@@ -266,4 +266,23 @@
     <string name="glass_lens_desc">กดค้างที่ว่างบนหน้าโฮม แล้วลากนิ้ว</string>
     <string name="nova_found">เจอโหมดลับ Supernova แล้ว! ธีมลับอยู่ใน ตั้งค่า › ธีม</string>
     <string name="nova_again">Supernova!</string>
+    <string name="onb_next">ถัดไป</string>
+    <string name="onb_try">ลองทำจริง</string>
+    <string name="onb_skip">ข้าม</string>
+    <string name="slide1_title">ปัดขึ้นเพื่อดูแอปทั้งหมด</string>
+    <string name="slide1_body">แอปถูกจัดเป็นหมวดให้อัตโนมัติ ปัดที่แถบด้านล่างเพื่อเปลี่ยนหมวด</string>
+    <string name="slide2_title">กดค้างที่ไอคอน</string>
+    <string name="slide2_body">เปิดทางลัด เปลี่ยนไอคอนหรือชื่อ หรือลากไปวางที่อื่น</string>
+    <string name="slide3_title">ปัดซ้ายขวาเพื่อเปลี่ยนหน้า</string>
+    <string name="slide3_body">เก็บแอปและ Widget เพิ่มได้ในหน้าโฮมหน้าอื่น</string>
+    <string name="slide4_title">กดค้างที่ที่ว่าง</string>
+    <string name="slide4_body">จัดหน้าโฮม เพิ่ม Widget และเปลี่ยนภาพพื้นหลัง</string>
+    <string name="practice_title">ลองทำดู</string>
+    <string name="practice_open_drawer">ปัดขึ้นจากกลางหน้าโฮม เพื่อเปิดลิ้นชักแอป</string>
+    <string name="practice_close_drawer">ปัดลงเพื่อปิดลิ้นชัก</string>
+    <string name="practice_hold_icon">กดค้างที่ไอคอนแอปไหนก็ได้</string>
+    <string name="practice_hold_empty">ปิดเมนู แล้วกดค้างที่ที่ว่างบนหน้าโฮม</string>
+    <string name="practice_exit_edit">แตะ เสร็จ ด้านบน เพื่อออกจากโหมดจัดหน้า</string>
+    <string name="practice_finished">เรียบร้อย! ขอให้สนุกกับ Xe</string>
+    <string name="replay_intro">ดูหน้าแนะนำอีกครั้ง</string>
 </resources>

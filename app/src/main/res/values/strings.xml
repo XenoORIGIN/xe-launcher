@@ -267,4 +267,23 @@
     <string name="glass_lens_desc">Hold an empty spot on Home, then drag</string>
     <string name="nova_found">You found Supernova! A secret theme is now in Settings › Themes</string>
     <string name="nova_again">Supernova!</string>
+    <string name="onb_next">Next</string>
+    <string name="onb_try">Try it</string>
+    <string name="onb_skip">Skip</string>
+    <string name="slide1_title">Swipe up for your apps</string>
+    <string name="slide1_body">Apps are sorted into categories for you. Swipe on the bar at the bottom to switch.</string>
+    <string name="slide2_title">Hold an icon</string>
+    <string name="slide2_body">Open shortcuts, change its icon or name, or drag it somewhere else.</string>
+    <string name="slide3_title">Swipe between pages</string>
+    <string name="slide3_body">Keep more apps and widgets on more Home pages.</string>
+    <string name="slide4_title">Hold an empty spot</string>
+    <string name="slide4_body">Arrange Home, add widgets and change the wallpaper.</string>
+    <string name="practice_title">Your turn</string>
+    <string name="practice_open_drawer">Swipe up from the middle of Home to open your apps</string>
+    <string name="practice_close_drawer">Now swipe down to close it</string>
+    <string name="practice_hold_icon">Hold any app icon</string>
+    <string name="practice_hold_empty">Close the menu, then hold an empty spot on Home</string>
+    <string name="practice_exit_edit">Tap Done at the top to finish arranging</string>
+    <string name="practice_finished">All set! Enjoy Xe</string>
+    <string name="replay_intro">Show the welcome tour again</string>
 </resources>

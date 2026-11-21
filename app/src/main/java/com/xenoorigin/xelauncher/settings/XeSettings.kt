@@ -9,6 +9,8 @@ import kotlinx.serialization.Serializable
 @Serializable enum class ThemeMode { LIGHT, DARK, AUTO }
 @Serializable enum class AppLanguage { SYSTEM, TH, EN }
 @Serializable enum class GestureAction { NONE, OPEN_DRAWER, NOTIFICATIONS, OPEN_SEARCH, OPEN_SETTINGS, EDIT_MODE }
+/** Where the first-run welcome is up to; DONE once finished or skipped. */
+@Serializable enum class OnboardingStage { INTRO, LANGUAGE, DEFAULT_HOME, SLIDES, PRACTICE, DONE }
 @Serializable enum class DrawerSort { ALPHABETICAL, MOST_USED, RECENTLY_INSTALLED, CUSTOM }
 
 @Serializable
@@ -68,4 +70,6 @@ data class XeSettings(
     val glassLens: Boolean = true,
     /** Found the Supernova easter egg: its secret theme is listed. */
     val novaUnlocked: Boolean = false,
+    /** First-run welcome: intro, language, default Home, tutorial. */
+    val onboarding: OnboardingStage = OnboardingStage.INTRO,
 )
