@@ -211,4 +211,17 @@
     <string name="widget_no_space">พื้นที่ว่างไม่พอ</string>
     <string name="widget_failed">เพิ่มวิดเจ็ตนี้ไม่ได้</string>
     <string name="no_widgets">ไม่พบวิดเจ็ต</string>
+    <string name="category_hidden">ซ่อนจากแถบ · แอปอยู่ใน “แอปอื่น”</string>
+    <string name="n_apps">%1$d แอป</string>
+    <string name="show_in_bar">แสดงในแถบ</string>
+    <string name="more_options">ตัวเลือกเพิ่มเติม</string>
+    <string name="reset_auto_all">ให้ระบบจัดแอปทุกตัวใหม่อัตโนมัติ</string>
+    <string name="reset_auto_this">ให้ระบบจัดแอปในหมวดนี้ใหม่</string>
+    <string name="reset_categories">รีเซ็ตหมวดเป็นค่าเริ่มต้น</string>
+    <string name="reset_categories_warning">หมวดที่สร้างเองและการย้ายแอปด้วยมือจะถูกลบ แอปจะถูกจัดหมวดอัตโนมัติใหม่</string>
+    <string name="choose_apps">เลือกแอปในหมวดนี้</string>
+    <string name="delete_category_warning">แอปในหมวดนี้จะย้ายไปอยู่ใน “แอปอื่น”</string>
+    <string name="delete_confirm">แตะอีกครั้งเพื่อลบ</string>
+    <string name="reset">รีเซ็ต</string>
+    <string name="choose_apps_hint">ติ๊กแอปเพื่อย้ายมาหมวดนี้ เอาติ๊กออกเพื่อให้ระบบจัดให้ใหม่</string>
 </resources>

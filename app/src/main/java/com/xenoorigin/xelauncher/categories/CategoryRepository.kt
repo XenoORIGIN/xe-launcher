@@ -37,11 +37,12 @@ class CategoryRepository(
         val grouped = all.asSequence()
             .filter { it.key.encode() !in s.hiddenApps }
             .groupBy { a ->
-                overrideMap[a.key.encode()]?.takeIf { it in ids }
+                val target = overrideMap[a.key.encode()]?.takeIf { it in ids }
                     ?: builtInIds[Categorizer.categorize(a.key.packageName, a.androidCategory)]
                     ?: otherId
+                if (target in s.hiddenCategories && target != otherId) otherId else target
             }
-        cats.mapNotNull { c ->
+        cats.filter { it.id !in s.hiddenCategories || it.id == otherId }.mapNotNull { c ->
             val builtIn = c.builtIn?.let { runCatching { BuiltInCategory.valueOf(it) }.getOrNull() }
             val members = AppSorting.sort(grouped[c.id].orEmpty(), s.drawerSort, statMap, s.appOrder)
             if (builtIn != null && members.isEmpty()) return@mapNotNull null
@@ -111,6 +112,22 @@ class CategoryRepository(
         val byId = db.categories().all().associateBy { it.id }
         ids.forEachIndexed { i, id -> byId[id]?.let { db.categories().update(it.copy(position = i)) } }
     }
+
+    /** Puts apps back where Xe would place them: in one category, or everywhere when [categoryId] is null. */
+    suspend fun resetAutomatic(categoryId: Long? = null) =
+        if (categoryId == null) db.overrides().clear() else db.overrides().deleteForCategory(categoryId)
+
+    /** Back to the built-in categories in their default order; user categories and manual moves are removed. */
+    suspend fun resetToDefaults() = db.withTransaction {
+        db.overrides().clear()
+        db.categories().all().forEach { db.categories().delete(it.id) }
+        BuiltInCategory.entries.forEachIndexed { i, b ->
+            db.categories().insert(CategoryEntity(builtIn = b.name, iconName = b.iconName, position = i))
+        }
+    }
+
+    /** Lets Xe decide this app's category again. */
+    suspend fun clearOverride(key: AppKey) = db.overrides().deleteForApp(key.encode())
 
     suspend fun moveApp(key: AppKey, categoryId: Long) = db.overrides().upsert(AppCategoryOverride(key.encode(), categoryId))
 

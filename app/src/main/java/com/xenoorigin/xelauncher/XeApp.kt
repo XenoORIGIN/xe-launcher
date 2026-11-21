@@ -70,6 +70,7 @@ import com.xenoorigin.xelauncher.home.DropRequest
 import com.xenoorigin.xelauncher.home.EditBar
 import com.xenoorigin.xelauncher.home.EditAppSheet
 import com.xenoorigin.xelauncher.drawer.ArrangeApps
+import com.xenoorigin.xelauncher.drawer.CategoryApps
 import com.xenoorigin.xelauncher.drawer.BulkIcons
 import com.xenoorigin.xelauncher.home.FolderCell
 import com.xenoorigin.xelauncher.home.FolderPopup
@@ -146,6 +147,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     var pictureFor by remember { mutableStateOf<AppEntry?>(null) }
     var arrange by remember { mutableStateOf<com.xenoorigin.xelauncher.categories.CategoryWithApps?>(null) }
     var bulkIcons by remember { mutableStateOf(false) }
+    var manageCategory by remember { mutableStateOf<Long?>(null) }
     var widgetPicker by remember { mutableStateOf(false) }
     var resizeId by remember { mutableStateOf<Long?>(null) }
     var pendingWidget by remember { mutableStateOf<Pair<Int, android.appwidget.AppWidgetProviderInfo>?>(null) }
@@ -251,7 +253,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     }
     fun closeAll() {
         menu = null; openFolder = null; drawerMenu = false; editor = null; moveFor = null; editFor = null; arrange = null; bulkIcons = false
-        widgetPicker = false; resizeId = null
+        widgetPicker = false; resizeId = null; manageCategory = null
         searchOpen = false; settingsRoute = null; editMode = false
     }
 
@@ -278,7 +280,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     LaunchedEffect(Unit) {
         graph.homePressed.collect {
             val anyOverlay = menu != null || openFolder != null || drawerMenu || editor != null || moveFor != null ||
-                editFor != null || arrange != null || bulkIcons || widgetPicker || resizeId != null || searchOpen || settingsRoute != null || editMode
+                editFor != null || arrange != null || manageCategory != null || bulkIcons || widgetPicker || resizeId != null || searchOpen || settingsRoute != null || editMode
             if (anyOverlay) closeAll()
             else if (drawerShown) settleDrawer(false)
             else homePager.animateScrollToPage(0)
@@ -490,8 +492,27 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                     setIcon = { id, i -> scope.launch { graph.categories.setIcon(id, i) } },
                     delete = { id -> scope.launch { graph.categories.delete(id) } },
                     reorder = { ids -> scope.launch { graph.categories.reorder(ids) } },
+                    setHidden = { id, h -> update { st -> st.copy(hiddenCategories = if (h) st.hiddenCategories + id else st.hiddenCategories - id) } },
+                    resetAutomatic = { id -> scope.launch { graph.categories.resetAutomatic(id) } },
+                    resetAll = { scope.launch { graph.categories.resetToDefaults(); update { it.copy(hiddenCategories = emptySet()) } } },
+                    manageApps = { id -> manageCategory = id },
                 ),
                 startAdding = adding, onClose = { editor = null },
+                hidden = settings.hiddenCategories,
+                counts = categories.associate { it.id to it.apps.size },
+                background = { com.xenoorigin.xelauncher.wallpaper.BlurredBackdrop(graph.wallpaper, Color.Black.copy(alpha = .72f)) },
+            )
+        }
+        manageCategory?.let { catId ->
+            val title = editable.firstOrNull { it.first.id == catId }?.second.orEmpty()
+            val members = categories.firstOrNull { it.id == catId }?.apps.orEmpty().map { it.key.encode() }.toSet()
+            val whereOf = categories.flatMap { c -> c.apps.map { it.key.encode() to c.title } }.toMap()
+            CategoryApps(
+                title, apps.filter { it.key.encode() !in settings.hiddenApps }, members, { a -> whereOf[a.key.encode()].orEmpty() },
+                styleOf, settings.iconShape,
+                onToggle = { a, on -> scope.launch { if (on) graph.categories.moveApp(a.key, catId) else graph.categories.clearOverride(a.key) } },
+                onClose = { manageCategory = null },
+                background = { com.xenoorigin.xelauncher.wallpaper.BlurredBackdrop(graph.wallpaper, Color.Black.copy(alpha = .72f)) },
             )
         }
         MoveToCategorySheet(moveFor, editable, onPick = { id -> moveFor?.let { a -> scope.launch { graph.categories.moveApp(a.key, id) } }; moveFor = null }, onDismiss = { moveFor = null })

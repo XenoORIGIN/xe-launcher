@@ -43,7 +43,7 @@ fun ArrangeApps(
 ) {
     val scheme = LocalXeScheme.current
     BackHandler(onBack = onClose)
-    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .55f)).clickable(enabled = false) {}) {
+    Box(Modifier.fillMaxSize().background(Color(0xF2050507)).clickable(enabled = false) {}) {
         Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 18.dp)) {
             Row(Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 GlassIconButton(R.drawable.ti_arrow_left, stringResource(R.string.done), onClose)

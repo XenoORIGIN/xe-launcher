@@ -28,6 +28,7 @@ interface OverrideDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertAll(o: List<AppCategoryOverride>)
     @Query("DELETE FROM app_category_overrides WHERE categoryId = :categoryId") suspend fun deleteForCategory(categoryId: Long)
     @Query("DELETE FROM app_category_overrides") suspend fun clear()
+    @Query("DELETE FROM app_category_overrides WHERE appKey = :appKey") suspend fun deleteForApp(appKey: String)
 }
 
 @Dao

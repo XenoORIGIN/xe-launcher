@@ -52,4 +52,6 @@ data class XeSettings(
     val categoriesVersion: Int = 1,
     /** Hand-arranged app order (AppKey.encode() -> rank) used by DrawerSort.CUSTOM. */
     val appOrder: Map<String, Int> = emptyMap(),
+    /** Categories kept out of the bar; their apps show in "Other". */
+    val hiddenCategories: Set<Long> = emptySet(),
 )

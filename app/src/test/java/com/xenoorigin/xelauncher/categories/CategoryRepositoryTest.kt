@@ -141,4 +141,33 @@ class CategoryRepositoryTest {
         assertThat(listOf("a", "b", "c").moved(0, 2)).containsExactly("b", "c", "a").inOrder()
         assertThat(listOf("a", "b", "c").moved(2, -9)).containsExactly("c", "a", "b").inOrder()
     }
+
+    @Test fun hiddenCategory_leavesBar_andItsAppsGoToOther() = runBlocking<Unit> {
+        repo.ensureDefaults()
+        apps.value = listOf(app("com.discord", "Discord"), app("com.example.unknown", "Zed"))
+        val comm = db.categories().all().first { it.builtIn == "COMMUNICATION" }
+        settings.value = XeSettings(hiddenCategories = setOf(comm.id))
+        val cats = repo.categories.first()
+        assertThat(cats.map { it.builtIn }).doesNotContain(BuiltInCategory.COMMUNICATION)
+        assertThat(cats.first { it.builtIn == BuiltInCategory.OTHER }.apps.map { it.label }).containsExactly("Discord", "Zed")
+    }
+
+    @Test fun resetAutomatic_undoesManualMoves() = runBlocking<Unit> {
+        repo.ensureDefaults()
+        apps.value = listOf(app("com.discord", "Discord"))
+        val games = db.categories().all().first { it.builtIn == "GAMES" }
+        repo.moveApp(app("com.discord", "").key, games.id)
+        assertThat(repo.categories.first().first { it.builtIn == BuiltInCategory.GAMES }.apps).hasSize(1)
+        repo.resetAutomatic()
+        assertThat(repo.categories.first().first().builtIn).isEqualTo(BuiltInCategory.COMMUNICATION)
+    }
+
+    @Test fun resetToDefaults_restoresBuiltInsAndRemovesUserCategories() = runBlocking<Unit> {
+        repo.ensureDefaults()
+        repo.add("School", "school")
+        db.categories().all().first { it.builtIn == "GAMES" }.let { repo.delete(it.id) }
+        repo.resetToDefaults()
+        val all = db.categories().all()
+        assertThat(all.map { it.builtIn }).containsExactlyElementsIn(BuiltInCategory.entries.map { it.name }).inOrder()
+    }
 }
