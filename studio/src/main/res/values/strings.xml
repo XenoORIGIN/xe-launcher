@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Xe Studio</string>
+    <string name="app_name" translatable="false">Xe Studio</string>
     <string name="tab_create">Create</string>
     <string name="tab_store">Store</string>
     <string name="tab_mine">My stuff</string>
