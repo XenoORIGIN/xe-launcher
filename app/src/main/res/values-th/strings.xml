@@ -320,4 +320,19 @@
     <string name="drawer_layout">รูปแบบ</string>
     <string name="layout_bento">Bento: แอปที่ใช้บ่อยได้ช่องใหญ่</string>
     <string name="layout_grid">ตาราง: ทุกแอปขนาดเท่ากัน</string>
+    <string name="test_alert">ส่งแจ้งเตือนทดสอบ</string>
+    <string name="test_alert_blocked">การแจ้งเตือนของ Xe ถูกปิดอยู่ เปิดเพื่อรับแจ้งเตือนอัปเดต</string>
+    <string name="badges_title">ตัวเลขแจ้งเตือน</string>
+    <string name="badges_row_on">แสดงจำนวนข้อความที่ยังไม่ได้อ่านบนไอคอน</string>
+    <string name="badges_row_needs_access">ต้องอนุญาตการเข้าถึงการแจ้งเตือนก่อน</string>
+    <string name="badges_access_on">อนุญาตการเข้าถึงการแจ้งเตือนแล้ว</string>
+    <string name="badges_access_on_desc">Xe นับแจ้งเตือนของแต่ละแอปเท่านั้น ไม่เก็บหรือส่งข้อมูลไปไหน</string>
+    <string name="badges_access_off">อนุญาตการเข้าถึงการแจ้งเตือน</string>
+    <string name="badges_access_off_desc">ต้องใช้เพื่อนับข้อความที่ยังไม่ได้อ่าน แตะแล้วเปิดสวิตช์ Xe Launcher</string>
+    <string name="badges_style">รูปแบบป้าย</string>
+    <string name="badge_red">แดงคลาสสิก</string>
+    <string name="badge_white">กระจกขาว</string>
+    <string name="badge_dot">จุดเล็ก</string>
+    <string name="badge_off">ปิด</string>
+    <string name="badges_note">ตัวเลขมาจากแจ้งเตือนของแต่ละแอป อาจไม่ตรงกับในแอปเป๊ะ เมื่ออ่านหรือปัดแจ้งเตือนทิ้ง ตัวเลขจะหายไปเอง</string>
 </resources>

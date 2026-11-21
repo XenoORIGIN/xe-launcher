@@ -75,6 +75,7 @@ fun SettingsHost(graph: AppGraph, start: String, onClose: () -> Unit) {
                 "widgets_help" -> WidgetsHelpScreen(back)
                 "animation" -> AnimationScreen(settings, update, back)
                 "play" -> PlayScreen(settings, update, ::push, back)
+                "badges" -> BadgesScreen(settings, update, back)
                 "gestures" -> GesturesScreen(settings, update, back)
                 "backup" -> BackupScreen(graph, back)
                 "pages/home" -> HomePageScreen(settings, update, ::push, back)

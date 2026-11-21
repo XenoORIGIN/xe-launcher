@@ -123,7 +123,12 @@ fun XeApp(graph: AppGraph) {
             com.xenoorigin.xelauncher.icons.LocalGlyphScale provides settings.glyphScale,
         ) {
             val customIcons by graph.customIcons.files.collectAsState()
-            CompositionLocalProvider(com.xenoorigin.xelauncher.icons.LocalCustomIcons provides customIcons) { LauncherRoot(graph, settings) }
+            val unread by com.xenoorigin.xelauncher.badges.Badges.counts.collectAsState()
+            CompositionLocalProvider(
+                com.xenoorigin.xelauncher.icons.LocalCustomIcons provides customIcons,
+                com.xenoorigin.xelauncher.badges.LocalBadgeCounts provides unread,
+                com.xenoorigin.xelauncher.badges.LocalBadgeStyle provides settings.badgeStyle,
+            ) { LauncherRoot(graph, settings) }
         }
     }
 }

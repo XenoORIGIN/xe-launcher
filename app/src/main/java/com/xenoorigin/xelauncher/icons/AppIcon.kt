@@ -65,7 +65,13 @@ fun AppIcon(
     tileModifier: Modifier = Modifier,
 ) {
     Column(modifier.width(size + 22.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        IconTile(app, size, style, shape, tileModifier)
+        Box {
+            IconTile(app, size, style, shape, tileModifier)
+            com.xenoorigin.xelauncher.badges.UnreadBadge(
+                com.xenoorigin.xelauncher.badges.badgeCountOf(app), size,
+                Modifier.align(Alignment.TopEnd).offset(x = 9.dp, y = (-7).dp),
+            )
+        }
         if (label) {
             Text(
                 app.label, style = XeType.Label.copy(shadow = Shadow(Color.Black.copy(alpha = .45f), blurRadius = 6f)),

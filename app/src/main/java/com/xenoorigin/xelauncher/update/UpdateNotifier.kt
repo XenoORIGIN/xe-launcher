@@ -70,6 +70,16 @@ class UpdateNotifier(
         private const val CHANNEL = "updates_alert"
         private const val OLD_CHANNEL = "updates"
 
+        /**
+         * Shows the update alert right now for the newest version on GitHub, so you can see what it looks like.
+         * False when Android is blocking Xe's notifications.
+         */
+        fun postTest(context: Context): Boolean {
+            if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) return false
+            systemPoster(context)(ReleaseInfo("v" + BuildConfig.VERSION_NAME, UpdateChecker.STABLE_APK, ""))
+            return true
+        }
+
         /** Posts "Xe Launcher x.y.z is ready"; tapping it downloads the APK in the browser. */
         fun systemPoster(context: Context): (ReleaseInfo) -> Unit = { r ->
             val nm = context.getSystemService(NotificationManager::class.java)

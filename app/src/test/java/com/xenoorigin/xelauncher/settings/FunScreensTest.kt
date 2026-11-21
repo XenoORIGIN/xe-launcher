@@ -39,4 +39,24 @@ class FunScreensTest {
         val started = shadowOf(app).nextStartedActivity
         assertThat(started.getStringArrayExtra(Intent.EXTRA_EMAIL)).asList().contains("xenodevg@gmail.com")
     }
+
+    @Test fun badgesPage_asksForAccess_andSavesTheChosenStyle() {
+        var s = XeSettings()
+        assertThat(s.badgeStyle).isEqualTo(BadgeStyle.RED)
+        rule.setContent { XeTheme { com.xenoorigin.xelauncher.settings.ui.BadgesScreen(s, { f -> s = f(s) }, {}) } }
+        rule.onNodeWithText("Allow notification access").performClick()
+        val app = ApplicationProvider.getApplicationContext<android.app.Application>()
+        val started = shadowOf(app).nextStartedActivity
+        assertThat(started.action).isAnyOf("android.settings.NOTIFICATION_LISTENER_DETAIL_SETTINGS", android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+        rule.onNodeWithText("White glass").performScrollTo().performClick()
+        assertThat(s.badgeStyle).isEqualTo(BadgeStyle.WHITE)
+        rule.onNodeWithText("Off").performScrollTo().performClick()
+        assertThat(s.badgeStyle).isEqualTo(BadgeStyle.OFF)
+    }
+
+    @Test fun aboutPage_hasATestAlertButton() {
+        val s = XeSettings()
+        rule.setContent { XeTheme { AboutScreen({}, s, { }) } }
+        rule.onNodeWithText("Send a test alert").performScrollTo().assertExists()
+    }
 }

@@ -1,5 +1,11 @@
 package com.xenoorigin.xelauncher.settings.ui
 
+import com.xenoorigin.xelauncher.design.glassTile
+import com.xenoorigin.xelauncher.design.LocalGlassStyle
+import androidx.compose.material3.Icon
+import androidx.compose.ui.res.painterResource
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.foundation.layout.offset
 import android.content.Intent
 import android.net.Uri
 import androidx.appcompat.app.AppCompatDelegate
@@ -75,6 +81,10 @@ fun SettingsRoot(s: XeSettings, push: (String) -> Unit, onClose: () -> Unit, new
             NavRow(stringResource(R.string.icons), R.drawable.ti_apps, RowColors.Blue) { push("icons") }
             NavRow(stringResource(R.string.animation), R.drawable.ti_sparkles, RowColors.Purple) { push("animation") }
             NavRow(stringResource(R.string.play_title), R.drawable.ti_device_gamepad_2, RowColors.Orange, subtitle = stringResource(R.string.play_row_desc)) { push("play") }
+            NavRow(
+                stringResource(R.string.badges_title), R.drawable.ti_bell, RowColors.Red,
+                subtitle = stringResource(if (com.xenoorigin.xelauncher.badges.rememberBadgeAccess()) R.string.badges_row_on else R.string.badges_row_needs_access),
+            ) { push("badges") }
             NavRow(stringResource(R.string.gestures), R.drawable.ti_hand_finger, RowColors.Red) { push("gestures") }
             NavRow(stringResource(R.string.xe_studio), R.drawable.ti_brush, RowColors.Pink, subtitle = stringResource(R.string.xe_studio_desc)) { push("studio") }
             NavRow(stringResource(R.string.backup), R.drawable.ti_device_floppy, RowColors.Cyan) { push("backup") }
@@ -208,6 +218,45 @@ fun AnimationScreen(s: XeSettings, update: Update, back: () -> Unit) {
             XeRow(stringResource(R.string.press_squish)) { GlassSwitch(s.pressSquish, { v -> update { it.copy(pressSquish = v) } }) }
             XeRow(stringResource(R.string.parallax)) { GlassSwitch(s.wallpaperParallax, { v -> update { it.copy(wallpaperParallax = v) } }) }
         }
+    }
+}
+
+/** Unread counts on icons: Xe's access to notifications, and how the badge looks. */
+@Composable
+fun BadgesScreen(s: XeSettings, update: Update, back: () -> Unit) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val access = com.xenoorigin.xelauncher.badges.rememberBadgeAccess()
+    SettingsPage(stringResource(R.string.badges_title), back) {
+        SettingsGroup {
+            if (access) XeRow(stringResource(R.string.badges_access_on), icon = R.drawable.ti_check, iconTint = RowColors.Green, subtitle = stringResource(R.string.badges_access_on_desc))
+            else XeRow(
+                stringResource(R.string.badges_access_off), icon = R.drawable.ti_bell, iconTint = RowColors.Red,
+                subtitle = stringResource(R.string.badges_access_off_desc),
+                onClick = { com.xenoorigin.xelauncher.badges.BadgeListener.requestAccess(ctx) },
+            )
+        }
+        SettingsGroup(stringResource(R.string.badges_style)) {
+            Box(Modifier.fillMaxWidth().padding(vertical = 14.dp), contentAlignment = Alignment.Center) {
+                Box {
+                    Box(
+                        Modifier.size(58.dp).glassTile(RoundedCornerShape(17.dp), LocalGlassStyle.current, Color.White.copy(alpha = .12f)),
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(painterResource(R.drawable.ti_message_circle), null, Modifier.size(26.dp), tint = LocalXeScheme.current.text) }
+                    CompositionLocalProvider(com.xenoorigin.xelauncher.badges.LocalBadgeStyle provides s.badgeStyle) {
+                        androidx.compose.runtime.key(s.badgeStyle) {
+                            com.xenoorigin.xelauncher.badges.UnreadBadge(3, 58.dp, Modifier.align(Alignment.TopEnd).offset(x = 9.dp, y = (-7).dp))
+                        }
+                    }
+                }
+            }
+            listOf(
+                com.xenoorigin.xelauncher.settings.BadgeStyle.RED to R.string.badge_red,
+                com.xenoorigin.xelauncher.settings.BadgeStyle.WHITE to R.string.badge_white,
+                com.xenoorigin.xelauncher.settings.BadgeStyle.DOT to R.string.badge_dot,
+                com.xenoorigin.xelauncher.settings.BadgeStyle.OFF to R.string.badge_off,
+            ).forEach { (st, l) -> ChoiceRow(stringResource(l), s.badgeStyle == st) { update { it.copy(badgeStyle = st) } } }
+        }
+        Text(stringResource(R.string.badges_note), style = XeType.Caption, color = LocalXeScheme.current.textSecondary, modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp))
     }
 }
 
@@ -398,6 +447,20 @@ fun AboutScreen(back: () -> Unit, s: XeSettings? = null, update: Update = {}, no
             }
             release?.let { r -> XeRow(stringResource(R.string.download_update), icon = R.drawable.ti_download, iconTint = RowColors.Green, onClick = { open(r.apkUrl) }) }
             if (s != null) XeRow(stringResource(R.string.update_notify)) { GlassSwitch(s.updateNotify, { v -> update { it.copy(updateNotify = v) } }) }
+            val testCtx = androidx.compose.ui.platform.LocalContext.current
+            val blocked = stringResource(R.string.test_alert_blocked)
+            XeRow(stringResource(R.string.test_alert), icon = R.drawable.ti_bell_ringing, iconTint = RowColors.Orange, onClick = {
+                if (!com.xenoorigin.xelauncher.update.UpdateNotifier.postTest(testCtx)) {
+                    android.widget.Toast.makeText(testCtx, blocked, android.widget.Toast.LENGTH_LONG).show()
+                    runCatching {
+                        testCtx.startActivity(
+                            android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, testCtx.packageName)
+                                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+                        )
+                    }
+                }
+            })
             NavRow(stringResource(R.string.website), R.drawable.ti_world_www, RowColors.Cyan) { open(UpdateChecker.WEBSITE) }
             NavRow(stringResource(R.string.replay_intro), R.drawable.ti_sparkles, RowColors.Purple) { update { it.copy(onboarding = com.xenoorigin.xelauncher.settings.OnboardingStage.INTRO) } }
             NavRow(stringResource(R.string.licenses), R.drawable.ti_book, RowColors.Grey) { licences = true }

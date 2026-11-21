@@ -1,9 +1,11 @@
-## Xe Launcher 1.0.11
+## Xe Launcher 1.0.12
 
-- หน้าลิ้นชักแอปแบบ Bento: แอปที่ใช้บ่อยสุดในแต่ละหมวดได้การ์ดกระจกใหญ่ แอปที่ใช้บ่อยรองลงมาได้การ์ดกว้าง ที่เหลือเป็นไอคอนเรียงเต็มช่องพอดีไม่มีที่ว่าง
-- ลูกเล่นเดิมใช้กับการ์ดใหญ่ได้ครบ ทั้งแรงโน้มถ่วง ฝุ่น แสงตามการเอียง และบ่อน้ำ
-- อยากกลับไปแบบตารางเดิม: ตั้งค่า › หน้าแอป › รูปแบบ › ตาราง
+- ตัวเลขข้อความที่ยังไม่ได้อ่านบนไอคอน เช่น LINE มีข้อความใหม่ 5 ข้อความจะขึ้นเลข 5 แสดงทั้งหน้าโฮม แถบด้านล่าง ลิ้นชักแอป การ์ด Bento และโฟลเดอร์ (รวมเลขของทุกแอปข้างใน)
+- เลือกรูปแบบป้ายได้: แดงคลาสสิก (ค่าเริ่มต้น) กระจกขาว จุดเล็ก หรือปิด ที่ ตั้งค่า › ตัวเลขแจ้งเตือน
+- ต้องอนุญาต "การเข้าถึงการแจ้งเตือน" ครั้งแรกครั้งเดียว: ตั้งค่า › ตัวเลขแจ้งเตือน › อนุญาต แล้วเปิดสวิตช์ Xe Launcher
+- ปุ่ม "ส่งแจ้งเตือนทดสอบ" ในหน้าเกี่ยวกับ เพื่อลองดูแจ้งเตือนอัปเดต
 
-- Bento app pages: each category's most used app gets a big glass card, the next ones wide cards, and the rest fill the grid with no gaps
-- All the toys work on the big cards too: gravity, dust, tilt sheen and the pond
-- Prefer the old look? Settings › App page › Layout › Grid
+- Unread counts on icons, e.g. LINE with 5 new messages shows 5: on Home, the dock, the drawer, Bento cards and folders (folders add up their apps)
+- Pick the badge style: classic red (default), white glass, small dot or off, in Settings › Unread badges
+- Allow "notification access" once: Settings › Unread badges › Allow, then switch on Xe Launcher
+- "Send a test alert" button in About to preview the update alert

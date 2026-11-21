@@ -227,7 +227,7 @@ private fun GridPage(
     val sparse = grid.columns < 4
     LazyVerticalGrid(
         GridCells.Fixed(grid.columns), Modifier.fillMaxSize().testTag("drawerGrid"),
-        contentPadding = PaddingValues(start = grid.sidePaddingDp.dp, end = grid.sidePaddingDp.dp, top = if (sparse) 14.dp else 0.dp, bottom = 20.dp),
+        contentPadding = PaddingValues(start = grid.sidePaddingDp.dp, end = grid.sidePaddingDp.dp, top = if (sparse) 14.dp else 10.dp, bottom = 20.dp),
         verticalArrangement = Arrangement.spacedBy(if (sparse) 26.dp else 20.dp),
     ) {
         itemsIndexed(apps, key = { _, a -> a.key.encode() }) { i, app ->
@@ -261,7 +261,7 @@ private fun BentoPage(
         val icon = look.iconSize.dp
         LazyColumn(
             Modifier.fillMaxSize().testTag("drawerGrid"),
-            contentPadding = PaddingValues(start = pad, end = pad, top = 4.dp, bottom = 20.dp),
+            contentPadding = PaddingValues(start = pad, end = pad, top = 10.dp, bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(vgap),
         ) {
             lazyItemsIndexed(bands, key = { _, b -> apps[b.first().app].key.encode() }) { bi, band ->

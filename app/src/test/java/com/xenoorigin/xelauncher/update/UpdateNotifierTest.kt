@@ -20,6 +20,18 @@ class UpdateNotifierTest {
     private val ctx = ApplicationProvider.getApplicationContext<android.content.Context>()
     private val rel = ReleaseInfo("v1.0.9", "https://x/xe-launcher.apk", "")
 
+    @Test fun testAlert_postsTheSameUpdateNotification_andSaysWhenAlertsAreBlocked() {
+        val nm = ctx.getSystemService(android.app.NotificationManager::class.java)
+        val shadow = org.robolectric.Shadows.shadowOf(nm)
+        shadow.setNotificationsEnabled(true)
+        assertThat(UpdateNotifier.postTest(ctx)).isTrue()
+        val n = shadow.allNotifications.single()
+        assertThat(n.extras.getString(android.app.Notification.EXTRA_TITLE)).contains("Xe Launcher")
+        assertThat(n.channelId).isEqualTo("updates_alert")
+        shadow.setNotificationsEnabled(false)
+        assertThat(UpdateNotifier.postTest(ctx)).isFalse()
+    }
+
     @Test fun newRelease_notifiesOnce_perVersion() = runBlocking<Unit> {
         val sc = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         val settings = SettingsStore(ctx, sc, "upd1-${System.nanoTime()}")

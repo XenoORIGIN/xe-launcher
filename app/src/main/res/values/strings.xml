@@ -321,4 +321,19 @@
     <string name="drawer_layout">Layout</string>
     <string name="layout_bento">Bento: big tiles for the apps you use most</string>
     <string name="layout_grid">Grid: every app the same size</string>
+    <string name="test_alert">Send a test alert</string>
+    <string name="test_alert_blocked">Notifications for Xe are off. Turn them on to get update alerts.</string>
+    <string name="badges_title">Unread badges</string>
+    <string name="badges_row_on">Numbers on icons for unread messages</string>
+    <string name="badges_row_needs_access">Needs notification access</string>
+    <string name="badges_access_on">Notification access is on</string>
+    <string name="badges_access_on_desc">Xe counts each app\'s notifications. Nothing is saved or sent anywhere.</string>
+    <string name="badges_access_off">Allow notification access</string>
+    <string name="badges_access_off_desc">Needed to count unread messages. Tap, then turn on Xe Launcher.</string>
+    <string name="badges_style">Badge style</string>
+    <string name="badge_red">Classic red</string>
+    <string name="badge_white">White glass</string>
+    <string name="badge_dot">Small dot</string>
+    <string name="badge_off">Off</string>
+    <string name="badges_note">Numbers come from each app\'s notifications, so they can differ a little from the count inside the app. Reading or clearing the notification clears the badge.</string>
 </resources>

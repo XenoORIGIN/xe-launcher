@@ -10,6 +10,8 @@ import kotlinx.serialization.Serializable
 @Serializable enum class AppLanguage { SYSTEM, TH, EN }
 @Serializable enum class DrawerLayout { BENTO, GRID }
 
+@Serializable enum class BadgeStyle { RED, WHITE, DOT, OFF }
+
 @Serializable enum class GestureAction { NONE, OPEN_DRAWER, NOTIFICATIONS, OPEN_SEARCH, OPEN_SETTINGS, EDIT_MODE, DRAW_LETTER }
 /** Where the first-run welcome is up to; DONE once finished or skipped. */
 @Serializable enum class OnboardingStage { INTRO, LANGUAGE, DEFAULT_HOME, SLIDES, PRACTICE, DONE }
@@ -74,6 +76,8 @@ data class XeSettings(
     val novaUnlocked: Boolean = false,
     /** First-run welcome: intro, language, default Home, tutorial. */
     val onboarding: OnboardingStage = OnboardingStage.INTRO,
+    /** How unread notification counts look on icons (needs notification access). */
+    val badgeStyle: BadgeStyle = BadgeStyle.RED,
     /** How each drawer page lays out its apps: Bento (big tile for the most used app) or a plain grid. */
     val drawerLayout: DrawerLayout = DrawerLayout.BENTO,
     /** Drawer icons slosh when the phone tilts and scatter when it's shaken. */

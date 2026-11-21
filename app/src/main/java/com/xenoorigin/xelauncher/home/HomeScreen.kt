@@ -342,15 +342,22 @@ fun FolderIcon(cell: FolderCell, look: HomeLook, label: Boolean) {
     val size = look.iconSize.dp
     Column(Modifier.width(size + 22.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         val fs = look.shape.toShape()
-        Box(Modifier.size(size).glassTile(fs, LocalGlassStyle.current, Color.White.copy(alpha = .16f))) {
-            val mini = size * .36f
-            Column(Modifier.align(Alignment.Center), verticalArrangement = Arrangement.spacedBy(size * .06f)) {
-                cell.apps.take(4).chunked(2).forEach { row ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(size * .06f)) {
-                        row.forEach { IconTile(it, mini, look.style(it), look.shape) }
+        Box {
+            Box(Modifier.size(size).glassTile(fs, LocalGlassStyle.current, Color.White.copy(alpha = .16f))) {
+                val mini = size * .36f
+                Column(Modifier.align(Alignment.Center), verticalArrangement = Arrangement.spacedBy(size * .06f)) {
+                    cell.apps.take(4).chunked(2).forEach { row ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(size * .06f)) {
+                            row.forEach { IconTile(it, mini, look.style(it), look.shape) }
+                        }
                     }
                 }
             }
+            // A folder shows everything unread inside it.
+            com.xenoorigin.xelauncher.badges.UnreadBadge(
+                com.xenoorigin.xelauncher.badges.badgeCountOf(cell.apps), size,
+                Modifier.align(Alignment.TopEnd).offset(x = 9.dp, y = (-7).dp),
+            )
         }
         if (label) Text(cell.name, style = XeType.Label, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
