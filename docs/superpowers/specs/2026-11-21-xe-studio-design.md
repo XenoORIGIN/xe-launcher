@@ -139,8 +139,11 @@ Each part can also be published or applied alone.
 - Icon precedence in Xe (builder's call): a Studio theme appears as one more choice,
   "From Xe Studio", in Xe's existing icon-style list (next to GLASS_DARK, MONO…). Picking another
   style switches back. A per-app custom picture set in Xe still wins over the theme for that app.
-- Code sharing: Studio lives in its own repo but the recipe schema and renderers are one
-  `studio-core` module used by both apps, so a theme looks identical in both.
+- Code sharing (builder's call, revised while planning): Studio lives in the xe-launcher repo as a
+  second app module `:studio`, next to `:app` (Xe). The recipe schema and renderers are one
+  `:studio-core` library module used by both apps, so a theme looks identical in both. Both APKs
+  are attached to the same GitHub release (`xe-launcher.apk`, `xe-studio.apk`), which is how
+  "both apps ship together" is enforced.
 - Wallpaper: Xe draws its own wallpaper (`windowShowWallpaper=false`; `WallpaperController`
   renders it so the glass can blur it), so a system or live wallpaper set by Studio would not
   show inside Xe. Decision (builder's call, keeps Xe's glass): Xe renders Studio wallpapers itself
