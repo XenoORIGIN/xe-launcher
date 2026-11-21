@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Xe Studio</string>
+    <string name="tab_create">Create</string>
+    <string name="tab_store">Store</string>
+    <string name="tab_mine">My stuff</string>
+    <string name="tab_profile">Profile</string>
+    <string name="create_title">What will you make?</string>
+    <string name="new_icon_theme">New icon theme</string>
+    <string name="new_icon_theme_desc">Style every icon at once, then perfect any one by hand</string>
+    <string name="new_wallpaper">Wallpaper</string>
+    <string name="new_widget">Widget</string>
+    <string name="mine_empty">Nothing here yet. Make your first one.</string>
+    <string name="coming_soon">Coming soon</string>
+    <string name="store_soon">Browse and share themes with everyone.</string>
+    <string name="profile_soon">Sign in to save your work to the cloud.</string>
+</resources>

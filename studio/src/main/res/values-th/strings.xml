@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tab_create">สร้าง</string>
+    <string name="tab_store">ร้านธีม</string>
+    <string name="tab_mine">งานของฉัน</string>
+    <string name="tab_profile">โปรไฟล์</string>
+    <string name="create_title">วันนี้จะสร้างอะไรดี</string>
+    <string name="new_icon_theme">ธีมไอคอนใหม่</string>
+    <string name="new_icon_theme_desc">แต่งไอคอนทั้งชุดในครั้งเดียว แล้วแตะแก้ทีละตัวได้</string>
+    <string name="new_wallpaper">วอลเปเปอร์</string>
+    <string name="new_widget">วิดเจ็ต</string>
+    <string name="mine_empty">ยังไม่มีงาน เริ่มสร้างอันแรกได้เลย</string>
+    <string name="coming_soon">เร็ว ๆ นี้</string>
+    <string name="store_soon">ดูและแชร์ธีมกับทุกคน</string>
+    <string name="profile_soon">ล็อกอินเพื่อเก็บงานไว้บนคลาวด์</string>
+</resources>
