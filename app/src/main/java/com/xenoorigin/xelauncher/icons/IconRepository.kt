@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import com.xenoorigin.xelauncher.apps.AppKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
@@ -34,7 +35,12 @@ class IconRepository(
     private val memory = object : LruCache<String, RenderedIcon>(40 * 1024 * 1024) {
         override fun sizeOf(key: String, value: RenderedIcon) = value.bitmap.width * value.bitmap.height * 4
     }
-    private val renderGate = Semaphore(4)
+    private val renderGate = Semaphore((Runtime.getRuntime().availableProcessors() - 1).coerceIn(2, 6))
+    /** Renders in progress, so a tile and the pre-warmer asking for the same icon share one render. */
+    private val inFlight = java.util.concurrent.ConcurrentHashMap<String, kotlinx.coroutines.Deferred<RenderedIcon?>>()
+    /** Disk writes happen off the render path; the icon is on screen before its PNG is saved. */
+    private val diskScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO.limitedParallelism(2))
+    private val pendingWrites = java.util.concurrent.ConcurrentLinkedQueue<kotlinx.coroutines.Job>()
 
     private enum class Variant { GLYPH_GRAY, GLYPH_COLOR, FULL, FULL_GRAY }
 
@@ -59,10 +65,19 @@ class IconRepository(
     fun peek(key: AppKey, style: IconStyle, sizePx: Int, contrast: Float): RenderedIcon? =
         memory.get(cacheKey(key, variantOf(style), sizePx, contrast))
 
-    suspend fun icon(key: AppKey, style: IconStyle, sizePx: Int, contrast: Float): RenderedIcon? = withContext(Dispatchers.Default) {
+    suspend fun icon(key: AppKey, style: IconStyle, sizePx: Int, contrast: Float): RenderedIcon? {
         val v = variantOf(style)
         val ck = cacheKey(key, v, sizePx, contrast)
-        memory.get(ck)?.let { return@withContext it }
+        memory.get(ck)?.let { return it }
+        val job = inFlight.computeIfAbsent(ck) {
+            diskScope.async(Dispatchers.Default, start = kotlinx.coroutines.CoroutineStart.LAZY) {
+                try { render(key, v, ck, sizePx, contrast) } finally { inFlight.remove(ck) }
+            }
+        }
+        return job.await()
+    }
+
+    private suspend fun render(key: AppKey, v: Variant, ck: String, sizePx: Int, contrast: Float): RenderedIcon? =
         renderGate.withPermit {
             memory.get(ck)?.let { return@withPermit it }
             val f = file(key, ck)
@@ -96,19 +111,28 @@ class IconRepository(
                     }
                 }
             }
-            dir.mkdirs()
-            runCatching {
-                f.outputStream().use { rendered.compress(Bitmap.CompressFormat.PNG, 100, it) }
-                meta.writeText("$color;${if (fills) 1 else 0}")
+            val out = RenderedIcon(rendered.asImageBitmap(), color, fills).also { memory.put(ck, it) }
+            pendingWrites += diskScope.launch {
+                dir.mkdirs()
+                runCatching {
+                    val tmp = File(f.path + ".tmp")
+                    tmp.outputStream().use { rendered.compress(Bitmap.CompressFormat.PNG, 100, it) }
+                    meta.writeText("$color;${if (fills) 1 else 0}")
+                    tmp.renameTo(f)
+                }
             }
-            RenderedIcon(rendered.asImageBitmap(), color, fills).also { memory.put(ck, it) }
+            out
         }
-    }
 
     /** Renders icons ahead of time so the drawer opens with every icon already in place. */
     suspend fun prewarm(keys: List<AppKey>, styleOf: (AppKey) -> IconStyle, sizePx: Int, contrast: Float) = coroutineScope {
         keys.map { k -> async(Dispatchers.Default) { runCatching { icon(k, styleOf(k), sizePx, contrast) } } }.awaitAll()
         Unit
+    }
+
+    /** Waits for queued disk writes (tests, and before clearing the cache). */
+    suspend fun flushDisk() {
+        while (true) { val j = pendingWrites.poll() ?: break; j.join() }
     }
 
     fun clearMemory() = memory.evictAll()

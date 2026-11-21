@@ -242,9 +242,14 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     val drawerFull by remember { derivedStateOf { drawer.value >= 1f } }
 
     // Render every icon ahead of time so the drawer opens with icons already in place.
-    LaunchedEffect(apps, settings.iconStyle, settings.iconOverrides, settings.iconSizeDp, settings.grayscaleContrast) {
+    LaunchedEffect(apps, categories.size, settings.iconStyle, settings.iconOverrides, settings.iconSizeDp, settings.grayscaleContrast) {
         val px = with(density) { settings.iconSizeDp.dp.roundToPx() }
-        graph.icons.prewarm(apps.map { it.key }, { k -> settings.iconOverrides[k.encode()] ?: settings.iconStyle }, px, settings.grayscaleContrast)
+        // What's on screen first: Home and dock, then the drawer in category order, then anything left.
+        val homeKeys = (layout.dock + layout.pages.flatten()).flatMap { c ->
+            when (c) { is com.xenoorigin.xelauncher.home.AppCell -> listOf(c.app.key); is com.xenoorigin.xelauncher.home.FolderCell -> c.apps.map { it.key }; else -> emptyList() }
+        }
+        val ordered = (homeKeys + categories.flatMap { c -> c.apps.map { it.key } } + apps.map { it.key }).distinct()
+        graph.icons.prewarm(ordered, { k -> settings.iconOverrides[k.encode()] ?: settings.iconStyle }, px, settings.grayscaleContrast)
     }
 
     fun update(f: (XeSettings) -> XeSettings) = scope.launch { graph.settings.update(f) }

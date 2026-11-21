@@ -1,5 +1,10 @@
 package com.xenoorigin.xelauncher.icons
 
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -75,16 +80,27 @@ fun IconTile(app: AppEntry, size: Dp, style: IconStyle, shape: IconShape, modifi
     val glyphScale = LocalGlyphScale.current
     val px = with(LocalDensity.current) { size.roundToPx() }
     val custom = LocalCustomIcons.current[app.key.encode()]
-    val icon by produceState(repo?.peek(app.key, style, px, contrast), app.key, style, px, contrast, custom) {
+    val ready = remember(app.key, style, px, contrast, custom) { repo?.peek(app.key, style, px, contrast) }
+    val icon by produceState(ready, app.key, style, px, contrast, custom) {
         if (value == null) value = repo?.icon(app.key, style, px, contrast)
+    }
+    // Icons that were already rendered appear at once; ones that had to load pop in.
+    val appear = remember(app.key, style, px, custom) { androidx.compose.animation.core.Animatable(if (ready != null) 1f else 0f) }
+    LaunchedEffect(icon != null) {
+        if (icon != null && appear.value < 1f) appear.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = .62f, stiffness = 420f))
+    }
+    val pop = Modifier.graphicsLayer {
+        val v = appear.value
+        alpha = v.coerceIn(0f, 1f); scaleX = .78f + .22f * v; scaleY = .78f + .22f * v
     }
     val s = shape.toShape()
     val base = LocalGlassStyle.current
     Box(modifier.size(size)) {
         val i = icon
         when {
+            i == null && (style == IconStyle.MONO || style == IconStyle.ORIGINAL) -> LoadingTile(s, base)
             i != null && i.fillsTile -> Image(
-                i.bitmap, app.label, Modifier.fillMaxSize().clip(s).glassFilmAndRim(s, base.copy(rimAlpha = base.rimAlpha * .5f)),
+                i.bitmap, app.label, Modifier.fillMaxSize().then(pop).clip(s).glassFilmAndRim(s, base.copy(rimAlpha = base.rimAlpha * .5f)),
             )
             style == IconStyle.GLASS_COLOR -> {
                 val c = Color(i?.dominantColor ?: 0xFF8E8E93.toInt())
@@ -93,7 +109,7 @@ fun IconTile(app: AppEntry, size: Dp, style: IconStyle, shape: IconShape, modifi
                         .background(Brush.linearGradient(listOf(lerp(c, Color.White, .35f), c, lerp(c, Color.Black, .35f))))
                         .glassFilmAndRim(s, base),
                     contentAlignment = Alignment.Center,
-                ) { i?.let { Image(it.bitmap, app.label, Modifier.fillMaxSize().scale(glyphScale)) } }
+                ) { if (i == null) Shimmer(s) else Image(i.bitmap, app.label, Modifier.fillMaxSize().scale(glyphScale).then(pop)) }
             }
             else -> {
                 val fill = when (style) {
@@ -101,7 +117,7 @@ fun IconTile(app: AppEntry, size: Dp, style: IconStyle, shape: IconShape, modifi
                     else -> Color(0xFF1C1C1E).copy(alpha = .78f)
                 }
                 Box(Modifier.fillMaxSize().glassTile(s, base.copy(dark = true), fill), contentAlignment = Alignment.Center) {
-                    i?.let { Image(it.bitmap, app.label, Modifier.fillMaxSize().scale(glyphScale)) }
+                    if (i == null) Shimmer(s) else Image(i.bitmap, app.label, Modifier.fillMaxSize().scale(glyphScale).then(pop))
                 }
             }
         }
@@ -112,4 +128,32 @@ fun IconTile(app: AppEntry, size: Dp, style: IconStyle, shape: IconShape, modifi
             ) { Icon(painterResource(R.drawable.ti_copy), null, Modifier.padding(3.dp), tint = Color.Black) }
         }
     }
+}
+
+/** Empty glass tile with a moving sheen, shown while an icon is being prepared. */
+@Composable
+private fun LoadingTile(shape: androidx.compose.ui.graphics.Shape, base: com.xenoorigin.xelauncher.design.GlassStyle) {
+    Box(Modifier.fillMaxSize().glassTile(shape, base.copy(dark = true), Color(0xFF1C1C1E).copy(alpha = .6f))) { Shimmer(shape) }
+}
+
+@Composable
+private fun Shimmer(shape: androidx.compose.ui.graphics.Shape) {
+    val t = androidx.compose.animation.core.rememberInfiniteTransition(label = "shimmer")
+    val x by t.animateFloat(
+        -1f, 2f,
+        androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(1100, easing = androidx.compose.animation.core.LinearEasing)),
+        label = "x",
+    )
+    Box(
+        Modifier.fillMaxSize().clip(shape).drawBehind {
+            val w = size.width
+            drawRect(
+                Brush.linearGradient(
+                    listOf(Color.Transparent, Color.White.copy(alpha = .14f), Color.Transparent),
+                    start = androidx.compose.ui.geometry.Offset(w * (x - .5f), 0f),
+                    end = androidx.compose.ui.geometry.Offset(w * x, size.height),
+                ),
+            )
+        },
+    )
 }

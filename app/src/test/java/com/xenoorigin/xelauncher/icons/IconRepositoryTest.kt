@@ -9,6 +9,8 @@ import com.google.common.truth.Truth.assertThat
 import com.xenoorigin.xelauncher.apps.AppKey
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
+import kotlinx.coroutines.async
+import kotlinx.coroutines.Dispatchers
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
@@ -27,6 +29,7 @@ class IconRepositoryTest {
     @Test fun secondRequest_afterMemoryCleared_comesFromDisk() = runBlocking<Unit> {
         val repo = IconRepository(loader, dir)
         repo.icon(key, IconStyle.GLASS_DARK, 96, 1.15f)
+        repo.flushDisk()
         repo.clearMemory()
         repo.icon(key, IconStyle.GLASS_DARK, 96, 1.15f)
         assertThat(loads).isEqualTo(1)
@@ -53,8 +56,25 @@ class IconRepositoryTest {
         val repo = IconRepository(blueIcon, dir)
         val first = repo.icon(key, IconStyle.GLASS_COLOR, 96, 1f)!!
         assertThat(Color.blue(first.dominantColor)).isGreaterThan(200)
-        repo.clearMemory()
+        repo.flushDisk(); repo.clearMemory()
         val again = repo.icon(key, IconStyle.GLASS_COLOR, 96, 1f)!!
         assertThat(again.dominantColor).isEqualTo(first.dominantColor)
+    }
+
+    @Test fun sameIconRequestedTwiceAtOnce_rendersOnce() = runBlocking<Unit> {
+        val slowLoader: (AppKey) -> Drawable? = { loads++; Thread.sleep(150); ColorDrawable(Color.RED) }
+        val repo = IconRepository(slowLoader, dir)
+        val a = async(Dispatchers.Default) { repo.icon(key, IconStyle.GLASS_DARK, 64, 1f) }
+        val b = async(Dispatchers.Default) { repo.icon(key, IconStyle.GLASS_DARK, 64, 1f) }
+        assertThat(a.await()).isNotNull(); assertThat(b.await()).isNotNull()
+        assertThat(loads).isEqualTo(1)
+    }
+
+    @Test fun renderedIcon_isAvailableInstantly_evenBeforeDiskWriteFinishes() = runBlocking<Unit> {
+        val repo = IconRepository(loader, dir)
+        repo.icon(key, IconStyle.GLASS_DARK, 64, 1f)
+        assertThat(repo.peek(key, IconStyle.GLASS_DARK, 64, 1f)).isNotNull()
+        repo.flushDisk()
+        assertThat(dir.listFiles()!!.any { it.name.endsWith(".png") }).isTrue()
     }
 }
