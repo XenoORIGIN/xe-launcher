@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable enum class ThemeMode { LIGHT, DARK, AUTO }
 @Serializable enum class AppLanguage { SYSTEM, TH, EN }
-@Serializable enum class GestureAction { NONE, OPEN_DRAWER, NOTIFICATIONS, OPEN_SEARCH, OPEN_SETTINGS, EDIT_MODE }
+@Serializable enum class GestureAction { NONE, OPEN_DRAWER, NOTIFICATIONS, OPEN_SEARCH, OPEN_SETTINGS, EDIT_MODE, DRAW_LETTER }
 /** Where the first-run welcome is up to; DONE once finished or skipped. */
 @Serializable enum class OnboardingStage { INTRO, LANGUAGE, DEFAULT_HOME, SLIDES, PRACTICE, DONE }
 @Serializable enum class DrawerSort { ALPHABETICAL, MOST_USED, RECENTLY_INSTALLED, CUSTOM }
@@ -72,4 +72,22 @@ data class XeSettings(
     val novaUnlocked: Boolean = false,
     /** First-run welcome: intro, language, default Home, tutorial. */
     val onboarding: OnboardingStage = OnboardingStage.INTRO,
+    /** Drawer icons slosh when the phone tilts and scatter when it's shaken. */
+    val toyIcons: Boolean = true,
+    /** Apps not opened for weeks gather dust that can be rubbed off. */
+    val appDust: Boolean = true,
+    /** When dust was switched on: no app is dustier than this (ms, 0 = not yet). */
+    val dustSince: Long = 0L,
+    /** When each app was last wiped clean, keyed by AppKey.encode(). */
+    val dustWiped: Map<String, Long> = emptyMap(),
+    /** Soft light in each category's own colour behind the drawer page. */
+    val categoryGlow: Boolean = true,
+    /** Dragging along the category bar swells the icons near the finger. */
+    val barMagnify: Boolean = true,
+    /** Tapping empty space in the drawer makes ripples and bubbles. */
+    val pond: Boolean = true,
+    /** Best score in the secret Bubble Pop game. */
+    val bubbleBest: Int = 0,
+    /** One-off upgrades for the playful features already applied (1 = double tap draws a letter). */
+    val playVersion: Int = 0,
 )

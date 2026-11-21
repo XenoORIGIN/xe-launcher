@@ -1,6 +1,7 @@
 package com.xenoorigin.xelauncher
 
 import android.app.ActivityOptions
+import androidx.lifecycle.repeatOnLifecycle
 import android.app.SearchManager
 import android.content.Intent
 import android.net.Uri
@@ -143,6 +144,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     val drawerState = remember { DrawerState(pageCount = { categories.size.coerceAtLeast(1) }) }
     val homePager = rememberPagerState { layout.pages.size + 1 }
     var searchOpen by remember { mutableStateOf(false) }
+    var drawPad by remember { mutableStateOf(false) }
     var menu by remember { mutableStateOf<MenuState?>(null) }
     var openFolder by remember { mutableStateOf<Pair<Long, Rect>?>(null) }
     var drawerMenu by remember { mutableStateOf(false) }
@@ -322,13 +324,44 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     }
 
     fun update(f: (XeSettings) -> XeSettings) = scope.launch { graph.settings.update(f) }
+
+    // ---------- Play ----------
+    val toy = com.xenoorigin.xelauncher.play.rememberIconToy(active = drawerFull && settings.toyIcons && speed != AnimationSpeed.OFF)
+    // One-off upgrades: double tap draws a letter (if it did nothing); dust starts counting from today.
+    LaunchedEffect(settings.playVersion, settings.appDust, settings.dustSince) {
+        if (settings.playVersion < 1) update { it.copy(playVersion = 1, doubleTap = if (it.doubleTap == GestureAction.NONE) GestureAction.DRAW_LETTER else it.doubleTap) }
+        if (settings.appDust && settings.dustSince == 0L) update { it.copy(dustSince = System.currentTimeMillis()) }
+    }
+    val lastLaunch = remember(launchStats) { launchStats.associate { it.appKey to it.lastLaunch } }
+    val dustNow = remember(launchStats, settings.dustWiped) { System.currentTimeMillis() }
+    val drawerPlay = remember(settings.categoryGlow, settings.pond, settings.tiltShine, settings.barMagnify, settings.appDust, settings.dustSince, settings.dustWiped, lastLaunch, speed) {
+        com.xenoorigin.xelauncher.drawer.DrawerPlay(
+            glow = settings.categoryGlow,
+            pond = settings.pond && speed != AnimationSpeed.OFF,
+            sheen = settings.tiltShine && speed != AnimationSpeed.OFF,
+            magnify = settings.barMagnify && speed != AnimationSpeed.OFF,
+            dust = if (!settings.appDust) ({ 0f }) else ({ a ->
+                val k = a.key.encode()
+                com.xenoorigin.xelauncher.play.dustLevel(dustNow, com.xenoorigin.xelauncher.play.lastUse(lastLaunch[k] ?: 0L, a.installedAt, settings.dustWiped[k] ?: 0L, settings.dustSince))
+            }),
+            onWiped = { a -> update { it.copy(dustWiped = it.dustWiped + (a.key.encode() to System.currentTimeMillis())) } },
+        )
+    }
+    // The live sky keeps up with the time while Xe is on screen.
+    LaunchedEffect(settings.wallpaperId, lifecycle) {
+        if (settings.wallpaperId != com.xenoorigin.xelauncher.wallpaper.LIVE_SKY_ID) return@LaunchedEffect
+        lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+            while (true) { graph.wallpaper.refreshLiveSky(); delay(60_000) }
+        }
+    }
+
     fun settleDrawer(open: Boolean) = scope.launch {
         drawer.animateTo(if (open) 1f else 0f, XeMotion.spring(speed, dampingRatio = .86f, stiffness = 380f))
     }
     fun closeAll() {
         menu = null; openFolder = null; drawerMenu = false; editor = null; moveFor = null; editFor = null; arrange = null; bulkIcons = false
         widgetPicker = false; resizeId = null; manageCategory = null; noteFor = null
-        searchOpen = false; settingsRoute = null; editMode = false
+        searchOpen = false; settingsRoute = null; editMode = false; drawPad = false
     }
 
     fun launch(app: AppEntry, r: Rect) {
@@ -336,7 +369,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
         graph.apps.launch(app.key, android.graphics.Rect(r.left.toInt(), r.top.toInt(), r.right.toInt(), r.bottom.toInt()), opts)
         scope.launch {
             graph.categories.recordLaunch(app.key)
-            delay(350); drawer.snapTo(0f); searchOpen = false; menu = null; openFolder = null
+            delay(350); drawer.snapTo(0f); searchOpen = false; menu = null; openFolder = null; drawPad = false
         }
     }
 
@@ -347,6 +380,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
             GestureAction.OPEN_SEARCH -> searchOpen = true
             GestureAction.OPEN_SETTINGS -> settingsRoute = "root"
             GestureAction.EDIT_MODE -> editMode = true
+            GestureAction.DRAW_LETTER -> drawPad = true
             GestureAction.NONE, null -> Unit
         }
     }
@@ -354,7 +388,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     LaunchedEffect(Unit) {
         graph.homePressed.collect {
             val anyOverlay = menu != null || openFolder != null || drawerMenu || editor != null || moveFor != null ||
-                editFor != null || arrange != null || manageCategory != null || noteFor != null || bulkIcons || widgetPicker || resizeId != null || searchOpen || settingsRoute != null || editMode
+                editFor != null || arrange != null || manageCategory != null || noteFor != null || bulkIcons || widgetPicker || resizeId != null || searchOpen || settingsRoute != null || editMode || drawPad
             if (anyOverlay) closeAll()
             else if (drawerShown) settleDrawer(false)
             else homePager.animateScrollToPage(0)
@@ -495,7 +529,10 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                 graph.wallpaper, Color.Black.copy(alpha = .38f),
                 Modifier.graphicsLayer { alpha = drawer.value.coerceIn(0f, 1f) },
             )
-            androidx.compose.runtime.CompositionLocalProvider(com.xenoorigin.xelauncher.drawer.LocalDrawerProgress provides { drawer.value }) {
+            androidx.compose.runtime.CompositionLocalProvider(
+                com.xenoorigin.xelauncher.drawer.LocalDrawerProgress provides { drawer.value },
+                com.xenoorigin.xelauncher.play.LocalIconToy provides toy.takeIf { settings.toyIcons && speed != AnimationSpeed.OFF },
+            ) {
             AppDrawer(
                 categories, drawerState, drawerLook,
                 onLaunch = ::launch,
@@ -508,6 +545,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                 },
                 onMenu = { drawerMenu = true },
                 onEditCategories = { editor = false },
+                play = drawerPlay,
                 modifier = Modifier
                     .graphicsLayer { val p = drawer.value; translationY = (1f - p) * heightPx * .35f; alpha = p.coerceIn(0f, 1f) }
                     .nestedScroll(closeConnection)
@@ -537,6 +575,17 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                         }
                     },
                     onClose = { searchOpen = false },
+                )
+            }
+        }
+
+        AnimatedVisibility(drawPad, enter = fadeIn() + scaleIn(initialScale = 1.04f), exit = fadeOut()) {
+            Box(Modifier.fillMaxSize()) {
+                com.xenoorigin.xelauncher.wallpaper.BlurredBackdrop(graph.wallpaper, Color.Black.copy(alpha = .55f))
+                com.xenoorigin.xelauncher.play.DrawPad(
+                    apps.filter { it.key.encode() !in settings.hiddenApps },
+                    remember(launchStats) { launchStats.associate { it.appKey to it.count } }, styleOf, settings.iconShape,
+                    onLaunch = ::launch, onClose = { drawPad = false },
                 )
             }
         }

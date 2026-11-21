@@ -15,6 +15,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.File
+import androidx.compose.ui.graphics.asAndroidBitmap
 
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -36,6 +37,29 @@ class WallpaperControllerTest {
         again.restore()
         assertThat(again.current.value).isNotNull()
         assertThat(again.current.value!!.width).isEqualTo(90)
+        sc.cancel()
+    }
+
+    @Test fun liveSky_redrawsOnlyWhenChosen_andOnlyWhenTheTimeOfDayMovesOn() = runBlocking<Unit> {
+        val sc = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val settings = SettingsStore(ctx, sc, "wp_sky")
+        val dir = File(ctx.filesDir, "wp-${System.nanoTime()}")
+        val c = WallpaperController(ctx, settings, dir, size)
+        c.apply(XeCollection.byId("xe_blue")!!, WallpaperTarget.HOME)
+        val base = c.systemWallpaperSetCount
+        c.refreshLiveSky(minute = 12 * 60)
+        assertThat(c.systemWallpaperSetCount).isEqualTo(base) // not the chosen wallpaper: untouched
+
+        c.apply(WallpaperPreset.Sky(minute = 12 * 60), WallpaperTarget.HOME)
+        val afterApply = c.systemWallpaperSetCount
+        c.refreshLiveSky(minute = 12 * 60 + 5)
+        assertThat(c.systemWallpaperSetCount).isEqualTo(afterApply) // same 20-minute slot
+        val noon = c.current.value!!.asAndroidBitmap().getPixel(45, 20)
+        c.refreshLiveSky(minute = 23 * 60)
+        assertThat(c.systemWallpaperSetCount).isEqualTo(afterApply + 1)
+        val night = c.current.value!!.asAndroidBitmap().getPixel(45, 20)
+        assertThat(android.graphics.Color.blue(night)).isLessThan(android.graphics.Color.blue(noon))
+        assertThat(settings.current().wallpaperId).isEqualTo(LIVE_SKY_ID)
         sc.cancel()
     }
 

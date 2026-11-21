@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import android.widget.Toast
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.boundsInRoot
@@ -73,6 +74,7 @@ fun SettingsRoot(s: XeSettings, push: (String) -> Unit, onClose: () -> Unit, new
             NavRow(stringResource(R.string.appearance), R.drawable.ti_palette, RowColors.Orange) { push("appearance") }
             NavRow(stringResource(R.string.icons), R.drawable.ti_apps, RowColors.Blue) { push("icons") }
             NavRow(stringResource(R.string.animation), R.drawable.ti_sparkles, RowColors.Purple) { push("animation") }
+            NavRow(stringResource(R.string.play_title), R.drawable.ti_device_gamepad_2, RowColors.Orange, subtitle = stringResource(R.string.play_row_desc)) { push("play") }
             NavRow(stringResource(R.string.gestures), R.drawable.ti_hand_finger, RowColors.Red) { push("gestures") }
             NavRow(stringResource(R.string.xe_studio), R.drawable.ti_brush, RowColors.Pink, subtitle = stringResource(R.string.xe_studio_desc)) { push("studio") }
             NavRow(stringResource(R.string.backup), R.drawable.ti_device_floppy, RowColors.Cyan) { push("backup") }
@@ -209,10 +211,46 @@ fun AnimationScreen(s: XeSettings, update: Update, back: () -> Unit) {
     }
 }
 
+/** Every toy in one place, each with a line on how to play with it. */
+@Composable
+fun PlayScreen(s: XeSettings, update: Update, push: (String) -> Unit, back: () -> Unit) {
+    SettingsPage(stringResource(R.string.play_title), back) {
+        SettingsGroup(stringResource(R.string.play_drawer)) {
+            XeRow(stringResource(R.string.toy_icons), icon = R.drawable.ti_device_mobile_vibration, iconTint = RowColors.Purple, subtitle = stringResource(R.string.toy_icons_desc)) {
+                GlassSwitch(s.toyIcons, { v -> update { it.copy(toyIcons = v) } })
+            }
+            XeRow(stringResource(R.string.pond), icon = R.drawable.ti_droplet, iconTint = RowColors.Cyan, subtitle = stringResource(R.string.pond_desc)) {
+                GlassSwitch(s.pond, { v -> update { it.copy(pond = v) } })
+            }
+            XeRow(stringResource(R.string.app_dust), icon = R.drawable.ti_wind, iconTint = RowColors.Grey, subtitle = stringResource(R.string.app_dust_desc)) {
+                GlassSwitch(s.appDust, { v -> update { it.copy(appDust = v, dustSince = if (v) System.currentTimeMillis() else 0L, dustWiped = emptyMap()) } })
+            }
+            XeRow(stringResource(R.string.bar_magnify), icon = R.drawable.ti_zoom_in, iconTint = RowColors.Blue, subtitle = stringResource(R.string.bar_magnify_desc)) {
+                GlassSwitch(s.barMagnify, { v -> update { it.copy(barMagnify = v) } })
+            }
+            XeRow(stringResource(R.string.category_glow), icon = R.drawable.ti_color_filter, iconTint = RowColors.Pink, subtitle = stringResource(R.string.category_glow_desc)) {
+                GlassSwitch(s.categoryGlow, { v -> update { it.copy(categoryGlow = v) } })
+            }
+        }
+        SettingsGroup(stringResource(R.string.play_everywhere)) {
+            XeRow(stringResource(R.string.tilt_shine), icon = R.drawable.ti_sun_high, iconTint = RowColors.Orange, subtitle = stringResource(R.string.tilt_shine_icons_desc)) {
+                GlassSwitch(s.tiltShine, { v -> update { it.copy(tiltShine = v) } })
+            }
+            NavRow(stringResource(R.string.action_draw), R.drawable.ti_signature, RowColors.Green, subtitle = stringResource(R.string.draw_setting_desc)) { push("gestures") }
+            NavRow(stringResource(R.string.live_sky), R.drawable.ti_moon, RowColors.Indigo, subtitle = stringResource(R.string.live_sky_desc)) { push("wallpaper") }
+        }
+        Text(
+            stringResource(R.string.play_secret), style = XeType.Caption, color = LocalXeScheme.current.textSecondary,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
+        )
+    }
+}
+
 private val gestureChoices = listOf(
     GestureAction.NONE to R.string.action_none, GestureAction.OPEN_DRAWER to R.string.action_drawer,
     GestureAction.NOTIFICATIONS to R.string.action_notifications, GestureAction.OPEN_SEARCH to R.string.action_search,
     GestureAction.OPEN_SETTINGS to R.string.action_settings, GestureAction.EDIT_MODE to R.string.action_edit,
+    GestureAction.DRAW_LETTER to R.string.action_draw,
 )
 
 @Composable
@@ -293,6 +331,7 @@ fun HiddenAppsScreen(graph: AppGraph, s: XeSettings, update: Update, back: () ->
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun AboutScreen(back: () -> Unit, s: XeSettings? = null, update: Update = {}, notifier: com.xenoorigin.xelauncher.update.UpdateNotifier? = null) {
     val ctx = LocalContext.current
@@ -310,6 +349,8 @@ fun AboutScreen(back: () -> Unit, s: XeSettings? = null, update: Update = {}, no
     var nameCenter by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
     val spin = remember { androidx.compose.animation.core.Animatable(0f) }
     val found = stringResource(R.string.nova_found); val again = stringResource(R.string.nova_again)
+    var game by remember { mutableStateOf(false) }
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     Box(Modifier.fillMaxSize()) {
     SettingsPage(stringResource(R.string.about), back) {
         Column(Modifier.fillMaxWidth().padding(vertical = 18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -318,7 +359,11 @@ fun AboutScreen(back: () -> Unit, s: XeSettings? = null, update: Update = {}, no
                 modifier = Modifier
                     .onGloballyPositioned { val b = it.boundsInRoot(); nameCenter = b.center }
                     .graphicsLayer { rotationZ = spin.value; scaleX = 1f + spin.value / 1800f; scaleY = scaleX }
-                    .clickable(remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, null) {
+                    .combinedClickable(
+                        remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, null,
+                        // Secret game: hold the name.
+                        onLongClick = { haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress); game = true },
+                    ) {
                         val hit = counter.tap(System.currentTimeMillis())
                         if (hit) {
                             val first = s?.novaUnlocked != true
@@ -355,6 +400,9 @@ fun AboutScreen(back: () -> Unit, s: XeSettings? = null, update: Update = {}, no
         }
     }
     GlassBurst(burst, burstAt)
+    androidx.compose.animation.AnimatedVisibility(game, enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.scaleIn(initialScale = .9f), exit = androidx.compose.animation.fadeOut()) {
+        com.xenoorigin.xelauncher.play.BubbleGame(s?.bubbleBest ?: 0, onRecord = { r -> update { it.copy(bubbleBest = maxOf(it.bubbleBest, r)) } }, onClose = { game = false })
+    }
     }
     GlassSheet(licences, { licences = false }) {
         val text = remember {

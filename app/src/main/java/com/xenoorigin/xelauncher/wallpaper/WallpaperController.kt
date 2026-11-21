@@ -32,6 +32,21 @@ class WallpaperController(
     /** Small pre-blurred wallpaper for full-screen panels (drawer, search, settings): no live blur needed. */
     val backdrop: StateFlow<ImageBitmap?> = _backdrop.asStateFlow()
 
+    private var skyShown = -1
+
+    /**
+     * Keeps the live sky current: redraws it when the time of day has moved on (every 20 minutes).
+     * Does nothing unless the live sky is the chosen wallpaper.
+     */
+    suspend fun refreshLiveSky(minute: Int = minuteNow()) = withContext(Dispatchers.IO) {
+        if (settings.current().wallpaperId != LIVE_SKY_ID) return@withContext
+        val bucket = skyBucket(minute)
+        if (bucket == skyShown) return@withContext
+        val (w, h) = screenSize()
+        applyBitmap(WallpaperRenderer.render(WallpaperPreset.Sky(minute = minute), w, h), WallpaperTarget.HOME)
+        skyShown = bucket
+    }
+
     private fun show(bmp: Bitmap) {
         _current.value = bmp.asImageBitmap()
         _backdrop.value = runCatching { WallpaperRenderer.backdrop(bmp).asImageBitmap() }.getOrNull()
@@ -58,6 +73,7 @@ class WallpaperController(
         val bmp = if (adjust == WallpaperAdjust()) raw else WallpaperRenderer.compose(raw, w, h, adjust)
         applyBitmap(bmp, target)
         settings.update { it.copy(wallpaperId = preset.id) }
+        skyShown = if (preset is WallpaperPreset.Sky) skyBucket(preset.minute ?: minuteNow()) else -1
     }
 
     /** Applies an already-rendered bitmap (used by Xe Studio and imports). */

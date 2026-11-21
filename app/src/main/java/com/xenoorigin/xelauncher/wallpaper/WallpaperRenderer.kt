@@ -29,6 +29,52 @@ object WallpaperRenderer {
         is WallpaperPreset.Mesh -> mesh(p, w, h)
         is WallpaperPreset.Abstract -> abstract(p, w, h)
         is WallpaperPreset.Image -> image(p, w, h)
+        is WallpaperPreset.Sky -> sky(skyAt(p.minute ?: minuteNow()), w, h)
+    }
+
+    /** Gradient sky with the sun's or moon's glow and, at night, stars. */
+    fun sky(look: SkyLook, w: Int, h: Int): Bitmap {
+        val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val c = Canvas(out)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
+        paint.shader = LinearGradient(0f, 0f, 0f, h.toFloat(), intArrayOf(look.top.argb(), look.mid.argb(), look.bottom.argb()), floatArrayOf(0f, .58f, 1f), Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, w.toFloat(), h.toFloat(), paint)
+        val ox = look.orbX * w; val oy = look.orbY * h
+        if (look.stars > 0f) {
+            val rnd = Random(2026)
+            val unit = w / 400f
+            repeat(260) {
+                val x = rnd.nextFloat() * w
+                val y = (rnd.nextFloat() * rnd.nextFloat()) * h * .85f
+                val big = rnd.nextFloat() < .06f
+                val r = (if (big) 1.5f + rnd.nextFloat() else .4f + rnd.nextFloat() * .8f) * unit
+                val a = (look.stars * (.35f + rnd.nextFloat() * .65f) * 255).toInt().coerceIn(0, 255)
+                val tint = if (rnd.nextFloat() < .2f) 0xFFDDE6 else if (rnd.nextFloat() < .2f) 0xD8E4FF else 0xFFFFFF
+                paint.shader = null
+                if (big) {
+                    paint.shader = RadialGradient(x, y, r * 5f, intArrayOf((a / 3 shl 24) or tint, tint), null, Shader.TileMode.CLAMP)
+                    c.drawCircle(x, y, r * 5f, paint); paint.shader = null
+                }
+                paint.color = (a shl 24) or tint
+                c.drawCircle(x, y, r, paint)
+            }
+        }
+        // Glow first, then the disc itself.
+        val warm = if (look.sunUp) 0xFFE0A0 else 0xD6E2FF
+        val glowR = w * (if (look.sunUp) .75f else .5f)
+        val ga = ((if (look.sunUp) .5f else .22f) * look.orbGlow * 255).toInt()
+        paint.shader = RadialGradient(ox, oy, glowR, intArrayOf((ga shl 24) or warm, ((ga / 4) shl 24) or warm, warm), floatArrayOf(0f, .35f, 1f), Shader.TileMode.CLAMP)
+        c.drawCircle(ox, oy, glowR, paint)
+        val discR = w * (if (look.sunUp) .055f else .04f)
+        paint.shader = RadialGradient(ox, oy, discR, intArrayOf(if (look.sunUp) 0xFFFFF6E0.toInt() else 0xFFF2F5FF.toInt(), if (look.sunUp) 0xF0FFE2A8.toInt() else 0xE0DCE4F5.toInt()), null, Shader.TileMode.CLAMP)
+        c.drawCircle(ox, oy, discR, paint)
+        if (!look.sunUp) {
+            // A crescent: the disc's shadow side.
+            paint.shader = null; paint.color = (0xD0 shl 24) or (look.top.argb() and 0x00FFFFFF)
+            c.drawCircle(ox + discR * .45f, oy - discR * .25f, discR * .9f, paint)
+        }
+        grain(out, .02f, 7)
+        return out
     }
 
     private fun Long.argb() = toInt()

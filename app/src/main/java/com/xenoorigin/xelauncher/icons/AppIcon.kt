@@ -61,9 +61,11 @@ fun AppIcon(
     label: Boolean,
     modifier: Modifier = Modifier,
     labelColor: Color = Color.White,
+    /** Drawn with the tile only (not the label): dust, sheen. */
+    tileModifier: Modifier = Modifier,
 ) {
     Column(modifier.width(size + 22.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        IconTile(app, size, style, shape)
+        IconTile(app, size, style, shape, tileModifier)
         if (label) {
             Text(
                 app.label, style = XeType.Label.copy(shadow = Shadow(Color.Black.copy(alpha = .45f), blurRadius = 6f)),

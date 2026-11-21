@@ -12,14 +12,20 @@ sealed interface WallpaperPreset {
     /** Flowing bands plus Liquid Glass lenses. */
     data class Abstract(override val id: String, override val name: String, val colors: List<Long>, val seed: Int, val shapes: Int = 4, val lenses: Int = 2) : WallpaperPreset
 
+    /** The sky right now: colours, sun or moon and stars follow the time of day ([minute] fixes a time, for previews). */
+    data class Sky(override val id: String = LIVE_SKY_ID, override val name: String = "Live Sky", val minute: Int? = null) : WallpaperPreset
+
     data class Image(val file: File) : WallpaperPreset {
         override val id: String get() = "image:${file.name}"
         override val name: String get() = file.nameWithoutExtension
     }
 }
 
+const val LIVE_SKY_ID = "live_sky"
+
 val XeCollection: List<WallpaperPreset> = listOf(
     WallpaperPreset.Mesh("xe_black", "Xe Black", listOf(0xFF000000, 0xFF8A8A8A, 0xFF4A4A4A, 0xFF2A2A2A), seed = 11, grain = .03f, glow = .5f),
+    WallpaperPreset.Sky(),
     WallpaperPreset.Abstract("xe_blue", "Xe Blue", listOf(0xFF05082A, 0xFF2F4BFF, 0xFF7A5CFF, 0xFF1E8BFF, 0xFFC27BFF), seed = 7),
     WallpaperPreset.Mesh("graphite", "Graphite", listOf(0xFF111114, 0xFF5E5E66, 0xFF2C2C30, 0xFF9A9AA2), seed = 23, glow = .7f),
     WallpaperPreset.Mesh("midnight", "Midnight", listOf(0xFF03041A, 0xFF1B2A8C, 0xFF3A1E7A, 0xFF0B4C8C), seed = 31),
