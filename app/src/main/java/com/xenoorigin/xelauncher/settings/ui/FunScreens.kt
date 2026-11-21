@@ -159,7 +159,7 @@ private fun PreviewTile(t: ThemePreset, icon: Int, c: Color) {
         }
         IconStyle.GLASS_COLOR -> Modifier.clip(shape).background(Brush.linearGradient(listOf(c.copy(alpha = .75f).compositeOverWhite(), c))).glassTile(shape, style, Color.Transparent) to Color.White
         IconStyle.GLASS_CLEAR -> Modifier.glassTile(shape, style, c.copy(alpha = .28f)) to Color.White
-        IconStyle.ORIGINAL -> Modifier.clip(shape).background(c) to Color.White
+        IconStyle.ORIGINAL, IconStyle.STUDIO -> Modifier.clip(shape).background(c) to Color.White
     }
     Box(Modifier.size(40.dp).then(mod), contentAlignment = Alignment.Center) {
         Icon(painterResource(icon), null, Modifier.size(21.dp), tint = tint)
@@ -176,6 +176,7 @@ private fun styleName(s: IconStyle): String = stringResource(
         IconStyle.GLASS_COLOR -> R.string.style_glass_color
         IconStyle.GLASS_CLEAR -> R.string.style_glass_clear
         IconStyle.ORIGINAL -> R.string.style_original
+        IconStyle.STUDIO -> R.string.style_studio
     },
 )
 

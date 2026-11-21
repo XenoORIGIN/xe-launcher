@@ -42,9 +42,12 @@ class AppGraph(val context: Context) {
     val settings = SettingsStore(context, CoroutineScope(SupervisorJob() + Dispatchers.IO))
     val apps = LauncherAppsSource(context, scope)
     val customIcons = CustomIconStore(File(context.filesDir, "custom_icons"))
+    /** Xe's copy of the icon theme applied in Xe Studio. */
+    val studioTheme = com.xenoorigin.xelauncher.studio.StudioThemeStore(File(context.filesDir, "studio_theme"), context.contentResolver)
     val icons = IconRepository(
         { apps.icon(it, context.resources.displayMetrics.densityDpi.coerceAtLeast(480)) }, File(context.cacheDir, "icons"),
         customIcons::get, customIcons::version,
+        studioTheme = { studioTheme.theme.value }, studioImage = studioTheme::image,
     )
 
     /** Installed apps with the user's own names applied. Everything shown on screen uses this list. */

@@ -48,6 +48,8 @@ val LocalIconRepository = staticCompositionLocalOf<IconRepository?> { null }
 val LocalGrayscaleContrast = staticCompositionLocalOf { 1.15f }
 /** The user's custom icon pictures (AppKey.encode() -> file); a change re-renders that tile. */
 val LocalCustomIcons = staticCompositionLocalOf<Map<String, java.io.File>> { emptyMap() }
+/** Version of the Xe Studio icon theme stored in Xe, or null when none was ever applied. */
+val LocalStudioThemeVersion = staticCompositionLocalOf<Long?> { null }
 /** How large the symbol is drawn on its tile (1 = default). */
 val LocalGlyphScale = staticCompositionLocalOf { 1f }
 
@@ -88,12 +90,16 @@ fun IconTile(app: AppEntry, size: Dp, style: IconStyle, shape: IconShape, modifi
     val glyphScale = LocalGlyphScale.current
     val px = with(LocalDensity.current) { size.roundToPx() }
     val custom = LocalCustomIcons.current[app.key.encode()]
-    val ready = remember(app.key, style, px, contrast, custom) { repo?.peek(app.key, style, px, contrast) }
-    val icon by produceState(ready, app.key, style, px, contrast, custom) {
+    val studioVersion = LocalStudioThemeVersion.current
+    // Without a Studio theme, the Studio style looks exactly like the default.
+    @Suppress("NAME_SHADOWING") val style = if (style == IconStyle.STUDIO && studioVersion == null) IconStyle.GLASS_DARK else style
+    val studioKey = if (style == IconStyle.STUDIO) studioVersion else null
+    val ready = remember(app.key, style, px, contrast, custom, studioKey) { repo?.peek(app.key, style, px, contrast) }
+    val icon by produceState(ready, app.key, style, px, contrast, custom, studioKey) {
         if (value == null) value = repo?.icon(app.key, style, px, contrast)
     }
     // Icons that were already rendered appear at once; ones that had to load pop in.
-    val appear = remember(app.key, style, px, custom) { androidx.compose.animation.core.Animatable(if (ready != null) 1f else 0f) }
+    val appear = remember(app.key, style, px, custom, studioKey) { androidx.compose.animation.core.Animatable(if (ready != null) 1f else 0f) }
     LaunchedEffect(icon != null) {
         if (icon != null && appear.value < 1f) appear.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = .62f, stiffness = 420f))
     }
@@ -106,7 +112,9 @@ fun IconTile(app: AppEntry, size: Dp, style: IconStyle, shape: IconShape, modifi
     Box(modifier.size(size)) {
         val i = icon
         when {
-            i == null && (style == IconStyle.MONO || style == IconStyle.ORIGINAL) -> LoadingTile(s, base)
+            i == null && (style == IconStyle.MONO || style == IconStyle.ORIGINAL || style == IconStyle.STUDIO) -> LoadingTile(s, base)
+            // A Studio theme brings its own shape, colours and outline: draw it as made.
+            i != null && style == IconStyle.STUDIO -> Image(i.bitmap, app.label, Modifier.fillMaxSize().then(pop))
             i != null && i.fillsTile -> Image(
                 i.bitmap, app.label, Modifier.fillMaxSize().then(pop).clip(s).glassFilmAndRim(s, base.copy(rimAlpha = base.rimAlpha * .5f)),
             )

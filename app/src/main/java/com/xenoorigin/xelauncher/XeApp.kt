@@ -124,8 +124,10 @@ fun XeApp(graph: AppGraph) {
         ) {
             val customIcons by graph.customIcons.files.collectAsState()
             val unread by com.xenoorigin.xelauncher.badges.Badges.counts.collectAsState()
+            val studioTheme by graph.studioTheme.theme.collectAsState()
             CompositionLocalProvider(
                 com.xenoorigin.xelauncher.icons.LocalCustomIcons provides customIcons,
+                com.xenoorigin.xelauncher.icons.LocalStudioThemeVersion provides studioTheme?.version,
                 com.xenoorigin.xelauncher.badges.LocalBadgeCounts provides unread,
                 com.xenoorigin.xelauncher.badges.LocalBadgeStyle provides settings.badgeStyle,
             ) { LauncherRoot(graph, settings) }

@@ -35,6 +35,10 @@ class IconRepository(
     processors: Int = Runtime.getRuntime().availableProcessors(),
     /** Where icons are drawn; by default a few low-priority threads, so scrolling and animations stay smooth. */
     private val renderDispatcher: kotlinx.coroutines.CoroutineDispatcher = backgroundPool((processors - 1).coerceIn(2, 6)),
+    /** The icon theme applied in Xe Studio, if any (Xe's own stored copy). */
+    private val studioTheme: () -> com.xenoorigin.xelauncher.studio.StoredTheme? = { null },
+    /** Override pictures of that theme. */
+    private val studioImage: (String) -> Bitmap? = { null },
 ) {
     private val memory = object : LruCache<String, RenderedIcon>(40 * 1024 * 1024) {
         override fun sizeOf(key: String, value: RenderedIcon) = value.bitmap.width * value.bitmap.height * 4
@@ -48,18 +52,21 @@ class IconRepository(
     /** Bumped by [invalidate]; a save that started before the bump is thrown away instead of reviving the old icon. */
     private val generation = java.util.concurrent.ConcurrentHashMap<String, Int>()
 
-    private enum class Variant { GLYPH_GRAY, GLYPH_COLOR, FULL, FULL_GRAY }
+    private enum class Variant { GLYPH_GRAY, GLYPH_COLOR, FULL, FULL_GRAY, STUDIO }
 
     private fun variantOf(style: IconStyle) = when (style) {
         IconStyle.GLASS_DARK -> Variant.GLYPH_GRAY
         IconStyle.GLASS_COLOR, IconStyle.GLASS_CLEAR -> Variant.GLYPH_COLOR
         IconStyle.MONO -> Variant.FULL_GRAY
         IconStyle.ORIGINAL -> Variant.FULL
+        // Without a Studio theme the tile looks exactly like the default style.
+        IconStyle.STUDIO -> if (studioTheme() != null) Variant.STUDIO else Variant.GLYPH_GRAY
     }
 
     private fun cacheKey(key: AppKey, v: Variant, size: Int, contrast: Float): String {
         val custom = customVersion(key)?.let { "|c$it" }.orEmpty()
-        return "v2|${key.encode()}|$v|$size|${"%.2f".format(contrast)}$custom"
+        val studio = if (v == Variant.STUDIO) "|s${studioTheme()?.version}" else ""
+        return "v2|${key.encode()}|$v|$size|${"%.2f".format(contrast)}$custom$studio"
     }
 
     private fun file(key: AppKey, ck: String): File {
@@ -86,6 +93,7 @@ class IconRepository(
     private suspend fun render(key: AppKey, v: Variant, ck: String, sizePx: Int, contrast: Float): RenderedIcon? =
         renderGate.withPermit {
             memory.get(ck)?.let { return@withPermit it }
+            if (v == Variant.STUDIO && customIcon(key) == null) return@withPermit renderStudio(key, ck, sizePx)
             val f = file(key, ck)
             val meta = File(f.path.removeSuffix(".png") + ".meta")
             val cached = if (f.exists()) BitmapFactory.decodeFile(f.path) else null
@@ -104,7 +112,7 @@ class IconRepository(
                 val whole = IconProcessor.full(d, sizePx)
                 val color = IconProcessor.dominantColor(whole)
                 when (v) {
-                    Variant.FULL -> Triple(whole, true, color)
+                    Variant.FULL, Variant.STUDIO -> Triple(whole, true, color)
                     Variant.FULL_GRAY -> Triple(IconProcessor.grayscale(whole, contrast), true, color)
                     Variant.GLYPH_GRAY, Variant.GLYPH_COLOR -> {
                         val g = IconProcessor.extractGlyph(IconProcessor.foregroundOf(d, sizePx))
@@ -133,6 +141,21 @@ class IconRepository(
             }
             out
         }
+
+    /**
+     * A Studio-themed icon. Kept in memory only: the theme's version is in the key, so applying a new theme
+     * never leaves stale files behind, and drawing from a recipe is quick.
+     */
+    private fun renderStudio(key: AppKey, ck: String, sizePx: Int): RenderedIcon? {
+        val theme = studioTheme() ?: return null
+        val d = loader(key)
+        if (d == null && !theme.recipe.overrides.containsKey(key.encode())) return null
+        val bmp = com.xenoorigin.xestudio.core.IconRenderer.render(theme.recipe, key.encode(), key.packageName.substringAfterLast('.'), d, sizePx, studioImage)
+        return RenderedIcon(bmp.asImageBitmap(), IconProcessor.dominantColor(bmp), fillsTile = true).also { memory.put(ck, it) }
+    }
+
+    /** Forgets every Studio-themed icon (a new theme was applied). */
+    fun dropStudio() = memory.snapshot().keys.filter { "|STUDIO|" in it }.forEach { memory.remove(it) }
 
     /**
      * Renders icons ahead of time, in [keys] order, so the drawer opens with icons already in place. Only

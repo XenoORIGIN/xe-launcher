@@ -2,6 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Shared with Xe Studio (same signing key): lets Xe read the theme applied there. Declared here too,
+         so it exists whichever app is installed first. -->
+    <permission
+        android:name="com.xenoorigin.xestudio.permission.READ_THEME"
+        android:protectionLevel="signature" />
+    <uses-permission android:name="com.xenoorigin.xestudio.permission.READ_THEME" />
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
     <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
     <uses-permission android:name="android.permission.VIBRATE" />
@@ -10,6 +16,10 @@
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
+
+    <queries>
+        <package android:name="com.xenoorigin.xestudio" />
+    </queries>
 
     <application
         android:name=".XeApplication"
@@ -59,5 +69,12 @@
             android:exported="false">
             <meta-data android:name="autoStoreLocales" android:value="true" />
         </service>
+        <receiver
+            android:name=".studio.StudioThemeReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.xenoorigin.xestudio.action.THEME_APPLIED" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

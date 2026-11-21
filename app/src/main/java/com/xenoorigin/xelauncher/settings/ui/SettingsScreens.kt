@@ -162,6 +162,7 @@ fun IconsScreen(s: XeSettings, update: Update, back: () -> Unit, sample: com.xen
                         IconStyle.GLASS_COLOR -> R.string.style_glass_color_desc
                         IconStyle.GLASS_CLEAR -> R.string.style_glass_clear_desc
                         IconStyle.ORIGINAL -> R.string.style_original_desc
+                        IconStyle.STUDIO -> R.string.style_studio_desc
                     },
                 ),
                 style = com.xenoorigin.xelauncher.design.XeType.Caption, color = com.xenoorigin.xelauncher.design.LocalXeScheme.current.textSecondary,

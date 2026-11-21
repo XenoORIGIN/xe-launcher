@@ -64,7 +64,9 @@ val IconStyleChoices = listOf(
 fun IconStylePicker(app: AppEntry?, selected: IconStyle?, shape: IconShape, onPick: (IconStyle) -> Unit, modifier: Modifier = Modifier) {
     val scheme = LocalXeScheme.current
     Row(modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        IconStyleChoices.forEach { (st, label) ->
+        // "From Xe Studio" is offered once a theme has been applied there.
+        val choices = if (com.xenoorigin.xelauncher.icons.LocalStudioThemeVersion.current != null) IconStyleChoices + (IconStyle.STUDIO to R.string.style_studio) else IconStyleChoices
+        choices.forEach { (st, label) ->
             val sel = st == selected
             Column(
                 Modifier.width(76.dp)

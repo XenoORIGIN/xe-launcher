@@ -336,4 +336,6 @@
     <string name="badge_dot">Small dot</string>
     <string name="badge_off">Off</string>
     <string name="badges_note">Numbers come from each app\'s notifications, so they can differ a little from the count inside the app. Reading or clearing the notification clears the badge.</string>
+    <string name="style_studio">From Xe Studio</string>
+    <string name="style_studio_desc">The icon theme you made in Xe Studio. Change it there and tap Use in Xe.</string>
 </resources>

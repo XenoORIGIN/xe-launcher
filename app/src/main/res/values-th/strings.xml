@@ -335,4 +335,6 @@
     <string name="badge_dot">จุดเล็ก</string>
     <string name="badge_off">ปิด</string>
     <string name="badges_note">ตัวเลขมาจากแจ้งเตือนของแต่ละแอป อาจไม่ตรงกับในแอปเป๊ะ เมื่ออ่านหรือปัดแจ้งเตือนทิ้ง ตัวเลขจะหายไปเอง</string>
+    <string name="style_studio">จาก Xe Studio</string>
+    <string name="style_studio_desc">ธีมไอคอนที่คุณสร้างใน Xe Studio แก้ได้ในแอปนั้นแล้วกด \"ใช้กับ Xe\"</string>
 </resources>
