@@ -1,5 +1,7 @@
 package com.xenoorigin.xelauncher.home
 
+import com.xenoorigin.xelauncher.design.appear
+
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -255,6 +257,7 @@ private fun HomeItem(
     val isWidget = cell is WidgetCell
     Box(
         Modifier.then(if (isWidget) Modifier.fillMaxSize() else Modifier)
+            .appear(cell.y * look.columns + cell.x, distance = 46f, stepMs = 22, scaleFrom = .8f)
             .onGloballyPositioned { coords = it }
             .homeItemGestures(cell.id, { latestEdit }, { latestCbs })
             .graphicsLayer { rotationZ = if (isWidget) wiggle() * .3f else wiggle(); alpha = if (isDragging) .25f else 1f },

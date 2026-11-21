@@ -1,5 +1,7 @@
 package com.xenoorigin.xelauncher.drawer
 
+import com.xenoorigin.xelauncher.design.appear
+
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -89,7 +91,7 @@ fun CategoryEditor(
     BackHandler(onBack = onClose)
     Box(Modifier.fillMaxSize().clickable(enabled = false) {}) {
         background()
-        Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 18.dp)) {
+        Column(Modifier.fillMaxSize().appear(0, distance = 120f, scaleFrom = .98f).statusBarsPadding().padding(horizontal = 18.dp)) {
             Row(Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                 GlassIconButton(R.drawable.ti_arrow_left, stringResource(R.string.done), onClose)
                 Text(stringResource(R.string.edit_categories), Modifier.weight(1f).padding(start = 14.dp), style = XeType.Title, color = scheme.text)
@@ -103,7 +105,7 @@ fun CategoryEditor(
             ) { (c, title), handle, dragging ->
                 val isHidden = c.id in hidden
                 Row(
-                    Modifier.fillMaxSize()
+                    Modifier.fillMaxSize().appear(categories.indexOfFirst { it.first.id == c.id } + 1, distance = 50f)
                         .glassTile(RoundedCornerShape(22.dp), LocalGlassStyle.current, Color.White.copy(alpha = if (dragging) .2f else .1f))
                         .clickable { editing = c }
                         .padding(start = 4.dp, end = 16.dp),

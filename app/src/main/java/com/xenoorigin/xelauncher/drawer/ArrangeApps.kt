@@ -1,5 +1,7 @@
 package com.xenoorigin.xelauncher.drawer
 
+import com.xenoorigin.xelauncher.design.appear
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -44,7 +46,7 @@ fun ArrangeApps(
     val scheme = LocalXeScheme.current
     BackHandler(onBack = onClose)
     Box(Modifier.fillMaxSize().background(Color(0xF2050507)).clickable(enabled = false) {}) {
-        Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 18.dp)) {
+        Column(Modifier.fillMaxSize().appear(0, distance = 120f, scaleFrom = .98f).statusBarsPadding().padding(horizontal = 18.dp)) {
             Row(Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 GlassIconButton(R.drawable.ti_arrow_left, stringResource(R.string.done), onClose)
                 Text(title, Modifier.weight(1f).padding(start = 14.dp), style = XeType.Title, color = scheme.text)

@@ -1,5 +1,7 @@
 package com.xenoorigin.xelauncher.widgets
 
+import com.xenoorigin.xelauncher.design.appear
+
 import android.appwidget.AppWidgetProviderInfo
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
@@ -68,7 +70,7 @@ fun WidgetPicker(host: XeWidgetHost, cellSize: (AppWidgetProviderInfo) -> Pair<I
         }
     }
     Box(Modifier.fillMaxSize().background(Color(0xF2050507)).clickable(enabled = false) {}) {
-        Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 18.dp)) {
+        Column(Modifier.fillMaxSize().appear(0, distance = 120f, scaleFrom = .98f).statusBarsPadding().navigationBarsPadding().padding(horizontal = 18.dp)) {
             Row(Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 GlassIconButton(R.drawable.ti_arrow_left, stringResource(R.string.back), onClose)
                 Text(stringResource(R.string.widgets), Modifier.weight(1f).padding(start = 14.dp), style = XeType.Title, color = scheme.text)

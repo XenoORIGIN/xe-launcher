@@ -1,5 +1,6 @@
 package com.xenoorigin.xelauncher.settings.ui
 
+import com.xenoorigin.xelauncher.design.appear
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +25,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -47,21 +49,26 @@ object RowColors {
 @Composable
 fun SettingsPage(title: String, onBack: (() -> Unit)?, content: @Composable ColumnScope.() -> Unit) {
     val scheme = LocalXeScheme.current
+    val stagger = remember { com.xenoorigin.xelauncher.design.Stagger() }
+    androidx.compose.runtime.CompositionLocalProvider(com.xenoorigin.xelauncher.design.LocalStagger provides stagger) {
     Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(horizontal = 18.dp)) {
-        Row(Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 18.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 18.dp).then(Modifier.appear(0, distance = 30f)), verticalAlignment = Alignment.CenterVertically) {
             if (onBack != null) GlassIconButton(R.drawable.ti_arrow_left, stringResource(R.string.cancel), onBack, Modifier.padding(end = 14.dp))
             Text(title, style = XeType.LargeTitle, color = scheme.text)
         }
         content()
         Spacer(Modifier.height(40.dp))
     }
+    }
 }
 
 /** iOS-style grouped glass card. */
 @Composable
 fun SettingsGroup(title: String? = null, content: @Composable ColumnScope.() -> Unit) {
-    if (title != null) SectionTitle(title, Modifier.padding(start = 6.dp))
-    GlassSurface(RoundedCornerShape(24.dp), Modifier.fillMaxWidth().padding(bottom = 6.dp)) {
+    val stagger = com.xenoorigin.xelauncher.design.LocalStagger.current
+    val index = remember { stagger?.let { ++it.next } ?: 0 }
+    if (title != null) SectionTitle(title, Modifier.padding(start = 6.dp).appear(index))
+    GlassSurface(RoundedCornerShape(24.dp), Modifier.fillMaxWidth().padding(bottom = 6.dp).appear(index)) {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp), content = content)
     }
 }

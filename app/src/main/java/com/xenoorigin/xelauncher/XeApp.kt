@@ -27,6 +27,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.key
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -414,12 +415,18 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                 ),
         )
         }
-        if (editMode) EditBar(
+        AnimatedVisibility(
+            editMode,
+            enter = fadeIn() + androidx.compose.animation.slideInVertically { -it },
+            exit = fadeOut() + androidx.compose.animation.slideOutVertically { -it },
+        ) {
+            EditBar(
             onWidgets = { widgetPicker = true },
             onWallpaper = { settingsRoute = "wallpaper" }, onSettings = { settingsRoute = "root" },
             onAddPage = { scope.launch { graph.home.addPage(); homePager.animateScrollToPage(homePager.pageCount - 1) } },
             onDone = { editMode = false; scope.launch { graph.home.removeEmptyPages() } },
         )
+        }
 
         // ---------- App drawer (follows the finger) ----------
         if (drawerShown) {
@@ -671,7 +678,16 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
             )
         }
 
-        settingsRoute?.let { route -> SettingsHost(graph, route, onClose = { settingsRoute = null }) }
+        // Settings rise in over the home screen and sink away when closed.
+        var lastRoute by remember { mutableStateOf("root") }
+        settingsRoute?.let { lastRoute = it }
+        AnimatedVisibility(
+            settingsRoute != null,
+            enter = fadeIn(androidx.compose.animation.core.tween(220)) + scaleIn(initialScale = .94f) + androidx.compose.animation.slideInVertically { it / 10 },
+            exit = fadeOut(androidx.compose.animation.core.tween(180)) + scaleOut(targetScale = .96f),
+        ) {
+            key(lastRoute) { SettingsHost(graph, lastRoute, onClose = { settingsRoute = null }) }
+        }
     }
 }
 
