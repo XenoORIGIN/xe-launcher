@@ -67,7 +67,7 @@ class StudioAppTest {
         settle()
         org.junit.Assert.assertEquals(com.xenoorigin.xestudio.link.ApplyResult.XE_MISSING, g.applyResult.value)
         settle()
-        rule.onNodeWithTag("xe_missing").assertExists()
+        rule.onNodeWithTag("xe_missing", useUnmergedTree = true).assertExists()
         rule.onNodeWithText(s(R.string.get_xe)).assertExists()
     }
 
