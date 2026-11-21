@@ -12,6 +12,15 @@ import java.net.URL
 
 data class ReleaseInfo(val tag: String, val apkUrl: String, val notes: String)
 
+data class HttpResult(val code: Int, val body: String)
+
+sealed interface UpdateResult {
+    data object UpToDate : UpdateResult
+    data class Available(val release: ReleaseInfo) : UpdateResult
+    /** No network, GitHub unreachable or rate-limited: try again later. */
+    data object Failed : UpdateResult
+}
+
 object UpdateChecker {
     const val LATEST_API = "https://api.github.com/repos/XenoORIGIN/xe-launcher/releases/latest"
     const val STABLE_APK = "https://github.com/XenoORIGIN/xe-launcher/releases/latest/download/xe-launcher.apk"
@@ -29,8 +38,17 @@ object UpdateChecker {
         return false
     }
 
-    suspend fun latest(fetch: suspend (String) -> String? = ::httpGet): ReleaseInfo? = runCatching {
-        val o = Json.parseToJsonElement(fetch(LATEST_API) ?: return null).jsonObject
+    /** Compares the newest GitHub release with [current]. A repository with no release yet counts as up to date. */
+    suspend fun check(current: String, fetch: suspend (String) -> HttpResult? = ::httpGet): UpdateResult {
+        val res = fetch(LATEST_API) ?: return UpdateResult.Failed
+        if (res.code == 404) return UpdateResult.UpToDate
+        if (res.code != 200) return UpdateResult.Failed
+        val r = parse(res.body) ?: return UpdateResult.Failed
+        return if (isNewer(r.tag, current)) UpdateResult.Available(r) else UpdateResult.UpToDate
+    }
+
+    private fun parse(body: String): ReleaseInfo? = runCatching {
+        val o = Json.parseToJsonElement(body).jsonObject
         val tag = o["tag_name"]!!.jsonPrimitive.content
         val apk = o["assets"]?.jsonArray?.map { it.jsonObject }
             ?.firstOrNull { it["name"]?.jsonPrimitive?.contentOrNull == "xe-launcher.apk" }
@@ -38,12 +56,15 @@ object UpdateChecker {
         ReleaseInfo(tag, apk, o["body"]?.jsonPrimitive?.contentOrNull.orEmpty())
     }.getOrNull()
 
-    private suspend fun httpGet(url: String): String? = withContext(Dispatchers.IO) {
+    private suspend fun httpGet(url: String): HttpResult? = withContext(Dispatchers.IO) {
         runCatching {
             (URL(url).openConnection() as HttpURLConnection).run {
-                connectTimeout = 8000; readTimeout = 8000
+                connectTimeout = 10000; readTimeout = 10000
                 setRequestProperty("Accept", "application/vnd.github+json")
-                if (responseCode != 200) null else inputStream.bufferedReader().use { it.readText() }
+                setRequestProperty("User-Agent", "XeLauncher")
+                val code = responseCode
+                val stream = if (code in 200..299) inputStream else errorStream
+                HttpResult(code, stream?.bufferedReader()?.use { it.readText() }.orEmpty())
             }
         }.getOrNull()
     }

@@ -54,4 +54,10 @@ data class XeSettings(
     val appOrder: Map<String, Int> = emptyMap(),
     /** Categories kept out of the bar; their apps show in "Other". */
     val hiddenCategories: Set<Long> = emptySet(),
+    /** Post a notification when a new version is on GitHub. */
+    val updateNotify: Boolean = true,
+    /** Release tag already notified about, so each version is announced once. */
+    val lastNotifiedTag: String = "",
+    /** Whether Xe already asked for the notification permission (Android 13+). */
+    val askedNotifications: Boolean = false,
 )

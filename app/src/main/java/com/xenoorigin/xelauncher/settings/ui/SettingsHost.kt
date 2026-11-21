@@ -36,6 +36,7 @@ fun SettingsHost(graph: AppGraph, start: String, onClose: () -> Unit) {
     val loaded by graph.settings.settings.collectAsState(initial = null)
     val settings = loaded ?: return
     val allApps by graph.labeledApps.collectAsState()
+    val newVersion by graph.updates.available.collectAsState()
     val scope = rememberCoroutineScope()
     val speed = LocalAnimationSpeed.current
     val stack = remember { mutableStateListOf(start) }
@@ -57,7 +58,7 @@ fun SettingsHost(graph: AppGraph, start: String, onClose: () -> Unit) {
         ) { (route, _) ->
             val back: () -> Unit = ::pop
             when (route) {
-                "root" -> SettingsRoot(settings, ::push, onClose)
+                "root" -> SettingsRoot(settings, ::push, onClose, newVersion?.tag)
                 "wallpaper" -> WallpaperScreen(graph, back)
                 "appearance" -> AppearanceScreen(settings, update, back)
                 "icons" -> IconsScreen(settings, update, back, allApps.firstOrNull { it.key.packageName.contains("camera") } ?: allApps.firstOrNull()) { push("bulk") }
@@ -76,7 +77,7 @@ fun SettingsHost(graph: AppGraph, start: String, onClose: () -> Unit) {
                 "pages/apps" -> AppPageScreen(settings, update, ::push, back)
                 "pages/search" -> SearchPageScreen(settings, update, back)
                 "hidden" -> HiddenAppsScreen(graph, settings, update, back)
-                "about" -> AboutScreen(back)
+                "about" -> AboutScreen(back, settings, update, graph.updates)
                 else -> SettingsRoot(settings, ::push, onClose)
             }
         }

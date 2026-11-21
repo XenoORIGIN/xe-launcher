@@ -13,11 +13,25 @@ class UpdateCheckerTest {
     @Test fun parsesGithubRelease() = runBlocking<Unit> {
         val json = """{"tag_name":"v1.0.20","body":"Notes","assets":[{"name":"other.txt","browser_download_url":"x"},
             {"name":"xe-launcher.apk","browser_download_url":"https://github.com/XenoORIGIN/xe-launcher/releases/download/v1.0.20/xe-launcher.apk"}]}"""
-        val r = UpdateChecker.latest { json }!!
+        val r = (UpdateChecker.check("1.0.3") { HttpResult(200, json) } as UpdateResult.Available).release
         assertThat(r.tag).isEqualTo("v1.0.20")
         assertThat(r.apkUrl).endsWith("/v1.0.20/xe-launcher.apk")
         assertThat(r.notes).isEqualTo("Notes")
     }
 
-    @Test fun networkFailure_isNull() = runBlocking<Unit> { assertThat(UpdateChecker.latest { null }).isNull() }
+    @Test fun networkFailure_isFailed() = runBlocking<Unit> {
+        assertThat(UpdateChecker.check("1.0.3") { null }).isEqualTo(UpdateResult.Failed)
+    }
+
+    @Test fun noReleasePublishedYet_isUpToDate_notAnError() = runBlocking<Unit> {
+        assertThat(UpdateChecker.check("1.0.3") { HttpResult(404, """{"message":"Not Found"}""") }).isEqualTo(UpdateResult.UpToDate)
+    }
+
+    @Test fun sameVersion_isUpToDate() = runBlocking<Unit> {
+        assertThat(UpdateChecker.check("1.0.20") { HttpResult(200, """{"tag_name":"v1.0.20","assets":[]}""") }).isEqualTo(UpdateResult.UpToDate)
+    }
+
+    @Test fun rateLimited_isFailed() = runBlocking<Unit> {
+        assertThat(UpdateChecker.check("1.0.3") { HttpResult(403, "{}") }).isEqualTo(UpdateResult.Failed)
+    }
 }

@@ -225,4 +225,11 @@
     <string name="delete_confirm">Tap again to delete</string>
     <string name="reset">Reset</string>
     <string name="choose_apps_hint">Tick apps to put them here. Untick to let Xe sort them again.</string>
+    <string name="updates_channel">App updates</string>
+    <string name="update_notif_title">Xe Launcher %1$s is ready</string>
+    <string name="update_notif_text">Tap to download the new version</string>
+    <string name="update_notify">Notify me about new versions</string>
+    <string name="update_banner">Version %1$s is available — tap to download</string>
+    <string name="download_update">Download update</string>
+    <string name="checking">Checking…</string>
 </resources>

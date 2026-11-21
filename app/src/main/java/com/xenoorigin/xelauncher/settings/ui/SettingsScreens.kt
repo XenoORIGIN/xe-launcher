@@ -57,8 +57,11 @@ import kotlin.math.roundToInt
 private typealias Update = ((XeSettings) -> XeSettings) -> Unit
 
 @Composable
-fun SettingsRoot(s: XeSettings, push: (String) -> Unit, onClose: () -> Unit) {
+fun SettingsRoot(s: XeSettings, push: (String) -> Unit, onClose: () -> Unit, newVersion: String? = null) {
     SettingsPage(stringResource(R.string.settings), onBack = onClose) {
+        if (newVersion != null) SettingsGroup {
+            NavRow(stringResource(R.string.update_banner, newVersion.removePrefix("v")), R.drawable.ti_download, RowColors.Green) { push("about") }
+        }
         SettingsGroup {
             NavRow(stringResource(R.string.wallpaper), R.drawable.ti_photo, RowColors.Green) { push("wallpaper") }
             NavRow(stringResource(R.string.appearance), R.drawable.ti_palette, RowColors.Orange) { push("appearance") }
@@ -278,14 +281,14 @@ fun HiddenAppsScreen(graph: AppGraph, s: XeSettings, update: Update, back: () ->
 }
 
 @Composable
-fun AboutScreen(back: () -> Unit) {
+fun AboutScreen(back: () -> Unit, s: XeSettings? = null, update: Update = {}, notifier: com.xenoorigin.xelauncher.update.UpdateNotifier? = null) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     var status by remember { mutableStateOf<String?>(null) }
-    var release by remember { mutableStateOf<ReleaseInfo?>(null) }
     var licences by remember { mutableStateOf(false) }
     val upToDate = stringResource(R.string.up_to_date); val failed = stringResource(R.string.update_check_failed)
-    val availableFmt = stringResource(R.string.update_available)
+    val availableFmt = stringResource(R.string.update_available); val checking = stringResource(R.string.checking)
+    val release = notifier?.available?.collectAsState()?.value
     fun open(url: String) = runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
     SettingsPage(stringResource(R.string.about), back) {
         Column(Modifier.fillMaxWidth().padding(vertical = 18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -294,13 +297,18 @@ fun AboutScreen(back: () -> Unit) {
         }
         SettingsGroup {
             NavRow(stringResource(R.string.check_updates), R.drawable.ti_refresh, RowColors.Blue, subtitle = status) {
+                status = checking
                 scope.launch {
-                    val r = UpdateChecker.latest()
-                    release = r?.takeIf { UpdateChecker.isNewer(it.tag, BuildConfig.VERSION_NAME) }
-                    status = when { r == null -> failed; release != null -> availableFmt.format(r.tag); else -> upToDate }
+                    val r = notifier?.checkNow() ?: UpdateChecker.check(BuildConfig.VERSION_NAME)
+                    status = when (r) {
+                        is com.xenoorigin.xelauncher.update.UpdateResult.Available -> availableFmt.format(r.release.tag)
+                        com.xenoorigin.xelauncher.update.UpdateResult.UpToDate -> upToDate
+                        com.xenoorigin.xelauncher.update.UpdateResult.Failed -> failed
+                    }
                 }
             }
-            release?.let { r -> XeRow(stringResource(R.string.download), icon = R.drawable.ti_download, iconTint = RowColors.Green, onClick = { open(r.apkUrl) }) }
+            release?.let { r -> XeRow(stringResource(R.string.download_update), icon = R.drawable.ti_download, iconTint = RowColors.Green, onClick = { open(r.apkUrl) }) }
+            if (s != null) XeRow(stringResource(R.string.update_notify)) { GlassSwitch(s.updateNotify, { v -> update { it.copy(updateNotify = v) } }) }
             NavRow(stringResource(R.string.website), R.drawable.ti_world_www, RowColors.Cyan) { open(UpdateChecker.WEBSITE) }
             NavRow(stringResource(R.string.licenses), R.drawable.ti_book, RowColors.Grey) { licences = true }
         }

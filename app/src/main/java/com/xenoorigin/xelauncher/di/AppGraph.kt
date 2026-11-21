@@ -53,6 +53,7 @@ class AppGraph(val context: Context) {
     }.stateIn(scope, SharingStarted.Eagerly, emptyList())
     val wallpaper = WallpaperController(context, settings)
     val widgetHost = com.xenoorigin.xelauncher.widgets.XeWidgetHost(context)
+    val updates = com.xenoorigin.xelauncher.update.UpdateNotifier(settings, post = com.xenoorigin.xelauncher.update.UpdateNotifier.systemPoster(context))
 
     /** Fires when the Home button is pressed while Xe is already in front. */
     val homePressed = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
@@ -89,6 +90,7 @@ class AppGraph(val context: Context) {
                 settings.update { it.copy(categoriesVersion = 2) }
             }
             wallpaper.restore()
+            updates.start(scope)
         }
         scope.launch { apps.packageChanges.collect { pkg -> icons.invalidate(pkg); home.pruneUninstalled() } }
         scope.launch {

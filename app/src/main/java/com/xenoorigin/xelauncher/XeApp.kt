@@ -241,6 +241,18 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     val drawerShown by remember { derivedStateOf { drawer.value > 0f } }
     val drawerFull by remember { derivedStateOf { drawer.value >= 1f } }
 
+    // Android 13+: ask once for permission to show update notifications.
+    val notifPermission = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) {}
+    LaunchedEffect(settings.askedNotifications) {
+        if (android.os.Build.VERSION.SDK_INT >= 33 && !settings.askedNotifications) {
+            kotlinx.coroutines.delay(4000)
+            graph.settings.update { it.copy(askedNotifications = true) }
+            if (ctx.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                runCatching { notifPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS) }
+            }
+        }
+    }
+
     // Render every icon ahead of time so the drawer opens with icons already in place.
     LaunchedEffect(apps, categories.size, settings.iconStyle, settings.iconOverrides, settings.iconSizeDp, settings.grayscaleContrast) {
         val px = with(density) { settings.iconSizeDp.dp.roundToPx() }

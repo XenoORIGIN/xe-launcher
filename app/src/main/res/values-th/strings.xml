@@ -224,4 +224,11 @@
     <string name="delete_confirm">แตะอีกครั้งเพื่อลบ</string>
     <string name="reset">รีเซ็ต</string>
     <string name="choose_apps_hint">ติ๊กแอปเพื่อย้ายมาหมวดนี้ เอาติ๊กออกเพื่อให้ระบบจัดให้ใหม่</string>
+    <string name="updates_channel">อัปเดตแอป</string>
+    <string name="update_notif_title">Xe Launcher %1$s พร้อมแล้ว</string>
+    <string name="update_notif_text">แตะเพื่อดาวน์โหลดเวอร์ชันใหม่</string>
+    <string name="update_notify">แจ้งเตือนเมื่อมีเวอร์ชันใหม่</string>
+    <string name="update_banner">มีเวอร์ชัน %1$s แล้ว · แตะเพื่อดาวน์โหลด</string>
+    <string name="download_update">ดาวน์โหลดอัปเดต</string>
+    <string name="checking">กำลังตรวจสอบ…</string>
 </resources>
