@@ -11,6 +11,11 @@
       f5t: "Your wallpaper", f5: "Import a picture, drag and pinch to fit, set dim and blur, then use it on the Home screen or lock screen.",
       f6t: "Update alerts", f6: "Xe tells you when a new version is out. One tap downloads it, and it installs over the old one with your settings kept.",
       shotsTitle: "Screenshots", allVersions: "All versions",
+      playTitle: "Try it", playSub: "Swipe up for categories, swipe sideways to switch, tap to open an app, hold for the menu.",
+      cTheme: "Theme", cStyle: "Icon style", cShape: "Icon shape", lens: "Glass follows your finger",
+      tilt: "Tilt your phone and the light on the glass rims moves with it.",
+      themesTitle: "Themes", themesSub: "10 themes come with the app. Tap one to try it on the phone above.",
+      secret: "✦ There's a secret somewhere on this page",
       installTitle: "Install on Samsung",
       s1: "Tap Download APK above", s2: "Open the file and allow your browser to “Install unknown apps”",
       s3: "Tap Install. New versions install over the old one and keep your settings",
@@ -21,7 +26,8 @@
   };
   const nodes = [...document.querySelectorAll("[data-i18n]")];
   nodes.forEach(n => (n.dataset.th = n.textContent));
-  let lang = (localStorage.getItem("xe-lang") || (navigator.language || "th").slice(0, 2)) === "en" ? "en" : "th";
+  let saved = null; try { saved = localStorage.getItem("xe-lang"); } catch (e) {}
+  let lang = (saved || (navigator.language || "th").slice(0, 2)) === "en" ? "en" : "th";
   let ver = "";
   const btn = document.getElementById("lang");
   const verEl = document.getElementById("version");
@@ -29,6 +35,7 @@
     document.documentElement.lang = lang;
     nodes.forEach(n => (n.textContent = lang === "en" ? T.en[n.dataset.i18n] ?? n.dataset.th : n.dataset.th));
     btn.textContent = lang === "en" ? "ไทย" : "EN";
+    dispatchEvent(new Event("xe-lang"));
     verEl.textContent = ver ? (T[lang].version || T.en.version).replace("%s", ver) : "";
   }
   const io = "IntersectionObserver" in window ? new IntersectionObserver(es => es.forEach(e => {

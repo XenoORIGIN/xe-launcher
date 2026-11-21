@@ -39,6 +39,21 @@
     </div>
   </section>
 
+  <section class="play" id="play">
+    <h2 class="reveal" data-i18n="playTitle">ลองเล่นเลย</h2>
+    <p class="sub muted reveal" data-i18n="playSub">ปัดขึ้นดูหมวด ปัดซ้ายขวาเปลี่ยนหมวด แตะเปิดแอป กดค้างดูเมนู</p>
+    <div class="playwrap">
+      <div class="dev" id="dev"><div class="scr"></div></div>
+      <div class="controls glass">
+        <p class="lbl" data-i18n="cTheme">ธีม</p><div class="chips" id="themeChips"></div>
+        <p class="lbl" data-i18n="cStyle">สไตล์ไอคอน</p><div class="chips" id="styleChips"></div>
+        <p class="lbl" data-i18n="cShape">ทรงไอคอน</p><div class="chips" id="shapeChips"></div>
+        <div class="chips extra"><button id="lensToggle" class="chip on" type="button"><span data-i18n="lens">กระจกตามนิ้ว</span></button></div>
+        <p class="tip muted" data-i18n="tilt">ลองเอียงมือถือ แสงบนขอบกระจกจะขยับตาม</p>
+      </div>
+    </div>
+  </section>
+
   <section class="features">
     <h2 class="reveal" data-i18n="featuresTitle">ทำมาเพื่อความสวยงาม</h2>
     <div class="grid">
@@ -49,6 +64,12 @@
       <article class="glass card reveal"><i>✦</i><h3 data-i18n="f5t">วอลเปเปอร์ของคุณ</h3><p data-i18n="f5">นำเข้ารูป ลากและซูมให้พอดี ปรับความมืดและความเบลอ แล้วตั้งเป็นหน้าหลักหรือหน้าล็อก</p></article>
       <article class="glass card reveal"><i>↻</i><h3 data-i18n="f6t">แจ้งเตือนอัปเดต</h3><p data-i18n="f6">มีเวอร์ชันใหม่ แอปแจ้งเตือนให้ แตะครั้งเดียวก็ดาวน์โหลดได้ ติดตั้งทับได้ การตั้งค่าไม่หาย</p></article>
     </div>
+  </section>
+
+  <section class="themes">
+    <h2 class="reveal" data-i18n="themesTitle">ธีม</h2>
+    <p class="sub muted reveal" data-i18n="themesSub">10 ธีมที่มากับแอป แตะเพื่อลองบนมือถือด้านบน</p>
+    <div class="gallery" id="gallery"></div>
   </section>
 
   <section class="shots" aria-label="Screenshots">
@@ -84,8 +105,10 @@
 
 <footer>
   <a href="https://github.com/XenoORIGIN/xe-launcher">GitHub</a> · <a href="https://github.com/XenoORIGIN/xe-launcher/releases" data-i18n="allVersions">ทุกเวอร์ชัน</a>
+  <p class="muted secret-hint" data-i18n="secret">✦ มีความลับซ่อนอยู่ในหน้านี้</p>
   <p class="muted">Inter, Noto Sans Thai (OFL) · Tabler Icons (MIT)</p>
 </footer>
 <script src="app.js"></script>
+<script src="play.js"></script>
 </body>
 </html>
