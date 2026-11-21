@@ -53,7 +53,7 @@
     if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
   }), { rootMargin: "0px 0px -8% 0px" }) : null;
   document.querySelectorAll(".reveal").forEach((el, i) => {
-    if (io) { el.style.transitionDelay = (el.closest(".grid,ol") ? (i % 3) * 70 : 0) + "ms"; io.observe(el); } else el.classList.add("in");
+    if (io) { if (el.closest(".grid,ol")) el.style.transitionDelay = (i % 3) * 90 + "ms"; io.observe(el); } else el.classList.add("in");
   });
   const NEWS = [
     { v: "1.0.7", d: "2026-11-21", th: ["แก้ปัดบน Widget แล้วเปิดเมนูหรือเปิดแอปของ Widget เอง", "ไอคอนที่อยู่บนจอขึ้นก่อน ไม่ต้องรอทั้งเครื่อง และเลื่อนลื่นขึ้นตอนกำลังโหลด"],

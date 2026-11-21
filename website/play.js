@@ -351,7 +351,7 @@
   $("#gallery").addEventListener("click", e => { const b = e.target.closest(".tcard"); if (b) applyTheme(themeList()[+b.dataset.i], true); });
 
   /* ---------- liquid glass lens that follows the finger ---------- */
-  const LS = 116;
+  const LS = 88;
   const lens = document.createElement("div");
   lens.className = "lens"; lens.setAttribute("aria-hidden", "true");
   document.body.appendChild(lens);
@@ -370,7 +370,7 @@
     svg.setAttribute("width", "0"); svg.setAttribute("height", "0"); svg.style.position = "absolute";
     svg.innerHTML = `<filter id="xelens" x="0" y="0" width="${LS}" height="${LS}" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
       <feImage href="${c.toDataURL()}" x="0" y="0" width="${LS}" height="${LS}" preserveAspectRatio="none" result="m"/>
-      <feDisplacementMap in="SourceGraphic" in2="m" scale="46" xChannelSelector="R" yChannelSelector="G"/></filter>`;
+      <feDisplacementMap in="SourceGraphic" in2="m" scale="34" xChannelSelector="R" yChannelSelector="G"/></filter>`;
     document.body.appendChild(svg);
     if (/Chrome\//.test(navigator.userAgent)) lens.classList.add("refract");
   })();
