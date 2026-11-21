@@ -46,6 +46,20 @@ class IconRepositoryTest {
         assertThat(loads).isEqualTo(2)
     }
 
+    /** An app update right after an icon was drawn: the old picture still being saved must not come back. */
+    @Test fun invalidate_beatsADiskWriteStillInFlight() = runBlocking<Unit> {
+        repeat(20) { n ->
+            val k = AppKey("com.race.app$n", "com.race.app$n.Main", 0)
+            var count = 0
+            val repo = IconRepository({ count++; ColorDrawable(Color.RED) }, File(dir, "race$n"))
+            repo.icon(k, IconStyle.GLASS_DARK, 96, 1f)
+            repo.invalidate(k.packageName)
+            repo.flushDisk(); repo.clearMemory()
+            repo.icon(k, IconStyle.GLASS_DARK, 96, 1f)
+            assertThat(count).isEqualTo(2)
+        }
+    }
+
     @Test fun missingIcon_returnsNullWithoutCrash() = runBlocking<Unit> {
         val repo = IconRepository({ null }, dir)
         assertThat(repo.icon(key, IconStyle.ORIGINAL, 96, 1f)).isNull()

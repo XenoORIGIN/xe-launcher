@@ -52,8 +52,11 @@ fun SettingsHost(graph: AppGraph, start: String, onClose: () -> Unit) {
             transitionSpec = {
                 val forward = targetState.second >= initialState.second
                 val d = XeMotion.durationMs(300, speed)
-                (slideInHorizontally(tween(d)) { if (forward) it / 3 else -it / 3 } + fadeIn(tween(d))) togetherWith
-                    (slideOutHorizontally(tween(d)) { if (forward) -it / 4 else it / 4 } + fadeOut(tween(d / 2)))
+                // The new page glides in from the side while the old one sinks back a little, like stacked glass.
+                (slideInHorizontally(tween(d, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { if (forward) it / 2 else -it / 3 } + fadeIn(tween(d)) +
+                    androidx.compose.animation.scaleIn(tween(d), initialScale = if (forward) 1f else .92f)) togetherWith
+                    (slideOutHorizontally(tween(d)) { if (forward) -it / 5 else it / 2 } + fadeOut(tween(d * 2 / 3)) +
+                        androidx.compose.animation.scaleOut(tween(d), targetScale = if (forward) .92f else 1f))
             }, label = "settings",
         ) { (route, _) ->
             val back: () -> Unit = ::pop

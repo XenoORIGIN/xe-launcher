@@ -35,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
@@ -140,11 +141,22 @@ fun GlassSwitch(checked: Boolean, onChange: (Boolean) -> Unit, modifier: Modifie
         if (checked) (if (scheme.accent == XeColors.White) Color(0xFF34C759) else scheme.accent) else Color.White.copy(alpha = .16f), label = "track",
     )
     val src = remember { MutableInteractionSource() }
+    // The knob stretches like jelly while it slides, then wobbles back to round.
+    val jelly = remember { androidx.compose.animation.core.Animatable(0f) }
+    val first = remember { booleanArrayOf(true) }
+    androidx.compose.runtime.LaunchedEffect(checked) {
+        if (first[0]) { first[0] = false; return@LaunchedEffect }
+        if (speed == AnimationSpeed.OFF) return@LaunchedEffect
+        jelly.animateTo(1f, androidx.compose.animation.core.tween(110))
+        jelly.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = .32f, stiffness = 420f))
+    }
     Box(
         modifier.size(52.dp, 32.dp).background(track.value, CircleShape)
             .clickable(src, null, role = Role.Switch) { onChange(!checked) },
     ) {
-        GlassSurface(CircleShape, Modifier.padding(start = x.value).align(Alignment.CenterStart).size(28.dp).pressSquish(src),
+        GlassSurface(CircleShape, Modifier.padding(start = x.value).align(Alignment.CenterStart).size(28.dp)
+            .graphicsLayer { val j = jelly.value; scaleX = 1f + .32f * j; scaleY = 1f - .14f * j; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(if (checked) 1f else 0f, .5f) }
+            .pressSquish(src),
             LocalGlassStyle.current.copy(tint = Color.White.copy(alpha = .92f)))
     }
 }

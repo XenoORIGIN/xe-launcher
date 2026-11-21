@@ -214,7 +214,17 @@ fun HomeScreen(
                 },
                 beyondViewportPageCount = 1, userScrollEnabled = drag == null && lens?.active != true,
             ) { page ->
-                Box(Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 18.dp).onGloballyPositioned { if (page == pager.currentPage) gridBounds = it.boundsInRoot() }) {
+                val depthOn = com.xenoorigin.xelauncher.design.LocalAnimationSpeed.current != com.xenoorigin.xelauncher.design.AnimationSpeed.OFF
+                Box(Modifier.fillMaxSize()
+                    .graphicsLayer {
+                        // Pages lean back and dim a little as they slide away, like turning a glass pane.
+                        if (depthOn && drag == null) {
+                            val d = com.xenoorigin.xelauncher.design.pageDepth((pager.currentPage - page) + pager.currentPageOffsetFraction)
+                            scaleX = d.scale; scaleY = d.scale; rotationY = d.rotationY; alpha = d.alpha
+                            cameraDistance = 14f * this.density
+                        }
+                    }
+                    .padding(horizontal = 10.dp, vertical = 18.dp).onGloballyPositioned { if (page == pager.currentPage) gridBounds = it.boundsInRoot() }) {
                     PageGrid(layout.pages.getOrNull(page).orEmpty(), look, editMode, drag?.cell?.id, ::callbacksFor)
                 }
             }

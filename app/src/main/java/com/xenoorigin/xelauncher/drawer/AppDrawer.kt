@@ -114,6 +114,9 @@ fun AppDrawer(
     }
 }
 
+/** How open the drawer is (0..1), read each frame; icons cascade in with it. */
+val LocalDrawerProgress = androidx.compose.runtime.staticCompositionLocalOf<() -> Float> { { 1f } }
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun AppGrid(
@@ -126,6 +129,7 @@ private fun AppGrid(
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         itemsIndexed(apps, key = { _, a -> a.key.encode() }) { i, app ->
+            val drawerProgress = LocalDrawerProgress.current
             val anim = remember { Animatable(1f) }
             LaunchedEffect(trigger) {
                 if (trigger == 0 || speed == AnimationSpeed.OFF || i > 23) { anim.snapTo(1f); return@LaunchedEffect }
@@ -142,8 +146,14 @@ private fun AppGrid(
                     Modifier
                         .graphicsLayer {
                             val v = anim.value
-                            alpha = v.coerceIn(0f, 1f); scaleX = .86f + .14f * v; scaleY = .86f + .14f * v
-                            translationY = (1f - v) * with(density) { 10.dp.toPx() }
+                            // Rows rise in one after another as the drawer opens (and follow the finger back down).
+                            val row = i / 4
+                            val c = if (speed == AnimationSpeed.OFF) 1f else com.xenoorigin.xelauncher.design.drawerCascade(drawerProgress(), row)
+                            alpha = v.coerceIn(0f, 1f) * c
+                            val sc = (.86f + .14f * v) * (.88f + .12f * c); scaleX = sc; scaleY = sc
+                            translationY = (1f - v) * with(density) { 10.dp.toPx() } + (1f - c) * with(density) { (36 + row * 12).dp.toPx() }
+                            rotationX = (1f - c) * 30f
+                            cameraDistance = 12f * density.density
                         }
                         .onGloballyPositioned { bounds = it.boundsInWindow() }
                         .pressSquish(src)

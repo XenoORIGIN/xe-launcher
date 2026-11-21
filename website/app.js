@@ -56,6 +56,8 @@
     if (io) { if (el.closest(".grid,ol")) el.style.transitionDelay = (i % 3) * 90 + "ms"; io.observe(el); } else el.classList.add("in");
   });
   const NEWS = [
+    { v: "1.0.8", d: "2026-11-21", th: ["หน้าแนะนำตอนเปิดครั้งแรก: โลโก้กระจก เลือกภาษา สอนใช้งาน และลองทำจริง", "ลิ้นชักแอปไอคอนไหลขึ้นทีละแถว และหน้าโฮมเอียงมีมิติตอนปัด", "เปิดแอปขยายจากไอคอน กลับหน้าโฮมซูมเข้าที่", "หน้าตั้งค่าเปลี่ยนแบบซ้อนกระจก สวิตช์เด้งแบบเจลลี่"],
+      en: ["First-run welcome: glass logo, language picker, tutorial and hands-on practice", "Drawer icons rise row by row; Home pages lean with depth as you swipe", "Apps zoom out of their icon; Home settles back in", "Settings pages slide like stacked glass; jelly switches"] },
     { v: "1.0.7", d: "2026-11-21", th: ["แก้ปัดบน Widget แล้วเปิดเมนูหรือเปิดแอปของ Widget เอง", "ไอคอนที่อยู่บนจอขึ้นก่อน ไม่ต้องรอทั้งเครื่อง และเลื่อนลื่นขึ้นตอนกำลังโหลด"],
       en: ["Swiping over a widget no longer opens its menu or the widget's app", "Icons on screen load first, and scrolling stays smooth while icons load"] },
     { v: "1.0.6", d: "2026-11-21", th: ["แจ้งเตือนอัปเดตมาเร็วขึ้น เช็กตอนเปิดแอป ตอนกลับหน้าโฮม และทุก 30 นาที", "แจ้งเตือนเด้งขึ้นบนจอ"],

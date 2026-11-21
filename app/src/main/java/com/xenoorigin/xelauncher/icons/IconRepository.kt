@@ -45,6 +45,8 @@ class IconRepository(
     /** Disk writes happen off the render path; the icon is on screen before its PNG is saved. */
     private val diskScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO.limitedParallelism(2))
     private val pendingWrites = java.util.concurrent.ConcurrentLinkedQueue<kotlinx.coroutines.Job>()
+    /** Bumped by [invalidate]; a save that started before the bump is thrown away instead of reviving the old icon. */
+    private val generation = java.util.concurrent.ConcurrentHashMap<String, Int>()
 
     private enum class Variant { GLYPH_GRAY, GLYPH_COLOR, FULL, FULL_GRAY }
 
@@ -116,13 +118,17 @@ class IconRepository(
                 }
             }
             val out = RenderedIcon(rendered.asImageBitmap(), color, fills).also { memory.put(ck, it) }
+            val gen = generation[key.packageName] ?: 0
             pendingWrites += diskScope.launch {
                 dir.mkdirs()
                 runCatching {
                     val tmp = File(f.path + ".tmp")
                     tmp.outputStream().use { rendered.compress(Bitmap.CompressFormat.PNG, 100, it) }
-                    meta.writeText("$color;${if (fills) 1 else 0}")
-                    tmp.renameTo(f)
+                    synchronized(generation) {
+                        if ((generation[key.packageName] ?: 0) != gen) { tmp.delete(); return@runCatching }
+                        meta.writeText("$color;${if (fills) 1 else 0}")
+                        tmp.renameTo(f)
+                    }
                 }
             }
             out
@@ -165,7 +171,10 @@ class IconRepository(
     fun clearMemory() = memory.evictAll()
 
     fun invalidate(packageName: String) {
-        memory.snapshot().keys.filter { it.startsWith("v2|$packageName/") }.forEach { memory.remove(it) }
-        dir.listFiles { f -> f.name.startsWith("${packageName}__") }?.forEach { it.delete() }
+        synchronized(generation) {
+            generation.merge(packageName, 1, Int::plus)
+            memory.snapshot().keys.filter { it.startsWith("v2|$packageName/") }.forEach { memory.remove(it) }
+            dir.listFiles { f -> f.name.startsWith("${packageName}__") }?.forEach { it.delete() }
+        }
     }
 }

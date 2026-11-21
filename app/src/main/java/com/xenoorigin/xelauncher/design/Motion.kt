@@ -25,3 +25,20 @@ object XeMotion {
 }
 
 val LocalAnimationSpeed = staticCompositionLocalOf { AnimationSpeed.NORMAL }
+
+/** How far one drawer row has arrived (0..1) when the drawer is [progress] open: top rows lead, the rest follow. */
+fun drawerCascade(progress: Float, row: Int): Float {
+    val lag = (row.coerceAtMost(7)) * .055f
+    return ((progress - lag) / (1f - .055f * 7)).coerceIn(0f, 1f).let { if (progress >= 1f) 1f else it }
+}
+
+/** A Home page's lean while swiping: [offset] is how far it is from the centre (-1..1, 0 = on screen). */
+data class PageDepth(val scale: Float, val rotationY: Float, val alpha: Float)
+
+fun pageDepth(offset: Float): PageDepth {
+    val o = offset.coerceIn(-1f, 1f); val a = kotlin.math.abs(o)
+    return PageDepth(1f - .1f * a, o * 16f, 1f - .4f * a)
+}
+
+/** Coming back to Home from an app: the screen settles in from slightly larger. [p] runs 0 to 1. */
+fun homeReturnScale(p: Float): Float = 1.07f - .07f * p.coerceIn(0f, 1f)

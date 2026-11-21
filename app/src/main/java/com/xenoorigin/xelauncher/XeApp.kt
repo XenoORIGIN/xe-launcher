@@ -273,6 +273,21 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
         onDispose { lifecycle.removeObserver(obs); tiltSensor.stop() }
     }
 
+    // Coming back from an app, Home settles in from slightly larger, like the app shrinking back into it.
+    val homeReturn = remember { Animatable(1f) }
+    androidx.compose.runtime.DisposableEffect(lifecycle, speed) {
+        var away = false
+        val obs = androidx.lifecycle.LifecycleEventObserver { _, e ->
+            if (e == androidx.lifecycle.Lifecycle.Event.ON_STOP) away = true
+            if (e == androidx.lifecycle.Lifecycle.Event.ON_START && away) {
+                away = false
+                if (speed != AnimationSpeed.OFF) scope.launch { homeReturn.snapTo(0f); homeReturn.animateTo(1f, XeMotion.spring(speed, dampingRatio = .8f, stiffness = 260f)) }
+            }
+        }
+        lifecycle.addObserver(obs)
+        onDispose { lifecycle.removeObserver(obs) }
+    }
+
     // Stable objects: they only change when settings do, so the drawer and home don't recompose every frame.
     val styleOf: (AppEntry) -> IconStyle = remember(settings.iconOverrides, settings.iconStyle) {
         { a -> settings.iconOverrides[a.key.encode()] ?: settings.iconStyle }
@@ -317,7 +332,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     }
 
     fun launch(app: AppEntry, r: Rect) {
-        val opts = if (r.width > 0) ActivityOptions.makeClipRevealAnimation(view, r.left.toInt(), r.top.toInt(), r.width.toInt(), r.height.toInt()).toBundle() else null
+        val opts = if (r.width > 0) ActivityOptions.makeScaleUpAnimation(view, r.left.toInt(), r.top.toInt(), r.width.toInt(), r.height.toInt()).toBundle() else null
         graph.apps.launch(app.key, android.graphics.Rect(r.left.toInt(), r.top.toInt(), r.right.toInt(), r.bottom.toInt()), opts)
         scope.launch {
             graph.categories.recordLaunch(app.key)
@@ -412,7 +427,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                 onDragStart = { menu = null; if (!settings.layoutLocked) editMode = true },
             ),
             Modifier
-                .graphicsLayer { val p = drawer.value; alpha = 1f - p; scaleX = 1f - .06f * p; scaleY = 1f - .06f * p }
+                .graphicsLayer { val p = drawer.value; val r = homeReturn.value; val back = com.xenoorigin.xelauncher.design.homeReturnScale(r); alpha = (1f - p) * (.35f + .65f * r); scaleX = (1f - .06f * p) * back; scaleY = scaleX }
                 .pointerInput(Unit) {
                     awaitPointerEventScope {
                         while (true) {
@@ -480,6 +495,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                 graph.wallpaper, Color.Black.copy(alpha = .38f),
                 Modifier.graphicsLayer { alpha = drawer.value.coerceIn(0f, 1f) },
             )
+            androidx.compose.runtime.CompositionLocalProvider(com.xenoorigin.xelauncher.drawer.LocalDrawerProgress provides { drawer.value }) {
             AppDrawer(
                 categories, drawerState, drawerLook,
                 onLaunch = ::launch,
@@ -501,6 +517,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                         onDragStopped = { v -> settleDrawer(!(v > fling * .5f || drawer.value < .65f)) },
                     ),
             )
+            }
         }
 
         // ---------- Overlays ----------
