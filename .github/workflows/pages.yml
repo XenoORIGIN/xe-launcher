@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths: ["website/**", ".github/workflows/pages.yml"]
   workflow_run:
-    workflows: ["Build APK", "Publish release"]
+    workflows: ["Publish release"]
     types: [completed]
   workflow_dispatch:
 
@@ -16,7 +16,7 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -28,8 +28,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      # The site lives at the root; the old /website/ link forwards there.
+      - run: |
+          mkdir -p _site/website && cp -r website/. _site/
+          printf '<!doctype html><meta charset="utf-8"><title>Xe Launcher</title><meta http-equiv="refresh" content="0; url=../"><script>location.replace("../"+location.hash)</script><a href="../">Xe Launcher</a>' > _site/website/index.html
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: website
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4
