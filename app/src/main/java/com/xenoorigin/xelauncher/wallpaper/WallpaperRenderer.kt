@@ -29,7 +29,7 @@ object WallpaperRenderer {
         is WallpaperPreset.Mesh -> mesh(p, w, h)
         is WallpaperPreset.Abstract -> abstract(p, w, h)
         is WallpaperPreset.Image -> image(p, w, h)
-        is WallpaperPreset.Sky -> sky(skyAt(p.minute ?: minuteNow()), w, h)
+        is WallpaperPreset.Sky -> sky(skyAt(p.minute ?: minuteNow(), sunToday()), w, h)
     }
 
     /** Gradient sky with the sun's or moon's glow and, at night, stars. */
