@@ -65,6 +65,8 @@ data class XeSettings(
     val hiddenCategories: Set<Long> = emptySet(),
     /** Accent colour (ARGB) chosen for a category; categories without one use their built-in hue. */
     val categoryAccent: Map<Long, Long> = emptyMap(),
+    /** The live sky was also put on the lock screen; Xe refreshes it there when the screen turns on. */
+    val liveSkyLock: Boolean = false,
     /** Per-category app order; missing = follow the drawer sort. */
     val categorySort: Map<Long, CategorySort> = emptyMap(),
     /** Post a notification when a new version is on GitHub. */

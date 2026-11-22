@@ -350,4 +350,9 @@
     <string name="cat_sort_newest">Newest</string>
     <string name="usage_access_title">Let Xe see time spent</string>
     <string name="usage_access_desc">Turn on Usage access so apps you spend longest in come first. Until then Xe counts how often you open them.</string>
+    <string name="live_sky_wallpaper">Xe Live Sky</string>
+    <string name="live_sky_wallpaper_desc">The sky outside right now: dawn, day, dusk and stars, always on time.</string>
+    <string name="live_sky_offer_title">Keep the sky on time everywhere?</string>
+    <string name="live_sky_offer_body">Use Xe Live Sky as the phone\'s own wallpaper too. It stays on time even when Xe isn\'t open, with no extra battery while the screen is off.</string>
+    <string name="live_sky_offer_yes">Use on the phone</string>
 </resources>

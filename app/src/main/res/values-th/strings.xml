@@ -349,4 +349,9 @@
     <string name="cat_sort_newest">ติดตั้งล่าสุด</string>
     <string name="usage_access_title">ให้ Xe ดูเวลาที่ใช้แต่ละแอป</string>
     <string name="usage_access_desc">เปิด \"การเข้าถึงการใช้งาน\" เพื่อให้แอปที่ใช้นานที่สุดขึ้นก่อน ระหว่างนี้ Xe จะนับจากจำนวนครั้งที่เปิดแทน</string>
+    <string name="live_sky_wallpaper">Xe ท้องฟ้าตามเวลาจริง</string>
+    <string name="live_sky_wallpaper_desc">ท้องฟ้าตามเวลาจริง ทั้งเช้า กลางวัน เย็น และดาว ตรงเวลาเสมอ</string>
+    <string name="live_sky_offer_title">ให้ท้องฟ้าตรงเวลาทุกที่ไหม</string>
+    <string name="live_sky_offer_body">ใช้ Xe ท้องฟ้าตามเวลาจริงเป็นวอลเปเปอร์ของเครื่องด้วย ภาพจะตรงเวลาแม้ไม่ได้เปิด Xe และไม่กินแบตตอนปิดจอ</string>
+    <string name="live_sky_offer_yes">ใช้เป็นวอลเปเปอร์เครื่อง</string>
 </resources>

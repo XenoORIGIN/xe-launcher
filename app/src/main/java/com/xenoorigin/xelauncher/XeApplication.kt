@@ -13,6 +13,7 @@ class XeApplication : Application() {
             com.xenoorigin.xelauncher.bugs.CrashStore(java.io.File(filesDir, "crashes")), BuildConfig.VERSION_NAME,
         )
         graph = AppGraph(this)
+        com.xenoorigin.xelauncher.wallpaper.LiveSkyWallpaper.watchScreenOn(this)
     }
 }
 

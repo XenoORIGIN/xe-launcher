@@ -365,6 +365,10 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
             onWiped = { a -> update { it.copy(dustWiped = it.dustWiped + (a.key.encode() to System.currentTimeMillis())) } },
         )
     }
+    // Outside Xe, a 15-minute job keeps the phone's copy of the live sky fresh.
+    LaunchedEffect(settings.wallpaperId) {
+        com.xenoorigin.xelauncher.wallpaper.LiveSkyWallpaper.schedule(ctx, settings.wallpaperId == com.xenoorigin.xelauncher.wallpaper.LIVE_SKY_ID)
+    }
     // The live sky keeps up with the time while Xe is on screen.
     LaunchedEffect(settings.wallpaperId, lifecycle) {
         if (settings.wallpaperId != com.xenoorigin.xelauncher.wallpaper.LIVE_SKY_ID) return@LaunchedEffect

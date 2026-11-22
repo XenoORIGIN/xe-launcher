@@ -48,6 +48,13 @@ class WallpaperController(
         skyShown = bucket
     }
 
+    /** Writes the current sky to the phone's lock screen only (called when the screen turns on). */
+    suspend fun refreshLockSky(minute: Int = minuteNow()) = withContext(Dispatchers.IO) {
+        if (settings.current().wallpaperId != LIVE_SKY_ID) return@withContext
+        val (w, h) = screenSize()
+        applyBitmap(WallpaperRenderer.render(WallpaperPreset.Sky(minute = minute), w, h), WallpaperTarget.LOCK)
+    }
+
     private fun show(bmp: Bitmap) {
         _current.value = bmp.asImageBitmap()
         _backdrop.value = runCatching { WallpaperRenderer.backdrop(bmp).asImageBitmap() }.getOrNull()
@@ -73,7 +80,8 @@ class WallpaperController(
         val raw = WallpaperRenderer.render(preset, w, h)
         val bmp = if (adjust == WallpaperAdjust()) raw else WallpaperRenderer.compose(raw, w, h, adjust)
         applyBitmap(bmp, target)
-        settings.update { it.copy(wallpaperId = preset.id) }
+        // Remember whether the lock screen shows the live sky, so screen-on can keep it current.
+        settings.update { it.copy(wallpaperId = preset.id, liveSkyLock = if (preset is WallpaperPreset.Sky) target != WallpaperTarget.HOME else it.liveSkyLock && target == WallpaperTarget.HOME) }
         skyShown = if (preset is WallpaperPreset.Sky) skyBucket(preset.minute ?: minuteNow()) else -1
     }
 
@@ -125,7 +133,7 @@ class WallpaperController(
         val (w, h) = screenSize()
         val src = BitmapFactory.decodeFile(file.path) ?: return@withContext
         applyBitmap(WallpaperRenderer.compose(src, w, h, adjust), target)
-        settings.update { it.copy(wallpaperId = "image:${file.name}") }
+        settings.update { it.copy(wallpaperId = "image:${file.name}", liveSkyLock = it.liveSkyLock && target == WallpaperTarget.HOME) }
     }
 
     /** Recently imported pictures, newest first. */

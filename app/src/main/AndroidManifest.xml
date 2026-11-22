@@ -19,6 +19,8 @@
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
 
+    <uses-feature android:name="android.software.live_wallpaper" android:required="false" />
+
     <queries>
         <package android:name="com.xenoorigin.xestudio" />
     </queries>
@@ -71,6 +73,22 @@
             android:exported="false">
             <meta-data android:name="autoStoreLocales" android:value="true" />
         </service>
+        <!-- "Xe Live Sky": the live sky as the phone's own wallpaper. -->
+        <service
+            android:name=".wallpaper.LiveSkyWallpaperService"
+            android:exported="true"
+            android:label="@string/live_sky_wallpaper"
+            android:permission="android.permission.BIND_WALLPAPER">
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+            </intent-filter>
+            <meta-data android:name="android.service.wallpaper" android:resource="@xml/live_sky_wallpaper" />
+        </service>
+        <service
+            android:name=".wallpaper.SkyMirrorJob"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
         <receiver
             android:name=".studio.StudioThemeReceiver"
             android:exported="true"

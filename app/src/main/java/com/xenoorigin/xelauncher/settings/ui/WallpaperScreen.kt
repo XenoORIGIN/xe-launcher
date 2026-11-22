@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.xenoorigin.xelauncher.R
@@ -73,6 +74,7 @@ fun WallpaperScreen(graph: AppGraph, back: () -> Unit) {
     val ctx = LocalContext.current
     val current by graph.settings.settings.collectAsState(initial = null)
     var editing by remember { mutableStateOf<WallpaperPreset?>(null) }
+    var offerLiveSky by remember { mutableStateOf(false) }
     var importsVersion by remember { mutableIntStateOf(0) }
     var importing by remember { mutableStateOf(false) }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
@@ -100,6 +102,15 @@ fun WallpaperScreen(graph: AppGraph, back: () -> Unit) {
             ThumbGrid(XeCollection, current?.wallpaperId) { editing = it }
         }
     }
+    com.xenoorigin.xelauncher.design.GlassSheet(offerLiveSky, { offerLiveSky = false }) {
+        Text(stringResource(R.string.live_sky_offer_title), style = XeType.Title, color = LocalXeScheme.current.text, modifier = Modifier.padding(vertical = 8.dp))
+        Text(stringResource(R.string.live_sky_offer_body), style = XeType.Body, color = LocalXeScheme.current.textSecondary)
+        GlassPillButton(stringResource(R.string.live_sky_offer_yes), {
+            offerLiveSky = false
+            runCatching { ctx.startActivity(com.xenoorigin.xelauncher.wallpaper.LiveSkyWallpaper.pickerIntent(ctx)) }
+        }, Modifier.fillMaxWidth().padding(top = 14.dp).testTag("live_sky_yes"), icon = R.drawable.ti_check)
+        GlassPillButton(stringResource(R.string.not_now), { offerLiveSky = false }, Modifier.fillMaxWidth().padding(vertical = 10.dp))
+    }
     editing?.let { p ->
         WallpaperEditor(
             p,
@@ -109,6 +120,8 @@ fun WallpaperScreen(graph: AppGraph, back: () -> Unit) {
                     if (preset is WallpaperPreset.Image) graph.wallpaper.applyImage(preset.file, adjust, target)
                     else graph.wallpaper.apply(preset, target, adjust)
                 }
+                // Offer the always-on-time system version of the live sky.
+                if (preset is WallpaperPreset.Sky && !com.xenoorigin.xelauncher.wallpaper.LiveSkyWallpaper.isActive(ctx)) offerLiveSky = true
             },
             onDelete = if (p is WallpaperPreset.Image) ({ graph.wallpaper.deleteImport(p.file); importsVersion++; editing = null }) else null,
             onClose = { editing = null },
