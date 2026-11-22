@@ -32,7 +32,7 @@ class GlassLensTest {
     private val layout = HomeLayout(listOf(listOf(AppCell(1, 0, 0, sampleEntry(0)))), emptyList())
     private var emptyHolds = 0
     private var itemMenus = 0
-    private val lens = LensState({ null }, { 0f })
+    private val lens = LensState({ null }, { Offset.Zero })
 
     private fun show() {
         val repo = sampleRepo()
@@ -82,11 +82,13 @@ class GlassLensTest {
     }
 
     @Test fun lensMapsScreenToTheCroppedWallpaper() {
-        val m = wallMapping(IntSize(100, 200), Size(300f, 600f), parallaxPx = 0f)
-        assertThat(m.scale).isWithin(.001f).of(3.24f)
-        assertThat(m.offset.x).isWithin(.01f).of(-12f)
-        assertThat(m.offset.y).isWithin(.01f).of(-24f)
-        assertThat(wallMapping(IntSize(100, 200), Size(300f, 600f), parallaxPx = 10f).offset.x).isWithin(.01f).of(-2f)
+        val m = wallMapping(IntSize(100, 200), Size(300f, 600f), parallaxPx = Offset.Zero)
+        assertThat(m.scale).isWithin(.001f).of(3.36f)
+        assertThat(m.offset.x).isWithin(.01f).of(-18f)
+        assertThat(m.offset.y).isWithin(.01f).of(-36f)
+        val shifted = wallMapping(IntSize(100, 200), Size(300f, 600f), parallaxPx = Offset(10f, 4f)).offset
+        assertThat(shifted.x).isWithin(.01f).of(-8f)
+        assertThat(shifted.y).isWithin(.01f).of(-32f)
     }
 
     @Test fun rimTurnsWithTilt_inThreeDegreeSteps() {

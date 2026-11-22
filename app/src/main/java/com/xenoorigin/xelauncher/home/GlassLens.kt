@@ -42,7 +42,7 @@ import kotlin.math.roundToInt
 
 /** A glass lens the finger can drag over the Home wallpaper (hold an empty spot, then drag). */
 @Stable
-class LensState(val wallpaper: () -> ImageBitmap?, val parallaxPx: () -> Float) {
+class LensState(val wallpaper: () -> ImageBitmap?, val parallaxPx: () -> Offset) {
     var active by mutableStateOf(false)
         private set
     var target by mutableStateOf(Offset.Zero)
@@ -55,12 +55,12 @@ class LensState(val wallpaper: () -> ImageBitmap?, val parallaxPx: () -> Float) 
 
 val LocalLens = staticCompositionLocalOf<LensState?> { null }
 
-/** Where the wallpaper bitmap sits on screen: drawn cropped to fill, scaled 1.08, shifted by parallax. */
+/** Where the wallpaper bitmap sits on screen: drawn cropped to fill, scaled [WALL_SCALE], shifted by parallax. */
 internal data class WallMapping(val scale: Float, val offset: Offset)
 
-internal fun wallMapping(bmp: IntSize, screen: Size, parallaxPx: Float): WallMapping {
-    val k = maxOf(screen.width / bmp.width, screen.height / bmp.height) * 1.08f
-    return WallMapping(k, Offset(screen.width / 2f - bmp.width * k / 2f + parallaxPx, screen.height / 2f - bmp.height * k / 2f))
+internal fun wallMapping(bmp: IntSize, screen: Size, parallaxPx: Offset): WallMapping {
+    val k = maxOf(screen.width / bmp.width, screen.height / bmp.height) * com.xenoorigin.xelauncher.wallpaper.WALL_SCALE
+    return WallMapping(k, Offset(screen.width / 2f - bmp.width * k / 2f + parallaxPx.x, screen.height / 2f - bmp.height * k / 2f + parallaxPx.y))
 }
 
 // Bends the wallpaper like a drop of glass: slight zoom in the middle, strong bend at the edge.

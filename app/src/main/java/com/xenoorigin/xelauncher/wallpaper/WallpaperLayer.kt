@@ -15,10 +15,10 @@ import androidx.compose.ui.layout.ContentScale
 import com.xenoorigin.xelauncher.design.LocalHazeState
 import dev.chrisbanes.haze.hazeSource
 
-/** Draws Xe's wallpaper; [parallaxPx] shifts it horizontally while paging. Acts as the blur source. */
+/** Draws Xe's wallpaper; [parallaxPx] shifts it while paging and tilting (depth). Acts as the blur source. */
 @Composable
 fun WallpaperLayer(
-    controller: WallpaperController, parallaxPx: () -> Float, modifier: Modifier = Modifier,
+    controller: WallpaperController, parallaxPx: () -> androidx.compose.ui.geometry.Offset, modifier: Modifier = Modifier,
     /** Live sky chosen: draw it live (stars, clouds) instead of the saved picture. */
     liveSky: Boolean = false, animate: Boolean = true,
 ) {
@@ -31,13 +31,13 @@ fun WallpaperLayer(
             var minute by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(minuteNow()) }
             val sun = androidx.compose.runtime.remember(minute / 60) { sunToday() }
             androidx.compose.runtime.LaunchedEffect(Unit) { while (true) { kotlinx.coroutines.delay(15_000); minute = minuteNow() } }
-            LiveSkyLayer(sun, { minute }, animate, Modifier.fillMaxSize().graphicsLayer { val p = parallaxPx(); translationX = p; scaleX = 1.08f; scaleY = 1.08f })
+            LiveSkyLayer(sun, { minute }, animate, Modifier.fillMaxSize().graphicsLayer { val p = parallaxPx(); translationX = p.x; translationY = p.y; scaleX = WALL_SCALE; scaleY = WALL_SCALE })
             return@Box
         }
         bmp?.let {
             Image(
                 it, null, contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().graphicsLayer { val p = parallaxPx(); translationX = p; scaleX = 1.08f; scaleY = 1.08f },
+                modifier = Modifier.fillMaxSize().graphicsLayer { val p = parallaxPx(); translationX = p.x; translationY = p.y; scaleX = WALL_SCALE; scaleY = WALL_SCALE },
             )
         }
     }

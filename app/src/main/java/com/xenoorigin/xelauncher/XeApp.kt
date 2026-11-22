@@ -281,7 +281,8 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     // Glass light follows the phone's tilt, only while Xe is on screen.
     val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
     val tiltSensor = remember { com.xenoorigin.xelauncher.design.TiltSensor(ctx) }
-    val tiltOn = settings.tiltShine && speed != AnimationSpeed.OFF
+    // Tilt feeds the glass light and the depth parallax; the sensor runs only while one of them is on.
+    val tiltOn = (settings.tiltShine || settings.depthParallax) && speed != AnimationSpeed.OFF && !powerSave
     androidx.compose.runtime.DisposableEffect(tiltOn, lifecycle) {
         val obs = androidx.lifecycle.LifecycleEventObserver { _, e ->
             if (e == androidx.lifecycle.Lifecycle.Event.ON_RESUME && tiltOn) tiltSensor.start()
@@ -435,11 +436,19 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
         var totalDy by remember { mutableStateOf(0f) }
         var maxPointers by remember { mutableIntStateOf(1) }
 
-        val parallax: () -> Float = {
-            if (!settings.wallpaperParallax) 0f else {
-                val count = (homePager.pageCount - 1).coerceAtLeast(1)
-                val f = (homePager.currentPage + homePager.currentPageOffsetFraction) / count
-                -(f - .5f) * with(density) { 24.dp.toPx() }
+        val widthPx = with(density) { androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp.toPx() }
+        val tiltPx = with(density) { 12.dp.toPx() }
+        val parallax: () -> androidx.compose.ui.geometry.Offset = {
+            val pos = homePager.currentPage + homePager.currentPageOffsetFraction
+            when {
+                // Depth: the wallpaper lags behind the pages and drifts with the phone's tilt.
+                settings.depthParallax && speed != AnimationSpeed.OFF ->
+                    com.xenoorigin.xelauncher.wallpaper.parallaxOffset(pos, homePager.pageCount, com.xenoorigin.xelauncher.design.GlassTilt.value.value, widthPx, tiltPx)
+                settings.wallpaperParallax -> {
+                    val count = (homePager.pageCount - 1).coerceAtLeast(1)
+                    androidx.compose.ui.geometry.Offset(-(pos / count - .5f) * with(density) { 24.dp.toPx() }, 0f)
+                }
+                else -> androidx.compose.ui.geometry.Offset.Zero
             }
         }
         com.xenoorigin.xelauncher.wallpaper.WallpaperLayer(
