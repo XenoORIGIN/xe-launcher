@@ -18,6 +18,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.File
+import androidx.compose.ui.graphics.asAndroidBitmap
 
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -125,5 +126,23 @@ class IconRepositoryTest {
         repo.prewarm((0 until 20).map(::keyN), { IconStyle.GLASS_DARK }, 64, 1f)
         assertThat(peak).isAtMost(2)
         assertThat((0 until 20).all { repo.peek(keyN(it), IconStyle.GLASS_DARK, 64, 1f) != null }).isTrue()
+    }
+
+    @Test fun customIconUnderLiquidGlassIsWhitened() = runBlocking<Unit> {
+        val pic = File(ctx.cacheDir, "custom-${System.nanoTime()}.png")
+        android.graphics.Bitmap.createBitmap(64, 64, android.graphics.Bitmap.Config.ARGB_8888).apply { eraseColor(Color.RED) }
+            .let { b -> pic.outputStream().use { b.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) } }
+        val repo = IconRepository(loader, dir, customIcon = { pic })
+        val icon = repo.icon(key, IconStyle.GLASS_CLEAR, 96, 1f)!!
+        val c = icon.bitmap.asAndroidBitmap().getPixel(48, 48)
+        assertThat(Color.red(c)).isAtLeast(216); assertThat(Color.green(c)).isAtLeast(216); assertThat(Color.blue(c)).isAtLeast(216)
+        assertThat(icon.fillsTile).isFalse()
+    }
+
+    @Test fun liquidGlassAndColourGlassAreCachedSeparately() = runBlocking<Unit> {
+        val repo = IconRepository(loader, dir)
+        repo.icon(key, IconStyle.GLASS_COLOR, 96, 1f)
+        repo.icon(key, IconStyle.GLASS_CLEAR, 96, 1f)
+        assertThat(loads).isEqualTo(2)
     }
 }

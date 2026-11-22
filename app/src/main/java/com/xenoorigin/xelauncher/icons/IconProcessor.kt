@@ -35,6 +35,39 @@ object IconProcessor {
         return out
     }
 
+    /**
+     * Liquid Glass symbol: every pixel turned near-white, keeping its alpha and a hint of its shading
+     * ([shade] of the darkness) so the symbol isn't flat.
+     */
+    fun milkyWhite(src: Bitmap, shade: Float = .15f): Bitmap {
+        val w = src.width; val h = src.height
+        val px = IntArray(w * h); src.getPixels(px, 0, w, 0, 0, w, h)
+        for (i in px.indices) {
+            val c = px[i]; val a = Color.alpha(c)
+            if (a == 0) { px[i] = 0; continue }
+            val lum = (Color.red(c) * 299 + Color.green(c) * 587 + Color.blue(c) * 114) / 1000
+            val v = (255 - (255 - lum) * shade).toInt().coerceIn(0, 255)
+            px[i] = Color.argb(a, v, v, v)
+        }
+        return Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).apply { setPixels(px, 0, w, 0, 0, w, h) }
+    }
+
+    /** A whole-tile icon (no separate symbol) as milky white: light parts solid, dark parts fade into the glass. */
+    fun milkyFromFull(src: Bitmap): Bitmap {
+        val out = milkyWhite(src)
+        val w = src.width; val h = src.height
+        val s = IntArray(w * h); src.getPixels(s, 0, w, 0, 0, w, h)
+        val o = IntArray(w * h); out.getPixels(o, 0, w, 0, 0, w, h)
+        for (i in s.indices) {
+            val c = s[i]
+            val lum = (Color.red(c) * 299 + Color.green(c) * 587 + Color.blue(c) * 114) / 1000
+            val a = (Color.alpha(c) * (.25f + .75f * lum / 255f)).toInt().coerceIn(0, 255)
+            o[i] = (o[i] and 0x00FFFFFF) or (a shl 24)
+        }
+        out.setPixels(o, 0, w, 0, 0, w, h)
+        return out
+    }
+
     /** Average luminance (0..1) of pixels with alpha >= 128; 1 when none. */
     fun averageLuminance(src: Bitmap): Float {
         var sum = 0.0; var n = 0

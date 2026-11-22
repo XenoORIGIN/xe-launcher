@@ -88,4 +88,23 @@ class IconProcessorTest {
         // 10px symbol (10%) is scaled up to roughly 60% of the tile.
         assertThat(Color.alpha(r.bitmap.getPixel(28, 50))).isGreaterThan(200)
     }
+
+    @Test fun milkyWhiteKeepsShapeAndIsLight() {
+        val src = bmp { x, y -> if (x < 4) Color.argb(200, 20, 40, 220) else if (y < 4) Color.argb(255, 250, 30, 10) else Color.TRANSPARENT }
+        val out = IconProcessor.milkyWhite(src)
+        for (x in 0 until 8) for (y in 0 until 8) {
+            val a = src.getPixel(x, y); val b = out.getPixel(x, y)
+            assertThat(Color.alpha(b)).isEqualTo(Color.alpha(a))
+            if (Color.alpha(b) > 0) {
+                assertThat(Color.red(b)).isAtLeast(216); assertThat(Color.green(b)).isAtLeast(216); assertThat(Color.blue(b)).isAtLeast(216)
+            }
+        }
+    }
+
+    @Test fun milkyFromFullFadesDarkAreas() {
+        val src = bmp { x, _ -> if (x < 4) Color.BLACK else Color.WHITE }
+        val out = IconProcessor.milkyFromFull(src)
+        assertThat(Color.alpha(out.getPixel(1, 1))).isLessThan(Color.alpha(out.getPixel(6, 1)))
+        assertThat(Color.red(out.getPixel(1, 1))).isAtLeast(210) // faint pixels lose a little to premultiplied alpha
+    }
 }

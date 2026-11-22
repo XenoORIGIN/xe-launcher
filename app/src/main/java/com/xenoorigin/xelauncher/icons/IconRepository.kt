@@ -52,11 +52,12 @@ class IconRepository(
     /** Bumped by [invalidate]; a save that started before the bump is thrown away instead of reviving the old icon. */
     private val generation = java.util.concurrent.ConcurrentHashMap<String, Int>()
 
-    private enum class Variant { GLYPH_GRAY, GLYPH_COLOR, FULL, FULL_GRAY, STUDIO }
+    private enum class Variant { GLYPH_GRAY, GLYPH_COLOR, GLYPH_WHITE, FULL, FULL_GRAY, STUDIO }
 
     private fun variantOf(style: IconStyle) = when (style) {
         IconStyle.GLASS_DARK -> Variant.GLYPH_GRAY
-        IconStyle.GLASS_COLOR, IconStyle.GLASS_CLEAR -> Variant.GLYPH_COLOR
+        IconStyle.GLASS_COLOR -> Variant.GLYPH_COLOR
+        IconStyle.GLASS_CLEAR -> Variant.GLYPH_WHITE
         IconStyle.MONO -> Variant.FULL_GRAY
         IconStyle.ORIGINAL -> Variant.FULL
         // Without a Studio theme the tile looks exactly like the default style.
@@ -105,8 +106,11 @@ class IconRepository(
             val custom = customIcon(key)?.let { BitmapFactory.decodeFile(it.path) }
             val (rendered, fills, color) = if (custom != null) {
                 val whole = IconProcessor.square(custom, sizePx)
-                val out = if (v == Variant.FULL_GRAY || v == Variant.GLYPH_GRAY) IconProcessor.grayscale(whole, contrast) else whole
-                Triple(out, true, IconProcessor.dominantColor(whole))
+                if (v == Variant.GLYPH_WHITE) Triple(IconProcessor.milkyFromFull(whole), false, IconProcessor.dominantColor(whole))
+                else {
+                    val out = if (v == Variant.FULL_GRAY || v == Variant.GLYPH_GRAY) IconProcessor.grayscale(whole, contrast) else whole
+                    Triple(out, true, IconProcessor.dominantColor(whole))
+                }
             } else {
                 val d = loader(key) ?: return@withPermit null
                 val whole = IconProcessor.full(d, sizePx)
@@ -114,9 +118,12 @@ class IconRepository(
                 when (v) {
                     Variant.FULL, Variant.STUDIO -> Triple(whole, true, color)
                     Variant.FULL_GRAY -> Triple(IconProcessor.grayscale(whole, contrast), true, color)
-                    Variant.GLYPH_GRAY, Variant.GLYPH_COLOR -> {
+                    Variant.GLYPH_GRAY, Variant.GLYPH_COLOR, Variant.GLYPH_WHITE -> {
                         val g = IconProcessor.extractGlyph(IconProcessor.foregroundOf(d, sizePx))
                         when {
+                            // Liquid Glass: every symbol milky white; whole-tile icons are whitened and sit inside the glass.
+                            v == Variant.GLYPH_WHITE && g.isGlyph -> Triple(IconProcessor.milkyWhite(g.bitmap), false, color)
+                            v == Variant.GLYPH_WHITE -> Triple(IconProcessor.milkyFromFull(whole), false, color)
                             !g.isGlyph && v == Variant.GLYPH_GRAY -> Triple(IconProcessor.grayscale(whole, contrast), true, color)
                             !g.isGlyph -> Triple(whole, true, color)
                             v == Variant.GLYPH_GRAY -> Triple(IconProcessor.grayscale(g.bitmap, contrast, lightenDarkGlyphs = true), false, color)
