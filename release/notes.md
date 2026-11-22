@@ -1,17 +1,21 @@
-## Xe Launcher 1.0.13 + Xe Studio (ใหม่)
+## Xe Launcher 1.0.14
 
-**อัปเดตทั้งสองแอปคู่กัน:** โหลด `xe-launcher.apk` และ `xe-studio.apk` ด้านล่าง ติดตั้งทับของเดิมได้ การตั้งค่ายังอยู่ครบ
+**อัปเดต:** โหลด `xe-launcher.apk` ด้านล่าง ติดตั้งทับของเดิมได้ การตั้งค่ายังอยู่ครบ (`xe-studio.apk` เป็นตัวเดิมพร้อมเลขเวอร์ชันใหม่)
 
-- **Xe Studio แอปใหม่** สำหรับสร้างธีมไอคอนเอง แต่งไอคอนทั้งชุดได้ด้วยทรง (7 แบบ) สีพื้นหลัง สีไอคอน (ต้นฉบับ ขาวดำ สีเดียว สองโทน) เส้นขอบ เงา และขนาดสัญลักษณ์ ตัวอย่างเป็นแอปจริงในเครื่อง
-- แตะไอคอนไหนก็แก้เฉพาะตัวนั้นได้: ใช้รูปจากแกลเลอรี ตัวอักษรหรือสัญลักษณ์ หรือวาดเอง
-- กด **ใช้กับ Xe** แล้วไอคอนใน Xe เปลี่ยนทันที ใน Xe จะมีสไตล์ไอคอนใหม่ "จาก Xe Studio" ถ้าลบ Studio ทิ้งธีมก็ยังอยู่ เลือกสไตล์อื่นได้ที่ ตั้งค่า › ไอคอน
-- ตั้งค่า › Xe Studio มีปุ่มเปิดแอป Xe Studio (หรือโหลดถ้ายังไม่มี)
-- แก้บั๊ก: แจ้งเตือนอัปเดตไม่ขึ้นถ้าตอนที่แอปเจอเวอร์ชันใหม่ การแจ้งเตือนของ Xe ถูกปิดอยู่ ตอนนี้จะแจ้งอีกครั้งเมื่อเปิดการแจ้งเตือน
+- **ท้องฟ้าสด** ตรงกับเวลาจริงแล้ว: คำนวณเวลาพระอาทิตย์ขึ้น-ตกตามโซนเวลาของเครื่อง เปลี่ยนทุก 15 นาทีแม้ไม่ได้เปิด Xe ภาพเมฆ ดาว และแสงสวยขึ้น ใช้กับหน้าล็อกได้ (อัปเดตตอนเปิดหน้าจอ)
+- **วิดเจ็ต** มีขนาดให้เลือกมากขึ้นและจัดหน้าตาตามขนาด กดค้างแล้วลากเพื่อย้าย ลากมุมเพื่อปรับขนาด มีป้ายบอกขนาด (เช่น 4×2) และปุ่มขนาดสำเร็จรูป ถ้าวางทับของอื่นจะขึ้นสีแดงและไม่ย้าย
+- **จัดการหมวดหมู่**: แก้บั๊กแถวค้างเวลาลาก ปัดแถวเพื่อซ่อน เลือกสีและวิธีเรียงแอปของแต่ละหมวด ชื่อยาวไม่ล้น
+- "ใช้บ่อยที่สุด" เปลี่ยนเป็น **"ใช้นานที่สุด"** (ต้องอนุญาตการเข้าถึงการใช้งาน ถ้าไม่อนุญาตจะนับจากจำนวนครั้งที่เปิดเหมือนเดิม)
+- **ลูกเล่นใหม่** (ปิด-เปิดได้ที่ ตั้งค่า › รูปลักษณ์): ไอคอนกระจกหักเหแสงแบบ "แสงสะท้อน" หรือ "เลนส์", Dock แบบน้ำที่ไอคอนพองตามนิ้ว, ภาพพื้นหลังมีมิติเวลาปัดหรือเอียงเครื่อง, เปิดแอปเป็นฟองกระจก, ขอบกระจกเป็นสีส้มตอนพระอาทิตย์ตกและสีฟ้าตอนกลางคืน
+- วอลเปเปอร์ธีมสวยขึ้น ธีมรวม 13 แบบ และแผ่นหน้าต่างๆ เลื่อนเข้าออกนุ่มขึ้น
+- แจ้งเตือนอัปเดตมี **เสียงกระจกของ Xe**
 
-**Update both apps together:** download `xe-launcher.apk` and `xe-studio.apk` below and install over the old ones; your settings stay.
+**Update:** download `xe-launcher.apk` below and install over the old one; your settings stay. (`xe-studio.apk` is unchanged apart from its version number.)
 
-- **Xe Studio, a new app** for making your own icon theme: style every icon by shape (7), background, icon colour (original, black and white, one colour, two-tone), outline, shadow and symbol size, previewed with your real apps
-- Tap any icon to change just that one: a picture from your gallery, a letter or symbol, or a drawing
-- Tap **Use in Xe** and Xe's icons change at once, as the new "From Xe Studio" icon style. It stays even if Studio is removed; pick another style in Settings › Icons
-- Settings › Xe Studio has a button that opens Xe Studio (or downloads it)
-- Fixed: update alerts never came if Xe's notifications were off when it found the new version
+- **Live Sky** now matches the real time: sunrise and sunset are computed for your time zone, it changes every 15 minutes even when Xe isn't open, clouds, stars and light look better, and it can go on the lock screen (refreshed when the screen turns on)
+- **Widgets** come in more sizes and lay themselves out for each size. Long-press and drag to move, drag a corner to resize, with a live size label (like 4×2) and size presets. Dropping onto something else shows red and keeps it where it was
+- **Category editor**: fixed rows getting stuck while dragging, swipe a row to hide it, pick each category's colour and how its apps are sorted, long names no longer overflow
+- "Most used" is now **"Used longest"** (needs usage access; without it Xe counts launches as before)
+- **New touches** (switch them in Settings › Appearance): glass icons that bend the light ("Light" or "Lens"), a liquid dock that swells under your finger, wallpaper depth as you swipe or tilt, a glass bubble app launch, and glass rims that turn amber at sunset and blue at night
+- Prettier theme wallpapers, 13 themes in all, and smoother sheets
+- Update alerts play **Xe's glass chime**
