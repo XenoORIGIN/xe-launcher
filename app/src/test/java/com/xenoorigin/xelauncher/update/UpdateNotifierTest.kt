@@ -27,9 +27,19 @@ class UpdateNotifierTest {
         assertThat(UpdateNotifier.postTest(ctx)).isTrue()
         val n = shadow.allNotifications.single()
         assertThat(n.extras.getString(android.app.Notification.EXTRA_TITLE)).contains("Xe Launcher")
-        assertThat(n.channelId).isEqualTo("updates_alert")
+        assertThat(n.channelId).isEqualTo("updates_alert_v2")
         shadow.setNotificationsEnabled(false)
         assertThat(UpdateNotifier.postTest(ctx)).isFalse()
+    }
+
+    @Test fun channelUsesXeChime_andLegacyChannelIsRemoved() {
+        val nm = ctx.getSystemService(android.app.NotificationManager::class.java)
+        nm.createNotificationChannel(android.app.NotificationChannel("updates_alert", "old", android.app.NotificationManager.IMPORTANCE_HIGH))
+        UpdateNotifier.ensureChannel(ctx)
+        assertThat(nm.getNotificationChannel("updates_alert")).isNull()
+        val ch = nm.getNotificationChannel(UpdateNotifier.CHANNEL_ID)
+        assertThat(ch.sound.toString()).endsWith("/" + com.xenoorigin.xelauncher.R.raw.xe_chime)
+        assertThat(ch.importance).isEqualTo(android.app.NotificationManager.IMPORTANCE_HIGH)
     }
 
     @Test fun newRelease_notifiesOnce_perVersion() = runBlocking<Unit> {

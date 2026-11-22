@@ -67,9 +67,25 @@ class UpdateNotifier(
         const val FIRST_CHECK_MS = 3_000L
         const val INTERVAL_MS = 30 * 60_000L
         const val MIN_GAP_MS = 10 * 60_000L
-        // High importance so the alert pops up on screen. (A channel's importance can't change once made, hence a new id.)
-        private const val CHANNEL = "updates_alert"
-        private const val OLD_CHANNEL = "updates"
+        // High importance so the alert pops up on screen, with Xe's glass chime. A channel's importance and
+        // sound can't change once it's made, hence a new id for each change.
+        const val CHANNEL_ID = "updates_alert_v2"
+        private val LEGACY_CHANNELS = listOf("updates", "updates_alert")
+
+        /** Creates the update channel (with the chime) and removes the older ones. */
+        fun ensureChannel(context: Context) {
+            val nm = context.getSystemService(NotificationManager::class.java)
+            LEGACY_CHANNELS.forEach { runCatching { nm.deleteNotificationChannel(it) } }
+            if (nm.getNotificationChannel(CHANNEL_ID) != null) return
+            val chime = Uri.parse("android.resource://${context.packageName}/${R.raw.xe_chime}")
+            val attrs = android.media.AudioAttributes.Builder()
+                .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
+                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build()
+            nm.createNotificationChannel(
+                NotificationChannel(CHANNEL_ID, context.getString(R.string.updates_channel), NotificationManager.IMPORTANCE_HIGH).apply { setSound(chime, attrs) },
+            )
+        }
 
         /**
          * Shows the update alert right now for the newest version on GitHub, so you can see what it looks like.
@@ -84,13 +100,12 @@ class UpdateNotifier(
         /** Posts "Xe Launcher x.y.z is ready"; tapping it downloads the APK in the browser. */
         fun systemPoster(context: Context): (ReleaseInfo) -> Boolean = { r ->
             val nm = context.getSystemService(NotificationManager::class.java)
-            runCatching { nm.deleteNotificationChannel(OLD_CHANNEL) }
-            nm.createNotificationChannel(NotificationChannel(CHANNEL, context.getString(R.string.updates_channel), NotificationManager.IMPORTANCE_HIGH))
+            ensureChannel(context)
             val open = PendingIntent.getActivity(
                 context, 1, Intent(Intent.ACTION_VIEW, Uri.parse(r.apkUrl)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             )
-            val n = NotificationCompat.Builder(context, CHANNEL)
+            val n = NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_launcher_monochrome)
                 .setContentTitle(context.getString(R.string.update_notif_title, r.tag.removePrefix("v")))
                 .setContentText(context.getString(R.string.update_notif_text))
