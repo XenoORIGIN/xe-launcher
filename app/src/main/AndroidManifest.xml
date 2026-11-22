@@ -9,6 +9,8 @@
         android:protectionLevel="signature" />
     <uses-permission android:name="com.xenoorigin.xestudio.permission.READ_THEME" />
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
+    <!-- "Used longest": lets Xe read how long each app was on screen this week. The user turns it on. -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />

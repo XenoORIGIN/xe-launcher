@@ -22,7 +22,7 @@
     <string name="category_bar">แถบหมวด</string>
     <string name="sorting">การเรียง</string>
     <string name="sort_alpha">A–Z</string>
-    <string name="sort_most_used">ใช้บ่อย</string>
+    <string name="sort_most_used">ใช้นานที่สุด</string>
     <string name="sort_recent">ติดตั้งล่าสุด</string>
     <string name="hidden_apps">แอปที่ซ่อน</string>
     <string name="lock_layout">ล็อกเลย์เอาต์</string>
@@ -316,7 +316,7 @@
     <string name="game_over">หมดเวลา!</string>
     <string name="game_record">สถิติใหม่!</string>
     <string name="game_again">เล่นอีกครั้ง</string>
-    <string name="bento_most_used">ใช้บ่อยสุด</string>
+    <string name="bento_most_used">ใช้นานที่สุด</string>
     <string name="drawer_layout">รูปแบบ</string>
     <string name="layout_bento">Bento: แอปที่ใช้บ่อยได้ช่องใหญ่</string>
     <string name="layout_grid">ตาราง: ทุกแอปขนาดเท่ากัน</string>
@@ -347,4 +347,6 @@
     <string name="cat_sort_az">ก–ฮ / A–Z</string>
     <string name="cat_sort_time">ใช้นานที่สุด</string>
     <string name="cat_sort_newest">ติดตั้งล่าสุด</string>
+    <string name="usage_access_title">ให้ Xe ดูเวลาที่ใช้แต่ละแอป</string>
+    <string name="usage_access_desc">เปิด \"การเข้าถึงการใช้งาน\" เพื่อให้แอปที่ใช้นานที่สุดขึ้นก่อน ระหว่างนี้ Xe จะนับจากจำนวนครั้งที่เปิดแทน</string>
 </resources>

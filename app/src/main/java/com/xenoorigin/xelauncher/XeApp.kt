@@ -290,6 +290,8 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
             if (e == androidx.lifecycle.Lifecycle.Event.ON_STOP) away = true
             if (e == androidx.lifecycle.Lifecycle.Event.ON_START && away) {
                 away = false
+                // Back on Home: time spent in apps has changed, so rankings are read again (cached 10 min).
+                graph.usageTick.value++
                 if (speed != AnimationSpeed.OFF) scope.launch { homeReturn.snapTo(0f); homeReturn.animateTo(1f, XeMotion.spring(speed, dampingRatio = .8f, stiffness = 260f)) }
             }
         }
@@ -302,7 +304,12 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
         { a -> settings.iconOverrides[a.key.encode()] ?: settings.iconStyle }
     }
     val homeLook = remember(settings, styleOf) { HomeLook(settings.homeColumns, settings.homeRows, settings.dockSize, settings.iconSizeDp, settings.showLabels, settings.iconShape, styleOf) }
-    val useCounts = remember(launchStats) { launchStats.associate { it.appKey to it.count } }
+    val usageTick by graph.usageTick.collectAsState()
+    // "Most used" = time spent in the app when Usage access is on, else how often it was opened.
+    val useCounts = remember(launchStats, usageTick, apps) {
+        val counts = launchStats.associate { it.appKey to it.count }
+        apps.associate { a -> a.key.encode() to graph.usage.score(a.key.packageName, counts[a.key.encode()] ?: 0).coerceAtMost(Int.MAX_VALUE.toLong()).toInt() }
+    }
     val drawerLook = remember(settings, styleOf, useCounts) {
         DrawerLook(styleOf, settings.iconShape, settings.iconSizeDp, settings.showLabels, settings.categoryBar, settings.drawerLayout, { a -> useCounts[a.key.encode()] ?: 0 }, settings.categoryAccent)
     }

@@ -1,5 +1,7 @@
 package com.xenoorigin.xelauncher.drawer
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -50,6 +52,7 @@ fun DrawerMenuSheet(
                 XeRow(stringResource(label), icon = if (settings.drawerSort == sort) R.drawable.ti_check else R.drawable.ti_arrows_sort,
                     onClick = { onUpdate { it.copy(drawerSort = sort) } })
             }
+        UsageAccessRow(settings.drawerSort == DrawerSort.MOST_USED)
         SectionTitle(" ")
         XeRow(stringResource(R.string.hidden_apps), icon = R.drawable.ti_eye_off, onClick = onHiddenApps)
         XeRow(stringResource(R.string.lock_layout), icon = if (settings.layoutLocked) R.drawable.ti_lock else R.drawable.ti_lock_open) {
@@ -57,4 +60,24 @@ fun DrawerMenuSheet(
         }
         XeRow(stringResource(R.string.all_settings), icon = R.drawable.ti_settings, onClick = onAllSettings)
     }
+}
+
+/** Asks for Usage access when "Used longest" is chosen and Xe can't see time spent yet. */
+@Composable
+fun UsageAccessRow(show: Boolean) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    var granted by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(com.xenoorigin.xelauncher.apps.UsageTime.hasAccess(ctx)) }
+    // Re-check when the user comes back from Android's settings.
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    androidx.compose.runtime.DisposableEffect(lifecycle) {
+        val obs = androidx.lifecycle.LifecycleEventObserver { _, e ->
+            if (e == androidx.lifecycle.Lifecycle.Event.ON_RESUME) granted = com.xenoorigin.xelauncher.apps.UsageTime.hasAccess(ctx)
+        }
+        lifecycle.addObserver(obs); onDispose { lifecycle.removeObserver(obs) }
+    }
+    if (!show || granted) return
+    XeRow(
+        stringResource(R.string.usage_access_title), subtitle = stringResource(R.string.usage_access_desc), icon = R.drawable.ti_clock,
+        onClick = { com.xenoorigin.xelauncher.apps.UsageTime.requestAccess(ctx) },
+    )
 }

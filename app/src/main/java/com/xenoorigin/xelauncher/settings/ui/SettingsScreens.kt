@@ -371,6 +371,7 @@ fun AppPageScreen(s: XeSettings, update: Update, push: (String) -> Unit, back: (
         SettingsGroup(stringResource(R.string.sorting)) {
             listOf(DrawerSort.ALPHABETICAL to R.string.sort_alpha, DrawerSort.MOST_USED to R.string.sort_most_used, DrawerSort.RECENTLY_INSTALLED to R.string.sort_recent)
                 .forEach { (so, l) -> ChoiceRow(stringResource(l), s.drawerSort == so) { update { it.copy(drawerSort = so) } } }
+            com.xenoorigin.xelauncher.drawer.UsageAccessRow(s.drawerSort == DrawerSort.MOST_USED)
         }
         SettingsGroup { NavRow(stringResource(R.string.hidden_apps), R.drawable.ti_eye_off, RowColors.Grey) { push("hidden") } }
     }

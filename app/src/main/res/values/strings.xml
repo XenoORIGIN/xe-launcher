@@ -23,7 +23,7 @@
     <string name="category_bar">Category bar</string>
     <string name="sorting">Sorting</string>
     <string name="sort_alpha">A–Z</string>
-    <string name="sort_most_used">Most used</string>
+    <string name="sort_most_used">Used longest</string>
     <string name="sort_recent">Recently installed</string>
     <string name="hidden_apps">Hidden apps</string>
     <string name="lock_layout">Lock layout</string>
@@ -317,7 +317,7 @@
     <string name="game_over">Time\'s up!</string>
     <string name="game_record">New record!</string>
     <string name="game_again">Play again</string>
-    <string name="bento_most_used">Most used</string>
+    <string name="bento_most_used">Used longest</string>
     <string name="drawer_layout">Layout</string>
     <string name="layout_bento">Bento: big tiles for the apps you use most</string>
     <string name="layout_grid">Grid: every app the same size</string>
@@ -348,4 +348,6 @@
     <string name="cat_sort_az">A–Z</string>
     <string name="cat_sort_time">Used longest</string>
     <string name="cat_sort_newest">Newest</string>
+    <string name="usage_access_title">Let Xe see time spent</string>
+    <string name="usage_access_desc">Turn on Usage access so apps you spend longest in come first. Until then Xe counts how often you open them.</string>
 </resources>

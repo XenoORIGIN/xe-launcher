@@ -23,12 +23,16 @@ class CategoryRepository(
     private val db: XeDatabase,
     apps: Flow<List<AppEntry>>,
     settings: Flow<XeSettings>,
+    private val usage: () -> Map<String, Long>? = { null },
+    usageTick: Flow<Int> = kotlinx.coroutines.flow.flowOf(0),
     private val labelFor: (BuiltInCategory) -> String,
 ) {
     /** Visible categories in order, each with its (sorted, non-hidden) apps. */
     val categories: Flow<List<CategoryWithApps>> = combine(
-        db.categories().observe(), db.overrides().observe(), db.launches().observe(), apps, settings,
+        db.categories().observe(), db.overrides().observe(), db.launches().observe(), apps,
+        kotlinx.coroutines.flow.combine(settings, usageTick) { s, _ -> s },
     ) { cats, overrides, stats, all, s ->
+        val timeSpent = usage()
         val overrideMap = overrides.associate { it.appKey to it.categoryId }
         val statMap = stats.associateBy { it.appKey }
         val ids = cats.map { it.id }.toSet()
@@ -44,7 +48,7 @@ class CategoryRepository(
             }
         cats.filter { it.id !in s.hiddenCategories || it.id == otherId }.mapNotNull { c ->
             val builtIn = c.builtIn?.let { runCatching { BuiltInCategory.valueOf(it) }.getOrNull() }
-            val members = AppSorting.sort(grouped[c.id].orEmpty(), com.xenoorigin.xelauncher.drawer.sortForCategory(c.id, s), statMap, s.appOrder)
+            val members = AppSorting.sort(grouped[c.id].orEmpty(), com.xenoorigin.xelauncher.drawer.sortForCategory(c.id, s), statMap, s.appOrder, timeSpent)
             if (builtIn != null && members.isEmpty()) return@mapNotNull null
             CategoryWithApps(c.id, c.name ?: labelFor(builtIn ?: BuiltInCategory.OTHER), c.iconName, builtIn, members)
         }
