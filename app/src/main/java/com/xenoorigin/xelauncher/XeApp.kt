@@ -304,7 +304,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     val homeLook = remember(settings, styleOf) { HomeLook(settings.homeColumns, settings.homeRows, settings.dockSize, settings.iconSizeDp, settings.showLabels, settings.iconShape, styleOf) }
     val useCounts = remember(launchStats) { launchStats.associate { it.appKey to it.count } }
     val drawerLook = remember(settings, styleOf, useCounts) {
-        DrawerLook(styleOf, settings.iconShape, settings.iconSizeDp, settings.showLabels, settings.categoryBar, settings.drawerLayout, { a -> useCounts[a.key.encode()] ?: 0 })
+        DrawerLook(styleOf, settings.iconShape, settings.iconSizeDp, settings.showLabels, settings.categoryBar, settings.drawerLayout, { a -> useCounts[a.key.encode()] ?: 0 }, settings.categoryAccent)
     }
     // Read the animated drawer position only through these, never directly in composition.
     val drawerShown by remember { derivedStateOf { drawer.value > 0f } }
@@ -659,10 +659,13 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                     resetAutomatic = { id -> scope.launch { graph.categories.resetAutomatic(id) } },
                     resetAll = { scope.launch { graph.categories.resetToDefaults(); update { it.copy(hiddenCategories = emptySet()) } } },
                     manageApps = { id -> manageCategory = id },
+                    setAccent = { id, c -> update { st -> st.copy(categoryAccent = if (c == null) st.categoryAccent - id else st.categoryAccent + (id to c)) } },
+                    setSort = { id, so -> update { st -> st.copy(categorySort = if (so == com.xenoorigin.xelauncher.settings.CategorySort.FOLLOW) st.categorySort - id else st.categorySort + (id to so)) } },
                 ),
                 startAdding = adding, onClose = { editor = null },
                 hidden = settings.hiddenCategories,
                 counts = categories.associate { it.id to it.apps.size },
+                accents = settings.categoryAccent, sorts = settings.categorySort,
                 background = { com.xenoorigin.xelauncher.wallpaper.BlurredBackdrop(graph.wallpaper, Color.Black.copy(alpha = .72f)) },
             )
         }

@@ -98,6 +98,8 @@ data class DrawerLook(
     val layout: DrawerLayout = DrawerLayout.GRID,
     /** How many times an app has been opened, for picking the Bento's big tiles. */
     val uses: (AppEntry) -> Int = { 0 },
+    /** Accent colours the user picked per category (ARGB). */
+    val accents: Map<Long, Long> = emptyMap(),
 )
 
 /** The drawer's playful extras; all off by default. Icon tilt-and-shake comes in through [LocalIconToy]. */
@@ -135,7 +137,7 @@ fun AppDrawer(
     )
     val tileShape = remember(look.iconShape) { look.iconShape.toShape() }
     Box(modifier.fillMaxSize()) {
-        if (play.glow && look.categoryBar) CategoryGlow(pages, state)
+        if (play.glow && look.categoryBar) CategoryGlow(pages, state, look.accents)
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
             Row(Modifier.fillMaxWidth().padding(start = 22.dp, end = 18.dp, top = 34.dp, bottom = 18.dp), verticalAlignment = Alignment.CenterVertically) {
                 val page = pages.getOrNull(state.pager.targetPage.coerceAtMost(pages.lastIndex))
@@ -179,8 +181,8 @@ fun AppDrawer(
 
 /** Soft light in the category's colour, blending between neighbours while the pages slide. */
 @Composable
-private fun CategoryGlow(pages: List<CategoryWithApps>, state: DrawerState) {
-    val hues = remember(pages) { pages.map { categoryHue(it.builtIn, it.id) } }
+private fun CategoryGlow(pages: List<CategoryWithApps>, state: DrawerState, accents: Map<Long, Long>) {
+    val hues = remember(pages, accents) { pages.map { accents[it.id] ?: categoryHue(it.builtIn, it.id) } }
     Box(
         Modifier.fillMaxSize().drawBehind {
             val c = Color(blendHue(hues, state.bubbleOffsetFraction))

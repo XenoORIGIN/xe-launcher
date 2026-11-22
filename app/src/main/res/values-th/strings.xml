@@ -341,4 +341,10 @@
     <string name="open_studio_app_desc">สร้างธีมไอคอนแล้วส่งมาใช้ใน Xe</string>
     <string name="get_studio_app_desc">แอปคู่หูสำหรับสร้างธีม ฟรี แตะเพื่อโหลด</string>
     <string name="studio_icons_moved">ย้ายไป Xe Studio แล้ว แตะเพื่อเปิด</string>
+    <string name="category_colour">สีประจำหมวด</string>
+    <string name="category_sort">เรียงแอปในหมวด</string>
+    <string name="cat_sort_follow">ตามลิ้นชัก</string>
+    <string name="cat_sort_az">ก–ฮ / A–Z</string>
+    <string name="cat_sort_time">ใช้นานที่สุด</string>
+    <string name="cat_sort_newest">ติดตั้งล่าสุด</string>
 </resources>

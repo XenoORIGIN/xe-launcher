@@ -17,6 +17,9 @@ import kotlinx.serialization.Serializable
 @Serializable enum class OnboardingStage { INTRO, LANGUAGE, DEFAULT_HOME, SLIDES, PRACTICE, DONE }
 @Serializable enum class DrawerSort { ALPHABETICAL, MOST_USED, RECENTLY_INSTALLED, CUSTOM }
 
+/** How apps are ordered inside one category. FOLLOW uses the drawer's sort. */
+@Serializable enum class CategorySort { FOLLOW, ALPHABETICAL, TIME, NEWEST }
+
 @Serializable
 data class XeSettings(
     val themeMode: ThemeMode = ThemeMode.DARK,
@@ -60,6 +63,10 @@ data class XeSettings(
     val appOrder: Map<String, Int> = emptyMap(),
     /** Categories kept out of the bar; their apps show in "Other". */
     val hiddenCategories: Set<Long> = emptySet(),
+    /** Accent colour (ARGB) chosen for a category; categories without one use their built-in hue. */
+    val categoryAccent: Map<Long, Long> = emptyMap(),
+    /** Per-category app order; missing = follow the drawer sort. */
+    val categorySort: Map<Long, CategorySort> = emptyMap(),
     /** Post a notification when a new version is on GitHub. */
     val updateNotify: Boolean = true,
     /** Release tag already notified about, so each version is announced once. */

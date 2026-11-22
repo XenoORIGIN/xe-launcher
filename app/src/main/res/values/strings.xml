@@ -342,4 +342,10 @@
     <string name="open_studio_app_desc">Make icon themes and send them to Xe</string>
     <string name="get_studio_app_desc">Free companion app for making themes. Tap to download</string>
     <string name="studio_icons_moved">Moved to Xe Studio. Tap to open</string>
+    <string name="category_colour">Colour</string>
+    <string name="category_sort">Order of apps</string>
+    <string name="cat_sort_follow">Same as drawer</string>
+    <string name="cat_sort_az">A–Z</string>
+    <string name="cat_sort_time">Used longest</string>
+    <string name="cat_sort_newest">Newest</string>
 </resources>

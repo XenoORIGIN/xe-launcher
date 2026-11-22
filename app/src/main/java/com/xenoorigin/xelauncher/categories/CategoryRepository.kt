@@ -44,7 +44,7 @@ class CategoryRepository(
             }
         cats.filter { it.id !in s.hiddenCategories || it.id == otherId }.mapNotNull { c ->
             val builtIn = c.builtIn?.let { runCatching { BuiltInCategory.valueOf(it) }.getOrNull() }
-            val members = AppSorting.sort(grouped[c.id].orEmpty(), s.drawerSort, statMap, s.appOrder)
+            val members = AppSorting.sort(grouped[c.id].orEmpty(), com.xenoorigin.xelauncher.drawer.sortForCategory(c.id, s), statMap, s.appOrder)
             if (builtIn != null && members.isEmpty()) return@mapNotNull null
             CategoryWithApps(c.id, c.name ?: labelFor(builtIn ?: BuiltInCategory.OTHER), c.iconName, builtIn, members)
         }

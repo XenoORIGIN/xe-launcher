@@ -50,10 +50,22 @@ fun <T> ReorderableColumn(
     var draggingKey by remember { mutableStateOf<Any?>(null) }
     var offset by remember { mutableFloatStateOf(0f) }
     var moves by remember { mutableIntStateOf(0) }
+    // If the list is replaced from outside mid-drag, nothing may stay lifted.
+    androidx.compose.runtime.LaunchedEffect(items.map(key)) { if (draggingKey != null && order.none { key(it) == draggingKey }) { draggingKey = null; offset = 0f } }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(spacing)) {
-        order.forEach { item ->
+        order.forEachIndexed { index, item -> androidx.compose.runtime.key(key(item)) {
             val k = key(item)
             val dragging = draggingKey == k
+            // Rows that get pushed aside glide to their new place on a spring instead of jumping.
+            val slide = remember { androidx.compose.animation.core.Animatable(0f) }
+            var lastIndex by remember { mutableIntStateOf(index) }
+            androidx.compose.runtime.LaunchedEffect(index) {
+                if (index != lastIndex && !dragging) {
+                    slide.snapTo((lastIndex - index) * step)
+                    slide.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = .72f, stiffness = 520f))
+                }
+                lastIndex = index
+            }
             val handle = Modifier.pointerInput(k) {
                 detectDragGestures(
                     onDragStart = { draggingKey = k; offset = 0f; moves = 0; haptic.performHapticFeedback(HapticFeedbackType.LongPress) },
@@ -77,8 +89,9 @@ fun <T> ReorderableColumn(
                     .zIndex(if (dragging) 1f else 0f)
                     .graphicsLayer {
                         if (dragging) { translationY = offset; scaleX = 1.03f; scaleY = 1.03f; shadowElevation = 12f }
+                        else translationY = slide.value
                     },
             ) { row(item, handle, dragging) }
-        }
+        } }
     }
 }
