@@ -33,6 +33,10 @@ class AsciiField(val cols: Int, val rows: Int, seed: Int = 11) {
     internal var lastStars = 0
     /** Centre cell of the sun or moon in the last frame (for tests). */
     internal var discCell = 0 to 0
+    /** Counts from the last frame, for tests. */
+    internal var trees = 0
+    internal var buildings = 0
+    internal var meteorCells = 0
 
     internal var look: SkyLook = skyAt(0)
     private var live = false
@@ -71,7 +75,7 @@ class AsciiField(val cols: Int, val rows: Int, seed: Int = 11) {
      * null = the scene's own fixed time. [color] picks the colour mode; [accent] is used by ACCENT.
      */
     fun fill(scene: AsciiScene, t: Float, look: SkyLook? = null, color: AsciiColor = AsciiColor.MONO, accent: Long = 0xFFFFFFFF) {
-        cells.clear(); highlight.fill(0); amount.fill(0f); lastStars = 0
+        cells.clear(); highlight.fill(0); amount.fill(0f); lastStars = 0; trees = 0; buildings = 0; meteorCells = 0
         live = look != null
         this.look = look ?: defaultLook(scene)
         when (scene) {
@@ -123,7 +127,7 @@ class AsciiField(val cols: Int, val rows: Int, seed: Int = 11) {
         }
     }
 
-    internal fun orb(x: Float, y: Float, rx: Float, sun: Boolean, strength: Float = 1f) {
+    internal fun orb(x: Float, y: Float, rx: Float, sun: Boolean, strength: Float = 1f, tintColor: Int = if (sun) SUN_TINT else MOON_TINT) {
         val ry = rx * 5f / 8f
         discCell = x.toInt().coerceIn(1, cols - 2) to y.toInt().coerceIn(1, rows - 2)
         for (r in 0 until horizonRow) for (c in 0 until cols) {
@@ -131,12 +135,12 @@ class AsciiField(val cols: Int, val rows: Int, seed: Int = 11) {
             val i = idx(c, r)
             if (d < 1f) {
                 cells.l[i] = max(cells.l[i], (if (sun) .92f else .8f - .22f * crater[i]) * strength)
-                tint(i, if (sun) SUN_TINT else MOON_TINT, if (sun) .6f else .15f)
+                tint(i, tintColor, if (sun) .6f else .15f)
             } else {
                 val halo = (if (sun) .34f else .24f) * exp(-(d - 1f) * rx * 5f / 16f) * strength
                 if (halo > .02f) {
                     cells.l[i] = max(cells.l[i], cells.l[i] + halo)
-                    if (halo > .08f) tint(i, if (sun) SUN_TINT else MOON_TINT, if (sun) .5f else .25f)
+                    if (halo > .08f) tint(i, tintColor, if (sun) .5f else .25f)
                 }
             }
         }
@@ -154,12 +158,12 @@ class AsciiField(val cols: Int, val rows: Int, seed: Int = 11) {
         }
     }
 
-    internal fun stars(t: Float, amountOf: Float, density: Float = 1f) {
+    internal fun stars(t: Float, amountOf: Float, density: Float = 1f, maxRow: Int = horizonRow, overRidges: Boolean = false) {
         if (amountOf <= 0f) return
-        for (r in 0 until horizonRow) for (c in 0 until cols) {
+        for (r in 0 until maxRow) for (c in 0 until cols) {
             val i = idx(c, r)
             if (!star[i] && !(density > 1f && rand[i] < .018f * (density - 1f))) continue
-            if (r >= far[c] || cells.l[i] > .2f) continue
+            if ((!overRidges && r >= far[c]) || cells.l[i] > .2f) continue
             val v = amountOf * (.28f + .25f * sin(t * ssp[i] + sph[i]))
             if (v > .09f && v > cells.l[i]) { cells.l[i] = v; lastStars++ }
         }
