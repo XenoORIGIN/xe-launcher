@@ -21,12 +21,18 @@ fun WallpaperLayer(
     controller: WallpaperController, parallaxPx: () -> androidx.compose.ui.geometry.Offset, modifier: Modifier = Modifier,
     /** Live sky chosen: draw it live (stars, clouds) instead of the saved picture. */
     liveSky: Boolean = false, animate: Boolean = true,
+    /** An ASCII wallpaper is on Home: drawn crisp by [AsciiLayer] (live ones move) instead of the saved picture. */
+    ascii: WallpaperPreset.Ascii? = null,
 ) {
     val bmp by controller.current.collectAsState()
     val haze = LocalHazeState.current
     var m = modifier.fillMaxSize().background(Color.Black)
     if (haze != null) m = m.hazeSource(haze)
     Box(m) {
+        if (ascii != null) {
+            com.xenoorigin.xelauncher.wallpaper.ascii.AsciiLayer(ascii, parallaxPx, animate, Modifier.fillMaxSize())
+            return@Box
+        }
         if (liveSky) {
             var minute by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(minuteNow()) }
             val sun = androidx.compose.runtime.remember(minute / 60) { sunToday() }

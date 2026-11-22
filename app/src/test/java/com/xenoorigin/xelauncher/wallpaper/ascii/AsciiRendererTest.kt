@@ -85,6 +85,17 @@ class AsciiRendererTest {
         assertThat(bluer).isGreaterThan(200)
     }
 
+    @Test fun homeAsciiFollowsSettings() {
+        val base = com.xenoorigin.xelauncher.settings.XeSettings()
+        assertThat(com.xenoorigin.xelauncher.wallpaper.homeAscii(base)).isNull()
+        val on = base.copy(wallpaperId = "ascii_city", asciiColor = AsciiColor.ACCENT, accent = 0xFF2F8BFF)
+        val p = com.xenoorigin.xelauncher.wallpaper.homeAscii(on)!!
+        assertThat(p.id).isEqualTo("ascii_city")
+        assertThat(p.color).isEqualTo(AsciiColor.ACCENT)
+        assertThat(p.accent).isEqualTo(0xFF2F8BFF)
+        assertThat(com.xenoorigin.xelauncher.wallpaper.homeAscii(on.copy(liveOnHome = false))).isNull()
+    }
+
     /** Contact sheet for review: app/src/test/screenshots/ascii_wallpapers.png */
     @Test fun contactSheet() {
         val items = AsciiCollection + listOf(lake.copy(color = AsciiColor.SKY), lake.copy(color = AsciiColor.ACCENT, accent = 0xFF2F8BFF))

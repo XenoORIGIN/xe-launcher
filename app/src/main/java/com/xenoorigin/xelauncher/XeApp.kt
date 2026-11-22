@@ -466,6 +466,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
         com.xenoorigin.xelauncher.wallpaper.WallpaperLayer(
             graph.wallpaper, parallaxPx = parallax,
             liveSky = settings.wallpaperId == com.xenoorigin.xelauncher.wallpaper.LIVE_SKY_ID && settings.liveOnHome,
+            ascii = remember(settings.wallpaperId, settings.liveOnHome, settings.asciiColor, settings.accent) { com.xenoorigin.xelauncher.wallpaper.homeAscii(settings) },
             animate = speed != AnimationSpeed.OFF && !powerSave,
         )
         val lens = remember(settings.glassLens, settings.wallpaperParallax) {

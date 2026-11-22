@@ -44,6 +44,10 @@ const val ASCII_LIVE_ID = "ascii_live"
 /** Wallpapers that follow the time of day: Xe keeps the phone's copy of them current. */
 fun isTimeWallpaper(id: String): Boolean = id == LIVE_SKY_ID || id == ASCII_LIVE_ID
 
+/** The ASCII wallpaper shown on Home right now, with the chosen colours (null if Home shows something else). */
+fun homeAscii(s: com.xenoorigin.xelauncher.settings.XeSettings): WallpaperPreset.Ascii? =
+    (allWallpapers().byId(s.wallpaperId) as? WallpaperPreset.Ascii)?.takeIf { s.liveOnHome }?.withColors(s)
+
 fun WallpaperPreset.Ascii.withColors(s: com.xenoorigin.xelauncher.settings.XeSettings) = copy(color = s.asciiColor, accent = s.accent)
 
 /** ASCII wallpapers: one that follows the time, then seven still scenes. */
