@@ -81,9 +81,13 @@ class AppGraph(val context: Context) {
     )
 
     /** Time spent per app (needs Usage access), else launch counts. */
-    val usage = com.xenoorigin.xelauncher.apps.UsageTime(com.xenoorigin.xelauncher.apps.UsageTime.systemSource(context))
-    /** Bumped when Xe comes back to the front, so time-spent rankings are read again. */
+    /** Bumped when Xe comes back to the front or a usage reading lands, so time-spent rankings are read again. */
     val usageTick = kotlinx.coroutines.flow.MutableStateFlow(0)
+    val usage = com.xenoorigin.xelauncher.apps.UsageTime(
+        com.xenoorigin.xelauncher.apps.UsageTime.systemSource(context),
+        runner = { r -> scope.launch(Dispatchers.IO) { r() } },
+        onChanged = { usageTick.value++ },
+    )
     val categories = CategoryRepository(db, labeledApps, settings.settings, usage::usage, usageTick, ::categoryLabel)
 
     val home = HomeRepository(

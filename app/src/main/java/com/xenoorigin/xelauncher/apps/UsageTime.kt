@@ -13,17 +13,31 @@ import android.provider.Settings
  * ("Usage access"), otherwise how often it was opened from Xe. Reads are cached for [REFRESH_MS].
  *
  * @param source package → foreground ms for the last 7 days, or null when access isn't granted
+ * @param runner where readings happen; the app passes a background thread so Home never waits on Android
+ * @param onChanged called after a background reading lands, so rankings can be redrawn
  */
-class UsageTime(private val source: () -> Map<String, Long>?, private val clock: () -> Long = System::currentTimeMillis) {
-    private var cached: Map<String, Long>? = null
-    private var readAt = Long.MIN_VALUE
+class UsageTime(
+    private val source: () -> Map<String, Long>?,
+    private val clock: () -> Long = System::currentTimeMillis,
+    private val runner: (() -> Unit) -> Unit = { it() },
+    private val onChanged: () -> Unit = {},
+) {
+    @Volatile private var cached: Map<String, Long>? = null
+    @Volatile private var readAt = Long.MIN_VALUE
+    private val reading = java.util.concurrent.atomic.AtomicBoolean(false)
 
-    /** Foreground time per package, or null without access. */
+    /** Foreground time per package, or null without access. Never blocks: a stale reading is refreshed in [runner]. */
     fun usage(): Map<String, Long>? {
         val now = clock()
-        if (readAt == Long.MIN_VALUE || now - readAt > REFRESH_MS) {
-            cached = runCatching { source() }.getOrNull()
-            readAt = now
+        if ((readAt == Long.MIN_VALUE || now - readAt > REFRESH_MS) && reading.compareAndSet(false, true)) {
+            runner {
+                try {
+                    // An empty answer means the phone isn't really sharing usage: treat it like no access.
+                    cached = runCatching { source() }.getOrNull()?.takeIf { it.isNotEmpty() }
+                    readAt = clock()
+                } finally { reading.set(false) }
+                onChanged()
+            }
         }
         return cached
     }

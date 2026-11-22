@@ -303,6 +303,8 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
             if (e == androidx.lifecycle.Lifecycle.Event.ON_START && away) {
                 away = false
                 // Back on Home: time spent in apps has changed, so rankings are read again (cached 10 min).
+                // Usage access may have just been granted in Android's settings: read again now, not in 10 minutes.
+                if (!graph.usage.usingTime) graph.usage.refresh()
                 graph.usageTick.value++
                 if (speed != AnimationSpeed.OFF) scope.launch { homeReturn.snapTo(0f); homeReturn.animateTo(1f, XeMotion.spring(speed, dampingRatio = .8f, stiffness = 260f)) }
             }

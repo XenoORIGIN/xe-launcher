@@ -38,4 +38,35 @@ class UsageTimeTest {
         val sorted = AppSorting.sort(apps, DrawerSort.MOST_USED, emptyMap(), usage = mapOf("com.line" to 100L, "com.calc" to 1L))
         assertThat(sorted.map { it.key.packageName }).containsExactly("com.line", "com.calc").inOrder()
     }
+
+    @Test fun staleReadingIsDoneInTheBackgroundNotByTheCaller() {
+        val queued = mutableListOf<() -> Unit>()
+        var reads = 0; var changed = 0
+        val u = UsageTime({ reads++; mapOf("a" to 5L) }, clock = { now }, runner = { queued += it }, onChanged = { changed++ })
+        assertThat(u.usage()).isNull() // nothing read yet, and the caller didn't wait for it
+        assertThat(reads).isEqualTo(0)
+        u.usage() // a second ask while the first read is pending doesn't queue another
+        assertThat(queued).hasSize(1)
+        queued.removeAt(0)()
+        assertThat(reads).isEqualTo(1)
+        assertThat(changed).isEqualTo(1)
+        assertThat(u.usage()).containsExactly("a", 5L)
+    }
+
+    @Test fun emptyReadingCountsAsNoAccess() {
+        // Some phones answer with nothing at all even though access is on: keep using launch counts.
+        val u = UsageTime({ emptyMap() }, clock = { now })
+        assertThat(u.usingTime).isFalse()
+        assertThat(u.score("a", launches = 4)).isEqualTo(4L)
+    }
+
+    @Test fun refreshAfterGrantReadsAgainRightAway() {
+        var allowed = false
+        val u = UsageTime({ if (allowed) mapOf("a" to 7L) else null }, clock = { now })
+        assertThat(u.usingTime).isFalse()
+        allowed = true
+        assertThat(u.usingTime).isFalse() // still cached
+        u.refresh()
+        assertThat(u.usingTime).isTrue()
+    }
 }
