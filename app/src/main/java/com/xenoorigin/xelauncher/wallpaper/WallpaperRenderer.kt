@@ -295,6 +295,21 @@ object WallpaperRenderer {
         return small
     }
 
+    /** The wallpaper as Liquid Glass sees it: 360 px wide, softly blurred and a little brighter. */
+    fun glassBackdrop(src: Bitmap): Bitmap {
+        val w = 360; val h = (src.height * w / src.width.toFloat()).toInt().coerceAtLeast(1)
+        val out = Bitmap.createScaledBitmap(src, w, h, true).copy(Bitmap.Config.ARGB_8888, true)
+        boxBlur(out, 3)
+        val px = IntArray(w * h); out.getPixels(px, 0, w, 0, 0, w, h)
+        for (i in px.indices) {
+            val c = px[i]
+            fun up(v: Int) = v + ((255 - v) * 12) / 100
+            px[i] = (c and 0xFF000000.toInt()) or (up((c shr 16) and 255) shl 16) or (up((c shr 8) and 255) shl 8) or up(c and 255)
+        }
+        out.setPixels(px, 0, w, 0, 0, w, h)
+        return out
+    }
+
     /** Three-pass box blur (close to Gaussian), in place. */
     fun boxBlur(b: Bitmap, radius: Int) {
         val w = b.width; val h = b.height

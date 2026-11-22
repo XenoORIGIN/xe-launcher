@@ -102,4 +102,27 @@ class WallpaperControllerTest {
         assertThat(c.current.value).isNotNull() // Xe's own copy still follows the time
         sc.cancel()
     }
+
+    @Test fun glassBackdropIsSmallBlurredAndBrighter() {
+        val src = android.graphics.Bitmap.createBitmap(900, 1950, android.graphics.Bitmap.Config.ARGB_8888)
+        for (x in 0 until 900) { val c = if ((x / 10) % 2 == 0) android.graphics.Color.BLACK else android.graphics.Color.WHITE; for (y in 0 until 1950 step 13) src.setPixel(x, y, c) }
+        android.graphics.Canvas(src).let { cv -> for (x in 0 until 90) cv.drawRect((x * 10).toFloat(), 0f, (x * 10 + 10).toFloat(), 1950f, android.graphics.Paint().apply { color = if (x % 2 == 0) android.graphics.Color.BLACK else android.graphics.Color.WHITE }) }
+        fun lum(b: android.graphics.Bitmap): Double { var t = 0.0; var n = 0; for (y in 0 until b.height step 7) for (x in 0 until b.width step 3) { t += android.graphics.Color.red(b.getPixel(x, y)); n++ }; return t / n }
+        val g = WallpaperRenderer.glassBackdrop(src)
+        assertThat(g.width).isEqualTo(360)
+        assertThat(lum(g)).isGreaterThan(lum(src))
+        var maxStep = 0
+        val y = g.height / 2
+        for (x in 1 until g.width) maxStep = maxOf(maxStep, kotlin.math.abs(android.graphics.Color.red(g.getPixel(x, y)) - android.graphics.Color.red(g.getPixel(x - 1, y))))
+        assertThat(maxStep).isLessThan(128)
+    }
+
+    @Test fun controllerPublishesGlassBackdrop() = runBlocking<Unit> {
+        val sc = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val settings = SettingsStore(ctx, sc, "wp_gb-${System.nanoTime()}")
+        val c = WallpaperController(ctx, settings, File(ctx.filesDir, "wp-${System.nanoTime()}"), size)
+        c.apply(XeCollection.first(), WallpaperTarget.HOME)
+        assertThat(c.glassBackdrop.value).isNotNull()
+        sc.cancel()
+    }
 }

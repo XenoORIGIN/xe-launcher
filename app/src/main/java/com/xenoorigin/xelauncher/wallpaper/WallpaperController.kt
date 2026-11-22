@@ -41,6 +41,9 @@ class WallpaperController(
     private val _backdrop = MutableStateFlow<ImageBitmap?>(null)
     /** Small pre-blurred wallpaper for full-screen panels (drawer, search, settings): no live blur needed. */
     val backdrop: StateFlow<ImageBitmap?> = _backdrop.asStateFlow()
+    private val _glassBackdrop = MutableStateFlow<ImageBitmap?>(null)
+    /** Frosted wallpaper the Liquid Glass icons, dock, folders and widgets show through. */
+    val glassBackdrop: StateFlow<ImageBitmap?> = _glassBackdrop.asStateFlow()
 
     private var skyShown = -1
 
@@ -70,6 +73,7 @@ class WallpaperController(
     private fun show(bmp: Bitmap) {
         _current.value = bmp.asImageBitmap()
         _backdrop.value = runCatching { WallpaperRenderer.backdrop(bmp).asImageBitmap() }.getOrNull()
+        _glassBackdrop.value = runCatching { WallpaperRenderer.glassBackdrop(bmp).asImageBitmap() }.getOrNull()
     }
     private val file get() = File(dir, "current.png")
 
