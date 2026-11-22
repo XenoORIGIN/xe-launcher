@@ -272,3 +272,8 @@ html.intro body{overflow:hidden}
 html.intro .hero .reveal{opacity:0!important;translate:0 48px!important;rotate:x 26deg!important;scale:.93!important}
 .hero>.reveal:nth-child(2){transition-delay:.08s}.hero>.reveal:nth-child(3){transition-delay:.16s}
 .hero>.reveal:nth-child(4){transition-delay:.24s}.hero>.reveal:nth-child(5){transition-delay:.34s}
+
+.dev-badge{margin-left:4px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:.02em;color:#000;background:linear-gradient(90deg,#ffd166,#ff9f6b);animation:devPulse 2.4s ease-in-out infinite}
+@keyframes devPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,190,110,.55)}50%{box-shadow:0 0 0 6px rgba(255,190,110,0)}}
+.dev-note{max-width:300px;margin:0 auto;font-size:13px;text-align:center;line-height:1.5}
+@media (prefers-reduced-motion:reduce){.dev-badge{animation:none}}

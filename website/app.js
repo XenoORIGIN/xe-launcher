@@ -3,7 +3,7 @@
     en: {
       eyebrow: "Android 10 or newer · APK file", title: "A Liquid Glass Home screen",
       lead: "Clean and minimal, with dark glass icons, automatic app categories, glass widgets and smooth animation everywhere.",
-      download: "Download APK", studioDl: "Get Xe Studio", featuresTitle: "Made to look good",
+      download: "Download APK", studioDl: "Get Xe Studio", inDev: "In development", studioNote: "Xe Studio is still being built. You can make icon themes now; wallpapers, widgets and the theme store are coming.", featuresTitle: "Made to look good",
       f1: "The dock, category bar, buttons and menus are blurred glass with bright rims that bend what's behind them.",
       f2t: "Icons your way", f2: "Dark glass, black and white, colour glass, clear glass or the original, in 5 shapes. Rename apps and use your own icon pictures.",
       f3t: "Automatic categories", f3: "Swipe up to see apps by category. Reorder, hide, add or delete categories, or let Xe sort your apps again.",
