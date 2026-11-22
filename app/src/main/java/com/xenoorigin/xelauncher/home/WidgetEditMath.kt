@@ -25,15 +25,31 @@ fun proposePlacement(
     val minW = min.x.coerceAtMost(cols); val minH = min.y.coerceAtMost(rows)
     val maxW = max.x.coerceAtMost(cols); val maxH = max.y.coerceAtMost(rows)
     var left = start.x; var top = start.y; var right = start.x + start.w; var bottom = start.y + start.h
+    val refused = Placement(start.x, start.y, start.w, start.h, false)
+    // A range with no room (widget at an edge, below its minimum, or bigger than the grid) can't be satisfied.
+    fun Int.clamp(lo: Int, hi: Int): Int? = if (lo > hi) null else coerceIn(lo, hi)
     when (handle) {
         Handle.BODY -> {
-            left = (start.x + mx).coerceIn(0, cols - start.w); top = (start.y + my).coerceIn(0, rows - start.h)
+            left = (start.x + mx).clamp(0, cols - start.w) ?: return refused
+            top = (start.y + my).clamp(0, rows - start.h) ?: return refused
             right = left + start.w; bottom = top + start.h
         }
-        Handle.TOP_LEFT -> { left = (left + mx).coerceIn(maxOf(0, right - maxW), right - minW); top = (top + my).coerceIn(maxOf(0, bottom - maxH), bottom - minH) }
-        Handle.TOP_RIGHT -> { right = (right + mx).coerceIn(left + minW, minOf(cols, left + maxW)); top = (top + my).coerceIn(maxOf(0, bottom - maxH), bottom - minH) }
-        Handle.BOTTOM_LEFT -> { left = (left + mx).coerceIn(maxOf(0, right - maxW), right - minW); bottom = (bottom + my).coerceIn(top + minH, minOf(rows, top + maxH)) }
-        Handle.BOTTOM_RIGHT -> { right = (right + mx).coerceIn(left + minW, minOf(cols, left + maxW)); bottom = (bottom + my).coerceIn(top + minH, minOf(rows, top + maxH)) }
+        Handle.TOP_LEFT -> {
+            left = (left + mx).clamp(maxOf(0, right - maxW), right - minW) ?: return refused
+            top = (top + my).clamp(maxOf(0, bottom - maxH), bottom - minH) ?: return refused
+        }
+        Handle.TOP_RIGHT -> {
+            right = (right + mx).clamp(left + minW, minOf(cols, left + maxW)) ?: return refused
+            top = (top + my).clamp(maxOf(0, bottom - maxH), bottom - minH) ?: return refused
+        }
+        Handle.BOTTOM_LEFT -> {
+            left = (left + mx).clamp(maxOf(0, right - maxW), right - minW) ?: return refused
+            bottom = (bottom + my).clamp(top + minH, minOf(rows, top + maxH)) ?: return refused
+        }
+        Handle.BOTTOM_RIGHT -> {
+            right = (right + mx).clamp(left + minW, minOf(cols, left + maxW)) ?: return refused
+            bottom = (bottom + my).clamp(top + minH, minOf(rows, top + maxH)) ?: return refused
+        }
     }
     val w = right - left; val h = bottom - top
     val fits = left >= 0 && top >= 0 && right <= cols && bottom <= rows &&

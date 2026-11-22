@@ -35,4 +35,24 @@ class WidgetEditMathTest {
         assertThat(p.w).isEqualTo(3)
         assertThat(p.fits).isFalse()
     }
+
+    @Test fun presetThatCannotGrowInPlaceIsRefusedNotCrashed() {
+        // A 2×2 widget in the right half of a 4-column grid, asked to become 4×2.
+        val p = proposePlacement(CellRect(2, 0, 2, 2), 0f, 0f, Handle.BOTTOM_RIGHT, 4, 6, Span(4, 2), Span(4, 2), emptySet())
+        assertThat(p.fits).isFalse()
+        val tall = proposePlacement(CellRect(0, 5, 2, 1), 0f, 0f, Handle.BOTTOM_RIGHT, 4, 6, Span(2, 3), Span(2, 3), emptySet())
+        assertThat(tall.fits).isFalse()
+    }
+
+    @Test fun cornerDragOnWidgetBelowItsMinimumAtTheEdgeIsRefused() {
+        val p = proposePlacement(CellRect(3, 0, 1, 2), 1f, 0f, Handle.BOTTOM_RIGHT, 4, 6, Span(2, 2), Span(4, 4), emptySet())
+        assertThat(p.fits).isFalse()
+        val q = proposePlacement(CellRect(0, 0, 1, 2), -1f, 0f, Handle.TOP_LEFT, 4, 6, Span(2, 2), Span(4, 4), emptySet())
+        assertThat(q.fits).isFalse()
+    }
+
+    @Test fun movingAWidgetWiderThanTheGridIsRefused() {
+        val p = proposePlacement(CellRect(0, 0, 5, 2), 1f, 0f, Handle.BODY, 4, 6, Span(1, 1), Span(5, 5), emptySet())
+        assertThat(p.fits).isFalse()
+    }
 }
