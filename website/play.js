@@ -95,6 +95,9 @@
     { id: "ember", name: "Ember", style: "dark", shape: "circle" },
     { id: "rose", name: "Rose", style: "orig", shape: "circle", light: true },
     { id: "mint", name: "Mint", style: "orig", shape: "rounded", light: true },
+    { id: "liquid_azure", name: "Liquid Azure", style: "clear", shape: "squircle" },
+    { id: "frost_aurora", name: "Frost Aurora", style: "color", shape: "circle" },
+    { id: "chrome_night", name: "Chrome Night", style: "mono", shape: "squircle" },
   ];
   const NOVA = { id: "nova", name: "Supernova", style: "color", shape: "tear", secret: true };
 
