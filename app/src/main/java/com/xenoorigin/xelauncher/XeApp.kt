@@ -120,9 +120,14 @@ fun XeApp(graph: AppGraph) {
         rimTint = rememberRimTint(settings.timeTint),
     ) {
         val haze = remember { HazeState() }
+        // Liquid Glass looks through a frosted copy of the wallpaper, lined up with where the wallpaper sits now.
+        val glassBg by graph.wallpaper.glassBackdrop.collectAsState()
+        val glassBackdrop = remember { com.xenoorigin.xelauncher.design.GlassBackdrop({ glassBg }, { androidx.compose.ui.geometry.Offset.Zero }, { androidx.compose.ui.geometry.Size(1f, 1f) }) }
         CompositionLocalProvider(
             LocalHazeState provides haze, LocalIconRepository provides graph.icons, LocalGrayscaleContrast provides settings.grayscaleContrast,
             com.xenoorigin.xelauncher.icons.LocalGlyphScale provides settings.glyphScale,
+            com.xenoorigin.xelauncher.design.LocalLiquidGlass provides (settings.iconStyle == IconStyle.GLASS_CLEAR),
+            com.xenoorigin.xelauncher.design.LocalGlassBackdrop provides glassBackdrop,
         ) {
             val customIcons by graph.customIcons.files.collectAsState()
             val unread by com.xenoorigin.xelauncher.badges.Badges.counts.collectAsState()
@@ -455,6 +460,9 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                 else -> androidx.compose.ui.geometry.Offset.Zero
             }
         }
+        // The glass follows the wallpaper's own movement and the full screen it covers.
+        val screenSize = androidx.compose.ui.geometry.Size(with(density) { maxWidth.toPx() }, heightPx)
+        com.xenoorigin.xelauncher.design.LocalGlassBackdrop.current?.let { it.parallaxPx = parallax; it.screen = { screenSize } }
         com.xenoorigin.xelauncher.wallpaper.WallpaperLayer(
             graph.wallpaper, parallaxPx = parallax,
             liveSky = settings.wallpaperId == com.xenoorigin.xelauncher.wallpaper.LIVE_SKY_ID,

@@ -48,4 +48,25 @@ class GlassWidgetsScreenshotTest {
         rule.waitForIdle(); rule.mainClock.advanceTimeBy(1500); rule.waitForIdle()
         rule.onRoot().captureRoboImage("$SHOT_DIR/widgets_all.png")
     }
+
+    @Test fun allWidgetsLiquid() {
+        rule.setContent {
+            XeTheme {
+                com.xenoorigin.xelauncher.testutil.LiquidBackdrop(com.xenoorigin.xelauncher.testutil.xeWall("violet_glass", 1170, 4200)) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        listOf(GlassWidgetKind.CLOCK, GlassWidgetKind.SEARCH, GlassWidgetKind.MONTH).forEach { k ->
+                            Box(Modifier.fillMaxWidth().aspectRatio(k.spanX / (k.spanY * 1.05f))) { GlassWidget(k) }
+                        }
+                        GlassWidgetKind.entries.filter { it.spanX == 2 }.chunked(2).forEach { row ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                row.forEach { k -> Box(Modifier.weight(1f).aspectRatio(1f / 1.05f)) { GlassWidget(k) } }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        rule.waitForIdle(); rule.mainClock.advanceTimeBy(1500); rule.waitForIdle()
+        rule.onRoot().captureRoboImage("$SHOT_DIR/widgets_liquid.png")
+    }
 }

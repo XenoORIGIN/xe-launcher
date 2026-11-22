@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.xenoorigin.xelauncher.design.liquidGlass
 import com.xenoorigin.xelauncher.R
 import com.xenoorigin.xelauncher.design.GlassIconButton
 import com.xenoorigin.xelauncher.design.GlassPillButton
@@ -39,13 +40,21 @@ import com.xenoorigin.xelauncher.home.WidgetCell
 @Composable
 fun WidgetContent(cell: WidgetCell, host: XeWidgetHost) {
     val kind = GlassWidgetKind.of(cell.kind)
-    var bounds by remember { mutableStateOf(Rect.Zero) }
-    val density = LocalDensity.current
     if (kind != null) {
         // The widget lays itself out for the size it was given on Home.
         androidx.compose.runtime.CompositionLocalProvider(LocalWidgetSpan provides kind.clamp(Span(cell.spanX, cell.spanY))) { GlassWidget(kind, cell.id) }
         return
     }
+    // Liquid Glass gives other apps' widgets a clear glass frame; what they draw inside stays theirs.
+    val frame = if (com.xenoorigin.xelauncher.design.LocalLiquidGlass.current)
+        Modifier.fillMaxSize().liquidGlass(RoundedCornerShape(24.dp), film = .06f) else Modifier.fillMaxSize()
+    Box(frame) { HostedWidget(cell, host) }
+}
+
+@Composable
+private fun HostedWidget(cell: WidgetCell, host: XeWidgetHost) {
+    var bounds by remember { mutableStateOf(Rect.Zero) }
+    val density = LocalDensity.current
     AndroidView(
         factory = { c -> host.viewFor(c, cell.widgetId) ?: TextView(c).apply { text = c.getString(R.string.widget_failed); setTextColor(0xB3FFFFFF.toInt()) } },
         modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(24.dp)).onGloballyPositioned {

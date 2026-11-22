@@ -41,7 +41,7 @@ import kotlin.math.roundToInt
  * currently sits ([parallaxPx]) and the size of the screen it covers ([screen]).
  * Lambdas so the draw phase, not composition, reads them.
  */
-class GlassBackdrop(val image: () -> ImageBitmap?, val parallaxPx: () -> Offset, val screen: () -> Size)
+class GlassBackdrop(val image: () -> ImageBitmap?, var parallaxPx: () -> Offset, var screen: () -> Size)
 
 val LocalGlassBackdrop = staticCompositionLocalOf<GlassBackdrop?> { null }
 

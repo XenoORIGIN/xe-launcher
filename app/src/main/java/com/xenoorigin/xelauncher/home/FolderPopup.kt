@@ -86,7 +86,7 @@ fun FolderPopup(
                 cursorBrush = SolidColor(scheme.text), keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { onRename(name) }),
             )
-            GlassSurface(RoundedCornerShape(36.dp), Modifier.width(320.dp).clickable(enabled = false) {}) {
+            com.xenoorigin.xelauncher.design.LiquidSurface(RoundedCornerShape(36.dp), Modifier.width(320.dp).clickable(enabled = false) {}) {
                 Column(Modifier.padding(vertical = 22.dp, horizontal = 10.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
                     folder.apps.chunked(4).forEach { row ->
                         Row(Modifier.fillMaxWidth()) {

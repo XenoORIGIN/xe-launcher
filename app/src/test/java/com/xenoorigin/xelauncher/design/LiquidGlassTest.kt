@@ -11,6 +11,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -107,5 +109,40 @@ class LiquidGlassTest {
             }
         }
         rule.onRoot().captureRoboImage("$SHOT_DIR/liquid_tile.png")
+    }
+
+    @Test fun liquidSurfaceOffUsesGlassSurface() {
+        var useLiquidSurface by androidx.compose.runtime.mutableStateOf(false)
+        rule.setContent {
+            XeTheme {
+                Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0xFF3355AA))) {
+                    if (useLiquidSurface) LiquidSurface(RoundedCornerShape(24.dp), Modifier.size(120.dp)) {}
+                    else GlassSurface(RoundedCornerShape(24.dp), Modifier.size(120.dp)) {}
+                }
+            }
+        }
+        rule.waitForIdle()
+        val a = windowBitmap()
+        useLiquidSurface = true
+        rule.waitForIdle()
+        val b = windowBitmap()
+        assertThat(b.sameAs(a)).isTrue()
+    }
+
+    @Test fun liquidSurfaceOnIsClear() {
+        rule.setContent {
+            XeTheme {
+                CompositionLocalProvider(LocalLiquidGlass provides true) {
+                    Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0xFF3355AA))) {
+                        LiquidSurface(RoundedCornerShape(24.dp), Modifier.size(120.dp).testTag("s")) {}
+                    }
+                }
+            }
+        }
+        rule.waitForIdle()
+        val r = rule.onNodeWithTag("s").fetchSemanticsNode().boundsInRoot
+        val c = windowBitmap().getPixel(r.center.x.toInt(), r.center.y.toInt())
+        // No backdrop yet: a frosted film over the blue, so still clearly blue (not the dark glass panel).
+        assertThat(android.graphics.Color.blue(c)).isGreaterThan(android.graphics.Color.red(c) + 60)
     }
 }

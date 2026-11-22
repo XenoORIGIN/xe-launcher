@@ -427,7 +427,7 @@ private fun Dock(
     val lift = remember { androidx.compose.animation.core.Animatable(0f) }
     var rowWidth by remember { mutableStateOf(1f) }
     val liquid = look.liquidDock && !editMode
-    GlassSurface(RoundedCornerShape(36.dp), modifier.fillMaxWidth().padding(horizontal = 14.dp).padding(bottom = 10.dp).height(look.iconSize.dp + 30.dp)) {
+    com.xenoorigin.xelauncher.design.LiquidSurface(RoundedCornerShape(36.dp), modifier.fillMaxWidth().padding(horizontal = 14.dp).padding(bottom = 10.dp).height(look.iconSize.dp + 30.dp)) {
         Row(
             Modifier.fillMaxSize().padding(horizontal = 10.dp).testTag("dock")
                 .onGloballyPositioned { rowWidth = it.size.width.toFloat().coerceAtLeast(1f) }

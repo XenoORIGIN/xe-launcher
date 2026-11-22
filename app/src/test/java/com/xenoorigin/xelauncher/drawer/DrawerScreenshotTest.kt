@@ -42,6 +42,23 @@ class DrawerScreenshotTest {
         rule.onRoot().captureRoboImage("$SHOT_DIR/drawer_black.png")
     }
 
+    @Test fun drawerLiquid() {
+        val repo = sampleRepo()
+        val cats = sampleCategories()
+        rule.setContent {
+            XeTheme {
+                CompositionLocalProvider(LocalIconRepository provides repo) {
+                    com.xenoorigin.xelauncher.testutil.LiquidBackdrop(com.xenoorigin.xelauncher.testutil.xeWall("aurora")) {
+                        AppDrawer(cats, DrawerState(pageCount = { cats.size }), DrawerLook({ IconStyle.GLASS_CLEAR }, IconShape.SQUIRCLE, 60, true, true),
+                            { _, _ -> }, { _, _ -> }, {}, {}, {})
+                    }
+                }
+            }
+        }
+        rule.waitForIdle(); Thread.sleep(400); rule.mainClock.advanceTimeBy(2000); rule.waitForIdle()
+        rule.onRoot().captureRoboImage("$SHOT_DIR/drawer_liquid.png")
+    }
+
     @Test fun drawerMenu() {
         rule.setContent {
             XeTheme { TestBackdrop(black = true) { DrawerMenuSheet(true, XeSettings(), {}, {}, {}, {}, {}, {}) } }

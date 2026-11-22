@@ -122,7 +122,7 @@ fun GlassWidget(kind: GlassWidgetKind, itemId: Long = -1, modifier: Modifier = M
     val span = LocalWidgetSpan.current ?: Span(kind.spanX, kind.spanY)
     val shape = RoundedCornerShape(if (span.y == 1) 32.dp else 28.dp)
     if (kind == GlassWidgetKind.PHOTO) { PhotoWidget(itemId, shape, modifier); return }
-    GlassSurface(shape, modifier.fillMaxSize()) {
+    com.xenoorigin.xelauncher.design.LiquidSurface(shape, modifier.fillMaxSize()) {
         // A soft light from the top-left gives every widget the same depth.
         Box(Modifier.fillMaxSize().clip(shape).background(Brush.radialGradient(listOf(Color.White.copy(alpha = .10f), Color.Transparent), Offset.Zero, 700f)))
         when (kind) {
@@ -336,7 +336,7 @@ private fun PhotoWidget(itemId: Long, shape: RoundedCornerShape, modifier: Modif
             Image(b, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
             Box(Modifier.fillMaxSize().glassTile(shape, LocalGlassStyle.current, Color.Transparent))
         }
-    } else GlassSurface(shape, modifier.fillMaxSize()) {
+    } else com.xenoorigin.xelauncher.design.LiquidSurface(shape, modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().clickable { actions.pickPhoto(itemId) }, verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(painterResource(R.drawable.ti_photo), null, Modifier.size(30.dp), tint = Color.White.copy(alpha = .8f))
             Text(stringResource(R.string.widget_photo_pick), color = Color.White.copy(alpha = .7f), style = XeType.Label, modifier = Modifier.padding(top = 6.dp), textAlign = TextAlign.Center)
