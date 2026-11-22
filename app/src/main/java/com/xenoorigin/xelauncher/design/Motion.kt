@@ -21,6 +21,9 @@ object XeMotion {
         spring(dampingRatio = dampingRatio, stiffness = stiffness / (speed.scale * speed.scale))
     }
 
+    /** The one spring sheets and panels use to arrive and leave, so everything settles the same way. */
+    fun <T> settle(speed: AnimationSpeed): SpringSpec<T> = spring(speed, dampingRatio = .82f, stiffness = 420f)
+
     fun durationMs(base: Int, speed: AnimationSpeed): Int = (base * speed.scale).toInt()
 }
 

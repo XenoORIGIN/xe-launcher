@@ -357,4 +357,18 @@
     <string name="live_sky_offer_yes">Use on the phone</string>
     <string name="widget_day_left">%1$d%% of today left</string>
     <string name="widget_edit_place">Move or resize</string>
+    <string name="icon_glass">Icon glass</string>
+    <string name="icon_glass_off">Off</string>
+    <string name="icon_glass_light">Light</string>
+    <string name="icon_glass_light_desc">A light sweep across icons as you move</string>
+    <string name="icon_glass_lens">Lens</string>
+    <string name="icon_glass_lens_desc">Icons bend the wallpaper behind them like real glass</string>
+    <string name="liquid_dock">Liquid dock</string>
+    <string name="liquid_dock_desc">Icons swell under your finger</string>
+    <string name="depth_parallax">Depth</string>
+    <string name="depth_parallax_desc">Wallpaper drifts behind the icons as you swipe or tilt</string>
+    <string name="glass_launch">Glass bubble launch</string>
+    <string name="glass_launch_desc">Apps open from a glass bubble</string>
+    <string name="time_tint">Time-of-day rims</string>
+    <string name="time_tint_desc">Glass edges turn amber at sunset and blue at night</string>
 </resources>

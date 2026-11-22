@@ -356,4 +356,18 @@
     <string name="live_sky_offer_yes">ใช้เป็นวอลเปเปอร์เครื่อง</string>
     <string name="widget_day_left">เหลือวันนี้อีก %1$d%%</string>
     <string name="widget_edit_place">ย้ายหรือปรับขนาด</string>
+    <string name="icon_glass">กระจกไอคอน</string>
+    <string name="icon_glass_off">ปิด</string>
+    <string name="icon_glass_light">แสงสะท้อน</string>
+    <string name="icon_glass_light_desc">แสงวิ่งผ่านไอคอนเวลาเลื่อนหรือเอียงเครื่อง</string>
+    <string name="icon_glass_lens">เลนส์</string>
+    <string name="icon_glass_lens_desc">ไอคอนหักเหภาพพื้นหลังเหมือนกระจกจริง</string>
+    <string name="liquid_dock">Dock แบบน้ำ</string>
+    <string name="liquid_dock_desc">ไอคอนพองขึ้นตามนิ้ว</string>
+    <string name="depth_parallax">ภาพมีมิติ</string>
+    <string name="depth_parallax_desc">พื้นหลังเลื่อนช้ากว่าไอคอนเวลาปัดหรือเอียงเครื่อง</string>
+    <string name="glass_launch">เปิดแอปเป็นฟองกระจก</string>
+    <string name="glass_launch_desc">แอปเปิดออกมาจากฟองกระจก</string>
+    <string name="time_tint">ขอบกระจกตามเวลา</string>
+    <string name="time_tint_desc">ขอบกระจกเป็นสีส้มตอนพระอาทิตย์ตก และสีฟ้าตอนกลางคืน</string>
 </resources>

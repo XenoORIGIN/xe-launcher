@@ -24,4 +24,12 @@ class MotionMathTest {
         assertThat(homeReturnScale(0f)).isGreaterThan(1f)
         assertThat(homeReturnScale(1f)).isEqualTo(1f)
     }
+
+    @Test fun settleSpringIsSharedAndScalesWithSpeed() {
+        val n = XeMotion.settle<Float>(AnimationSpeed.NORMAL)
+        val slow = XeMotion.settle<Float>(AnimationSpeed.SMOOTH)
+        assertThat(n.dampingRatio).isEqualTo(.82f)
+        assertThat(slow.stiffness).isLessThan(n.stiffness)
+        assertThat(XeMotion.settle<Float>(AnimationSpeed.OFF).stiffness).isAtLeast(100_000f)
+    }
 }

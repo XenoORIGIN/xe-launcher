@@ -62,6 +62,7 @@ import com.xenoorigin.xelauncher.settings.DrawerSort
 import com.xenoorigin.xelauncher.settings.GestureAction
 import com.xenoorigin.xelauncher.settings.ThemeMode
 import com.xenoorigin.xelauncher.settings.XeSettings
+import com.xenoorigin.xelauncher.settings.IconGlass
 import com.xenoorigin.xelauncher.update.ReleaseInfo
 import com.xenoorigin.xelauncher.update.UpdateChecker
 import kotlinx.coroutines.launch
@@ -133,6 +134,21 @@ fun AppearanceScreen(s: XeSettings, update: Update, back: () -> Unit) {
         SettingsGroup(stringResource(R.string.effects)) {
             XeRow(stringResource(R.string.tilt_shine), subtitle = stringResource(R.string.tilt_shine_desc)) { GlassSwitch(s.tiltShine, { v -> update { it.copy(tiltShine = v) } }) }
             XeRow(stringResource(R.string.glass_lens), subtitle = stringResource(R.string.glass_lens_desc)) { GlassSwitch(s.glassLens, { v -> update { it.copy(glassLens = v) } }) }
+            EffectSwitch("liquidDock", R.string.liquid_dock, R.string.liquid_dock_desc, s.liquidDock) { v -> update { it.copy(liquidDock = v) } }
+            EffectSwitch("depthParallax", R.string.depth_parallax, R.string.depth_parallax_desc, s.depthParallax) { v -> update { it.copy(depthParallax = v) } }
+            EffectSwitch("glassLaunch", R.string.glass_launch, R.string.glass_launch_desc, s.glassLaunch) { v -> update { it.copy(glassLaunch = v) } }
+            EffectSwitch("timeTint", R.string.time_tint, R.string.time_tint_desc, s.timeTint) { v -> update { it.copy(timeTint = v) } }
+        }
+        SettingsGroup(stringResource(R.string.icon_glass)) {
+            listOf(
+                Triple(IconGlass.OFF, R.string.icon_glass_off, null),
+                Triple(IconGlass.LIGHT, R.string.icon_glass_light, R.string.icon_glass_light_desc),
+                Triple(IconGlass.LENS, R.string.icon_glass_lens, R.string.icon_glass_lens_desc),
+            ).forEach { (g, l, d) ->
+                Box(Modifier.testTag("iconGlass_$g")) {
+                    ChoiceRow(stringResource(l), s.iconGlass == g, d?.let { stringResource(it) }) { update { it.copy(iconGlass = g) } }
+                }
+            }
         }
         SettingsGroup {
             SliderRow(stringResource(R.string.text_size), s.fontScale, .85f..1.3f, steps = 8, display = { "${(it * 100).roundToInt()}%" }) { v -> update { it.copy(fontScale = v) } }
@@ -495,4 +511,9 @@ fun AboutScreen(back: () -> Unit, s: XeSettings? = null, update: Update = {}, no
         }
         Text(text, style = XeType.Caption, color = LocalXeScheme.current.textSecondary)
     }
+}
+
+@Composable
+private fun EffectSwitch(tag: String, title: Int, desc: Int, on: Boolean, onChange: (Boolean) -> Unit) {
+    XeRow(stringResource(title), subtitle = stringResource(desc)) { GlassSwitch(on, onChange, Modifier.testTag("effect_$tag")) }
 }

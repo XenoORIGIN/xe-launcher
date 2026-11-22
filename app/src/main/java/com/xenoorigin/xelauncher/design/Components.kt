@@ -83,8 +83,8 @@ fun GlassSheet(visible: Boolean, onDismiss: () -> Unit, content: @Composable Col
         }
         AnimatedVisibility(
             visible, Modifier.align(Alignment.BottomCenter),
-            enter = slideInVertically(XeMotion.spring(speed, dampingRatio = .82f, stiffness = 420f)) { it } + fadeIn(),
-            exit = slideOutVertically(tween(XeMotion.durationMs(200, speed))) { it } + fadeOut(),
+            enter = slideInVertically(XeMotion.settle(speed)) { it } + fadeIn(),
+            exit = slideOutVertically(XeMotion.settle(speed)) { it } + fadeOut(tween(XeMotion.durationMs(180, speed))),
         ) {
             GlassSurface(
                 RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp, bottomStart = 0.dp, bottomEnd = 0.dp),
