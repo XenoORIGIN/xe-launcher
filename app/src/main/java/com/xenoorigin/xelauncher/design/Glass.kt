@@ -38,6 +38,8 @@ data class GlassStyle(
     val refraction: Float,
     val noiseAlpha: Float,
     val dark: Boolean,
+    /** Time-of-day colour the rims lean toward; transparent leaves them white. */
+    val rimTint: Color = Color.Transparent,
 )
 
 fun glassStyleFor(q: GlassQuality, dark: Boolean, sdk: Int = Build.VERSION.SDK_INT): GlassStyle {
@@ -90,9 +92,14 @@ private val RimColors = listOf(Color.White, Color(0xFFA0FFF0), Color.White, Colo
 private val RimAlphas = floatArrayOf(.10f, .30f, .55f, .10f, .35f, .95f, .30f, .10f)
 
 /** The bright rim, turned by [degrees] around the panel centre (sweep gradients can't rotate on their own). */
-private class RimBrush(private val rimAlpha: Float, private val degrees: Float) : ShaderBrush() {
+internal fun rimColors(tint: Color): List<Color> =
+    if (tint.alpha <= 0f) RimColors
+    else RimColors.map { androidx.compose.ui.graphics.lerp(it, tint.copy(alpha = 1f), (tint.alpha * 2f).coerceAtMost(.7f)) }
+
+private class RimBrush(private val rimAlpha: Float, private val degrees: Float, private val tint: Color) : ShaderBrush() {
     override fun createShader(size: Size): Shader {
-        val colors = IntArray(RimColors.size) { i -> RimColors[i].copy(alpha = RimAlphas[i] * rimAlpha).toArgb() }
+        val base = rimColors(tint)
+        val colors = IntArray(base.size) { i -> base[i].copy(alpha = RimAlphas[i] * rimAlpha).toArgb() }
         return android.graphics.SweepGradient(size.width / 2f, size.height / 2f, colors, RimStops).apply {
             if (degrees != 0f) setLocalMatrix(android.graphics.Matrix().apply { setRotate(degrees, size.width / 2f, size.height / 2f) })
         }
@@ -122,7 +129,7 @@ fun Modifier.glassFilmAndRim(shape: Shape, style: GlassStyle, drawFilm: Boolean 
         onDrawWithContent {
             val tilt = GlassTilt.value.value
             val deg = rimDegrees(tilt)
-            val rim = rims.getOrPut(deg) { RimBrush(style.rimAlpha, deg.toFloat()) }
+            val rim = rims.getOrPut(deg) { RimBrush(style.rimAlpha, deg.toFloat(), style.rimTint) }
             if (drawFilm) drawOutline(outline, style.tint)
             drawOutline(outline, sheen)
             drawOutline(outline, topGlow)

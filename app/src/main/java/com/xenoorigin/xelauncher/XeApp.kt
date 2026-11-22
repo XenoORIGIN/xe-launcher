@@ -117,6 +117,7 @@ fun XeApp(graph: AppGraph) {
         dark = dark, accent = Color(settings.accent.toInt()), glassQuality = settings.glassQuality,
         animationSpeed = if (systemOff) AnimationSpeed.OFF else settings.animationSpeed,
         pressSquish = settings.pressSquish, fontScale = settings.fontScale,
+        rimTint = rememberRimTint(settings.timeTint),
     ) {
         val haze = remember { HazeState() }
         CompositionLocalProvider(
@@ -883,6 +884,17 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
             )
         }
     }
+}
+
+/** The rim colour for now, re-checked every five minutes; clear when the setting is off. */
+@Composable
+private fun rememberRimTint(on: Boolean): Color {
+    if (!on) return Color.Transparent
+    val minute by androidx.compose.runtime.produceState(com.xenoorigin.xelauncher.wallpaper.minuteNow()) {
+        while (true) { delay(5 * 60_000L); value = com.xenoorigin.xelauncher.wallpaper.minuteNow() }
+    }
+    val sun = remember { com.xenoorigin.xelauncher.wallpaper.sunToday() }
+    return remember(minute / 5, sun) { com.xenoorigin.xelauncher.design.rimTintAt(minute, sun) }
 }
 
 @Suppress("unused") private val unusedAppCell = AppCell::class

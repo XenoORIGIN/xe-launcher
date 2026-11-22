@@ -21,10 +21,11 @@ fun XeTheme(
     animationSpeed: AnimationSpeed = AnimationSpeed.NORMAL,
     pressSquish: Boolean = true,
     fontScale: Float = 1f,
+    rimTint: Color = Color.Transparent,
     content: @Composable () -> Unit,
 ) {
     val scheme = remember(dark, accent) { xeScheme(dark, accent) }
-    val glass = remember(glassQuality, dark) { glassStyleFor(glassQuality, dark) }
+    val glass = remember(glassQuality, dark, rimTint) { glassStyleFor(glassQuality, dark).copy(rimTint = rimTint) }
     val d = LocalDensity.current
     val m3 = if (dark) darkColorScheme(primary = scheme.accent, background = Color.Black, surface = Color(0xFF111114))
     else lightColorScheme(primary = scheme.accent)
