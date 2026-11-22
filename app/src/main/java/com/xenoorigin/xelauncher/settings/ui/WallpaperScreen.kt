@@ -60,6 +60,7 @@ import com.xenoorigin.xelauncher.wallpaper.WallpaperPreset
 import com.xenoorigin.xelauncher.wallpaper.WallpaperRenderer
 import com.xenoorigin.xelauncher.wallpaper.WallpaperTarget
 import com.xenoorigin.xelauncher.wallpaper.XeCollection
+import com.xenoorigin.xelauncher.wallpaper.withColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -101,6 +102,11 @@ fun WallpaperScreen(graph: AppGraph, back: () -> Unit) {
         SettingsGroup(stringResource(R.string.xe_collection)) {
             ThumbGrid(XeCollection, current?.wallpaperId) { editing = it }
         }
+        current?.let { s ->
+            SettingsGroup(stringResource(R.string.ascii_group)) {
+                AsciiGroup(s, { c -> scope.launch { graph.settings.update { it.copy(asciiColor = c) }; graph.wallpaper.reapplyAscii() } }) { editing = it }
+            }
+        }
     }
     com.xenoorigin.xelauncher.design.GlassSheet(offerLiveSky, { offerLiveSky = false }) {
         Text(stringResource(R.string.live_sky_offer_title), style = XeType.Title, color = LocalXeScheme.current.text, modifier = Modifier.padding(vertical = 8.dp))
@@ -117,6 +123,7 @@ fun WallpaperScreen(graph: AppGraph, back: () -> Unit) {
             onApply = { preset, adjust, target ->
                 editing = null
                 scope.launch {
+                    graph.settings.update { settingsAfterApply(it, preset) }
                     if (preset is WallpaperPreset.Image) graph.wallpaper.applyImage(preset.file, adjust, target)
                     else graph.wallpaper.apply(preset, target, adjust)
                 }
@@ -129,18 +136,41 @@ fun WallpaperScreen(graph: AppGraph, back: () -> Unit) {
     }
 }
 
+/** Applying an ASCII wallpaper also saves the colour picked in the editor. */
+internal fun settingsAfterApply(s: com.xenoorigin.xelauncher.settings.XeSettings, preset: WallpaperPreset) =
+    if (preset is WallpaperPreset.Ascii) s.copy(asciiColor = preset.color) else s
+
+/** The ASCII wallpapers: a colour choice (saved at once) and their thumbnails in that colour. */
+@Composable
+internal fun AsciiGroup(s: com.xenoorigin.xelauncher.settings.XeSettings, onColor: (com.xenoorigin.xelauncher.settings.AsciiColor) -> Unit, onPick: (WallpaperPreset) -> Unit) {
+    Text(stringResource(R.string.ascii_color), style = XeType.Caption, color = LocalXeScheme.current.textSecondary, modifier = Modifier.padding(top = 4.dp, start = 6.dp))
+    AsciiColorRow(s.asciiColor, "ascii_color_", onColor)
+    ThumbGrid(com.xenoorigin.xelauncher.wallpaper.AsciiCollection.map { it.withColors(s) }, s.wallpaperId, onPick)
+}
+
+@Composable
+private fun AsciiColorRow(selected: com.xenoorigin.xelauncher.settings.AsciiColor, tagPrefix: String, onSelect: (com.xenoorigin.xelauncher.settings.AsciiColor) -> Unit) {
+    listOf(
+        com.xenoorigin.xelauncher.settings.AsciiColor.MONO to R.string.ascii_mono,
+        com.xenoorigin.xelauncher.settings.AsciiColor.SKY to R.string.ascii_sky,
+        com.xenoorigin.xelauncher.settings.AsciiColor.ACCENT to R.string.ascii_accent,
+    ).forEach { (c, label) ->
+        Box(Modifier.testTag("$tagPrefix${c.name}")) { ChoiceRow(stringResource(label), selected == c) { onSelect(c) } }
+    }
+}
+
 @Composable
 private fun ThumbGrid(items: List<WallpaperPreset>, selectedId: String?, onPick: (WallpaperPreset) -> Unit) {
     items.chunked(3).forEach { row ->
         Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             row.forEach { p ->
                 Column(Modifier.weight(1f)) {
-                    val thumb by produceState<ImageBitmap?>(null, p.id) {
+                    val thumb by produceState<ImageBitmap?>(null, p) {
                         value = withContext(Dispatchers.Default) { runCatching { WallpaperRenderer.render(p, 135, 292).asImageBitmap() }.getOrNull() }
                     }
                     val sel = selectedId == p.id
                     Box(
-                        Modifier.fillMaxWidth().aspectRatio(135f / 292f).clip(RoundedCornerShape(16.dp))
+                        Modifier.testTag("thumb_${p.id}").fillMaxWidth().aspectRatio(135f / 292f).clip(RoundedCornerShape(16.dp))
                             .background(Color.White.copy(alpha = .06f))
                             .border(if (sel) 2.5.dp else 0.5.dp, if (sel) Color.White else Color.White.copy(alpha = .2f), RoundedCornerShape(16.dp))
                             .clickable { onPick(p) },
@@ -155,7 +185,7 @@ private fun ThumbGrid(items: List<WallpaperPreset>, selectedId: String?, onPick:
 
 /** Live preview with framing (drag / pinch for photos), shuffle and glow for Xe designs, dim and blur for all. */
 @Composable
-private fun WallpaperEditor(
+internal fun WallpaperEditor(
     start: WallpaperPreset,
     onApply: (WallpaperPreset, WallpaperAdjust, WallpaperTarget) -> Unit,
     onDelete: (() -> Unit)?,
@@ -209,7 +239,7 @@ private fun WallpaperEditor(
                 }
             }
             Text(
-                stringResource(if (preset is WallpaperPreset.Image) R.string.drag_to_frame else R.string.shuffle_hint),
+                if (preset is WallpaperPreset.Ascii) "" else stringResource(if (preset is WallpaperPreset.Image) R.string.drag_to_frame else R.string.shuffle_hint),
                 Modifier.fillMaxWidth().padding(top = 6.dp), style = XeType.Caption, color = scheme.textSecondary,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
@@ -227,19 +257,25 @@ private fun WallpaperEditor(
                         SliderRow(stringResource(R.string.glass_lenses), p.lenses.toFloat(), 0f..5f, steps = 4, display = { it.toInt().toString() }) { preset = p.copy(lenses = it.toInt()) }
                     }
                     is WallpaperPreset.Sky -> Text(stringResource(R.string.live_sky_desc), Modifier.padding(top = 10.dp), style = XeType.Caption, color = scheme.textSecondary)
-                    is WallpaperPreset.Ascii -> Unit
+                    is WallpaperPreset.Ascii -> {
+                        Text(stringResource(if (p.live) R.string.ascii_live_desc else R.string.ascii_still_desc), Modifier.padding(top = 10.dp), style = XeType.Caption, color = scheme.textSecondary)
+                        AsciiColorRow(p.color, "editor_ascii_color_") { preset = p.copy(color = it) }
+                    }
                     is WallpaperPreset.Image -> SliderRow(stringResource(R.string.zoom), adjust.zoom, 1f..4f, display = { "%.1f×".format(it) }) { adjust = adjust.copy(zoom = it) }
                 }
-                SliderRow(stringResource(R.string.dim), adjust.dim, 0f..0.7f, display = { "${(it * 100).toInt()}%" }) { adjust = adjust.copy(dim = it) }
-                SliderRow(stringResource(R.string.blur), adjust.blur, 0f..1f, display = { "${(it * 100).toInt()}%" }) { adjust = adjust.copy(blur = it) }
-                GlassPillButton(stringResource(R.string.set_wallpaper), { chooseTarget = true }, Modifier.fillMaxWidth().padding(vertical = 10.dp), icon = R.drawable.ti_check)
+                // ASCII is drawn crisp and live on Home, where dim and blur can't follow it.
+                if (preset !is WallpaperPreset.Ascii) {
+                    Box(Modifier.testTag("slider_dim")) { SliderRow(stringResource(R.string.dim), adjust.dim, 0f..0.7f, display = { "${(it * 100).toInt()}%" }) { adjust = adjust.copy(dim = it) } }
+                    SliderRow(stringResource(R.string.blur), adjust.blur, 0f..1f, display = { "${(it * 100).toInt()}%" }) { adjust = adjust.copy(blur = it) }
+                }
+                GlassPillButton(stringResource(R.string.set_wallpaper), { chooseTarget = true }, Modifier.fillMaxWidth().padding(vertical = 10.dp).testTag("set_wallpaper"), icon = R.drawable.ti_check)
             }
         }
     }
     com.xenoorigin.xelauncher.design.GlassSheet(chooseTarget, { chooseTarget = false }) {
         Text(stringResource(R.string.apply_wallpaper_to), style = XeType.Title, color = scheme.text, modifier = Modifier.padding(vertical = 8.dp))
         listOf(WallpaperTarget.HOME to R.string.apply_home, WallpaperTarget.LOCK to R.string.apply_lock, WallpaperTarget.BOTH to R.string.apply_both).forEach { (t, l) ->
-            ChoiceRow(stringResource(l), false) { chooseTarget = false; onApply(preset, adjust, t) }
+            Box(Modifier.testTag("target_$t")) { ChoiceRow(stringResource(l), false) { chooseTarget = false; onApply(preset, adjust, t) } }
         }
     }
 }

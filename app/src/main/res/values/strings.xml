@@ -371,4 +371,11 @@
     <string name="glass_launch_desc">Apps open from a glass bubble</string>
     <string name="time_tint">Time-of-day rims</string>
     <string name="time_tint_desc">Glass edges turn amber at sunset and blue at night</string>
+    <string name="ascii_group">ASCII</string>
+    <string name="ascii_color">ASCII colour</string>
+    <string name="ascii_mono">Mono</string>
+    <string name="ascii_sky">Sky</string>
+    <string name="ascii_accent">Accent</string>
+    <string name="ascii_live_desc">Moves and follows the time of day: sun by day, moon and stars at night.</string>
+    <string name="ascii_still_desc">A still scene drawn in text characters.</string>
 </resources>

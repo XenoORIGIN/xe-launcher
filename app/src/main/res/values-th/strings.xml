@@ -370,4 +370,11 @@
     <string name="glass_launch_desc">แอปเปิดออกมาจากฟองกระจก</string>
     <string name="time_tint">ขอบกระจกตามเวลา</string>
     <string name="time_tint_desc">ขอบกระจกเป็นสีส้มตอนพระอาทิตย์ตก และสีฟ้าตอนกลางคืน</string>
+    <string name="ascii_group">ASCII</string>
+    <string name="ascii_color">สีของ ASCII</string>
+    <string name="ascii_mono">ขาวเทา</string>
+    <string name="ascii_sky">ตามท้องฟ้า</string>
+    <string name="ascii_accent">ตามสีเน้น</string>
+    <string name="ascii_live_desc">ขยับได้และเปลี่ยนตามเวลาจริง กลางวันมีพระอาทิตย์ กลางคืนมีพระจันทร์และดาว</string>
+    <string name="ascii_still_desc">ฉากภาพนิ่งที่วาดด้วยตัวอักษร</string>
 </resources>
