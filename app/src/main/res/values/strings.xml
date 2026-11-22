@@ -356,4 +356,5 @@
     <string name="live_sky_offer_body">Use Xe Live Sky as the phone\'s own wallpaper too. It stays on time even when Xe isn\'t open, with no extra battery while the screen is off.</string>
     <string name="live_sky_offer_yes">Use on the phone</string>
     <string name="widget_day_left">%1$d%% of today left</string>
+    <string name="widget_edit_place">Move or resize</string>
 </resources>

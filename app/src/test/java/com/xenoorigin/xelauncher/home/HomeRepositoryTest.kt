@@ -173,4 +173,20 @@ class HomeRepositoryTest {
         assertThat(repo.removeWidget(id)).isEqualTo(42)
         assertThat(layout().pages[0]).isEmpty()
     }
+
+    @Test fun placeWidget_movesAndResizesInOneStep() = runBlocking<Unit> {
+        val id = repo.addWidget(page = 0, spanX = 2, spanY = 1, widgetId = 1, kind = "xe_clock")
+        assertThat(repo.placeWidget(id, 1, 0, 3, 2)).isTrue()
+        val w = layout().pages[0].filterIsInstance<WidgetCell>().single()
+        assertThat(listOf(w.x, w.y, w.spanX, w.spanY)).containsExactly(1, 0, 3, 2).inOrder()
+    }
+
+    @Test fun placeWidget_failureKeepsOriginal() = runBlocking<Unit> {
+        val id = repo.addWidget(page = 0, spanX = 2, spanY = 1, widgetId = 1, kind = "xe_clock") // (0,0)
+        repo.addApp(all[0].key) // (2,0)
+        assertThat(repo.placeWidget(id, 1, 0, 2, 1)).isFalse() // would cover the app
+        assertThat(repo.placeWidget(id, 3, 0, 2, 1)).isFalse() // past the edge
+        val w = layout().pages[0].filterIsInstance<WidgetCell>().single()
+        assertThat(listOf(w.x, w.y, w.spanX, w.spanY)).containsExactly(0, 0, 2, 1).inOrder()
+    }
 }

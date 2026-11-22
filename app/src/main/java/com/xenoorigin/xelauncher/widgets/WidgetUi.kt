@@ -59,29 +59,6 @@ fun WidgetContent(cell: WidgetCell, host: XeWidgetHost) {
     )
 }
 
-/** Width and height steppers for a widget; [onResize] returns false when there isn't room. */
-@Composable
-fun WidgetResizeSheet(cell: WidgetCell?, columns: Int, rows: Int, onResize: (Int, Int) -> Unit, onDismiss: () -> Unit) {
-    val scheme = LocalXeScheme.current
-    GlassSheet(cell != null, onDismiss) {
-        if (cell == null) return@GlassSheet
-        Text(stringResource(R.string.widget_resize), style = XeType.Title, color = scheme.text, modifier = Modifier.padding(vertical = 8.dp))
-        @Composable
-        fun stepper(label: Int, value: Int, max: Int, set: (Int) -> Unit) {
-            Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(label), Modifier.weight(1f), style = XeType.Headline, color = scheme.text)
-                GlassIconButton(R.drawable.ti_minus, "-", { if (value > 1) set(value - 1) })
-                Box(Modifier.width(56.dp), contentAlignment = Alignment.Center) { Text("$value", style = XeType.Title, color = scheme.text) }
-                GlassIconButton(R.drawable.ti_plus, "+", { if (value < max) set(value + 1) })
-            }
-        }
-        stepper(R.string.widget_width, cell.spanX, columns) { onResize(it, cell.spanY) }
-        stepper(R.string.widget_height, cell.spanY, rows) { onResize(cell.spanX, it) }
-        Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            GlassPillButton(stringResource(R.string.done), onDismiss, Modifier.weight(1f), icon = R.drawable.ti_check)
-        }
-    }
-}
 
 /** Write or change the text of a note widget. */
 @Composable

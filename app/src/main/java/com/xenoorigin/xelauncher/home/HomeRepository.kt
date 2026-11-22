@@ -99,6 +99,13 @@ class HomeRepository(
         dao.update(i.copy(spanX = spanX, spanY = spanY)); true
     }
 
+    /** Moves and resizes a widget in one step if the new area is free; returns whether it changed. */
+    suspend fun placeWidget(itemId: Long, x: Int, y: Int, spanX: Int, spanY: Int): Boolean = db.withTransaction {
+        val i = dao.get(itemId)?.takeIf { it.type == WIDGET } ?: return@withTransaction false
+        if (!fits(i.page, x, y, spanX, spanY, except = i.id)) return@withTransaction false
+        dao.update(i.copy(x = x, y = y, spanX = spanX, spanY = spanY)); true
+    }
+
     /** Deletes a widget item and returns its Android widget id (0 for Xe widgets) so the host can free it. */
     suspend fun removeWidget(itemId: Long): Int = db.withTransaction {
         val i = dao.get(itemId)?.takeIf { it.type == WIDGET } ?: return@withTransaction 0

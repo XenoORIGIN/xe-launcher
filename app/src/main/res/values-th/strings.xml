@@ -355,4 +355,5 @@
     <string name="live_sky_offer_body">ใช้ Xe ท้องฟ้าตามเวลาจริงเป็นวอลเปเปอร์ของเครื่องด้วย ภาพจะตรงเวลาแม้ไม่ได้เปิด Xe และไม่กินแบตตอนปิดจอ</string>
     <string name="live_sky_offer_yes">ใช้เป็นวอลเปเปอร์เครื่อง</string>
     <string name="widget_day_left">เหลือวันนี้อีก %1$d%%</string>
+    <string name="widget_edit_place">ย้ายหรือปรับขนาด</string>
 </resources>

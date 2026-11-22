@@ -1,5 +1,7 @@
 package com.xenoorigin.xelauncher
 
+import com.xenoorigin.xelauncher.widgets.clamp
+import com.xenoorigin.xelauncher.design.glassTile
 import android.app.ActivityOptions
 import androidx.lifecycle.repeatOnLifecycle
 import android.app.SearchManager
@@ -186,9 +188,15 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
         }
     }
     var widgetPicker by remember { mutableStateOf(false) }
-    var resizeId by remember { mutableStateOf<Long?>(null) }
+    /** The widget being moved/resized in place on Home. */
+    var widgetEditId by remember { mutableStateOf<Long?>(null) }
     var pendingWidget by remember { mutableStateOf<Pair<Int, android.appwidget.AppWidgetProviderInfo>?>(null) }
     val host = graph.widgetHost
+    fun removeWidget(wc: com.xenoorigin.xelauncher.home.WidgetCell) = scope.launch {
+        val hid = graph.home.removeWidget(wc.id); if (hid > 0) host.release(hid)
+        java.io.File(photoDir, "${wc.id}.jpg").delete()
+        graph.settings.update { st -> st.copy(widgetNotes = st.widgetNotes - wc.id.toString()) }
+    }
     val conf = androidx.compose.ui.platform.LocalConfiguration.current
     val cellWDp = (conf.screenWidthDp - 20f) / settings.homeColumns
     val cellHDp = (conf.screenHeightDp - 230f) / settings.homeRows
@@ -382,7 +390,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     }
     fun closeAll() {
         menu = null; openFolder = null; drawerMenu = false; editor = null; moveFor = null; editFor = null; arrange = null; bulkIcons = false
-        widgetPicker = false; resizeId = null; manageCategory = null; noteFor = null
+        widgetPicker = false; widgetEditId = null; manageCategory = null; noteFor = null
         searchOpen = false; settingsRoute = null; editMode = false; drawPad = false
     }
 
@@ -410,7 +418,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     LaunchedEffect(Unit) {
         graph.homePressed.collect {
             val anyOverlay = menu != null || openFolder != null || drawerMenu || editor != null || moveFor != null ||
-                editFor != null || arrange != null || manageCategory != null || noteFor != null || bulkIcons || widgetPicker || resizeId != null || searchOpen || settingsRoute != null || editMode || drawPad
+                editFor != null || arrange != null || manageCategory != null || noteFor != null || bulkIcons || widgetPicker || widgetEditId != null || searchOpen || settingsRoute != null || editMode || drawPad
             if (anyOverlay) closeAll()
             else if (drawerShown) settleDrawer(false)
             else homePager.animateScrollToPage(0)
@@ -471,6 +479,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
             HomeCallbacks(
                 onLaunch = ::launch,
                 onItemMenu = { cell, app, b -> if (!editMode) menu = MenuState(b, app, cell, MenuSource.HOME) },
+                onWidgetEdit = { c -> if (!settings.layoutLocked) widgetEditId = c.id },
                 onFolderOpen = { f, b -> openFolder = f.folderId to b },
                 onEmptyLongPress = { if (!settings.layoutLocked) editMode = true },
                 onEmptyTap = { if (editMode) editMode = false },
@@ -512,6 +521,23 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                         else perform(GestureResolver.resolve(0f, totalDy, v, maxPointers, settings, threshold, fling).takeUnless { editMode })
                     },
                 ),
+            widgetEdit = widgetEditId?.let { id ->
+                com.xenoorigin.xelauncher.home.WidgetEditing(
+                    id,
+                    place = { pl -> scope.launch { if (!graph.home.placeWidget(id, pl.x, pl.y, pl.w, pl.h)) Toast.makeText(ctx, ctx.getString(R.string.widget_no_space), Toast.LENGTH_SHORT).show() } },
+                    remove = { layout.pages.flatten().filterIsInstance<com.xenoorigin.xelauncher.home.WidgetCell>().firstOrNull { it.id == id }?.let(::removeWidget); widgetEditId = null },
+                    done = { widgetEditId = null },
+                    content = { cell, span ->
+                        val k = com.xenoorigin.xelauncher.widgets.GlassWidgetKind.of(cell.kind)
+                        if (k != null) androidx.compose.runtime.CompositionLocalProvider(com.xenoorigin.xelauncher.widgets.LocalWidgetSpan provides k.clamp(span)) {
+                            com.xenoorigin.xelauncher.widgets.GlassWidget(k, cell.id)
+                        } else androidx.compose.foundation.layout.Box(
+                            Modifier.fillMaxSize().glassTile(androidx.compose.foundation.shape.RoundedCornerShape(26.dp), LocalGlassStyle.current, Color.White.copy(alpha = .14f)),
+                            contentAlignment = androidx.compose.ui.Alignment.Center,
+                        ) { androidx.compose.material3.Icon(androidx.compose.ui.res.painterResource(R.drawable.ti_layout_grid), null, tint = Color.White.copy(alpha = .8f)) }
+                    },
+                )
+            },
         )
         }
         AnimatedVisibility(
@@ -726,18 +752,10 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
         )
 
         if (widgetPicker) com.xenoorigin.xelauncher.widgets.WidgetPicker(host, ::spanOf, onPick = ::addWidget, onClose = { widgetPicker = false })
-        val resizing = resizeId?.let { id -> layout.pages.flatten().filterIsInstance<com.xenoorigin.xelauncher.home.WidgetCell>().firstOrNull { it.id == id } }
         com.xenoorigin.xelauncher.widgets.NoteSheet(
             noteFor?.let { settings.widgetNotes[it.toString()].orEmpty() }, visible = noteFor != null,
             onSave = { text -> noteFor?.let { id -> update { st -> st.copy(widgetNotes = st.widgetNotes + (id.toString() to text)) } }; noteFor = null },
             onDismiss = { noteFor = null },
-        )
-        com.xenoorigin.xelauncher.widgets.WidgetResizeSheet(
-            resizing, settings.homeColumns, settings.homeRows,
-            onResize = { w, h ->
-                resizing?.let { c -> scope.launch { if (!graph.home.resizeWidget(c.id, w, h)) Toast.makeText(ctx, ctx.getString(R.string.widget_no_space), Toast.LENGTH_SHORT).show() } }
-            },
-            onDismiss = { resizeId = null },
         )
 
         menu?.let { m ->
@@ -749,16 +767,8 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                     })
                     MenuSource.HOME, MenuSource.FOLDER -> if (m.cell is com.xenoorigin.xelauncher.home.WidgetCell) {
                         val wc = m.cell
-                        add(MenuAction(R.drawable.ti_arrows_diagonal, stringResource(R.string.widget_resize)) { resizeId = wc.id; menu = null })
-                        add(MenuAction(R.drawable.ti_arrows_move, stringResource(R.string.widget_move)) { editMode = true; menu = null })
-                        add(MenuAction(R.drawable.ti_trash, stringResource(R.string.widget_remove)) {
-                            scope.launch {
-                                val hid = graph.home.removeWidget(wc.id); if (hid > 0) host.release(hid)
-                                java.io.File(photoDir, "${wc.id}.jpg").delete()
-                                if (settings.widgetNotes.containsKey(wc.id.toString())) update { st -> st.copy(widgetNotes = st.widgetNotes - wc.id.toString()) }
-                            }
-                            menu = null
-                        })
+                        add(MenuAction(R.drawable.ti_arrows_diagonal, stringResource(R.string.widget_edit_place)) { widgetEditId = wc.id; menu = null })
+                        add(MenuAction(R.drawable.ti_trash, stringResource(R.string.widget_remove)) { removeWidget(wc); menu = null })
                     } else m.cell?.let { cell ->
                         add(MenuAction(R.drawable.ti_x, stringResource(R.string.remove_from_home)) {
                             scope.launch {

@@ -63,7 +63,7 @@ class WidgetLongPressTest {
     private val look = HomeLook(4, 6, 4, 60, true, IconShape.SQUIRCLE, { IconStyle.GLASS_DARK })
     private val widget = WidgetCell(7, 0, 0, 4, 2, 42, null)
 
-    private class Counts { var menus = 0; var clicks = 0 }
+    private class Counts { var menus = 0; var clicks = 0; var edits = 0 }
 
     /** Home with one widget whose whole face is a button, the usual shape of other apps' widgets. */
     private fun setHome(counts: Counts) {
@@ -86,7 +86,7 @@ class WidgetLongPressTest {
                     Box(Modifier.fillMaxSize()) {
                         HomeScreen(
                             HomeLayout(listOf(listOf(widget)), emptyList()), look, rememberPagerState { 2 }, false,
-                            HomeCallbacks({ _, _ -> }, { _, _, _ -> counts.menus++ }, { _, _ -> }, {}, {}, {}, {}, {}),
+                            HomeCallbacks({ _, _ -> }, { _, _, _ -> counts.menus++ }, { _, _ -> }, {}, {}, {}, {}, {}, onWidgetEdit = { counts.edits++ }),
                         )
                     }
                 }
@@ -95,11 +95,12 @@ class WidgetLongPressTest {
         rule.waitForIdle()
     }
 
-    @Test fun holdingAWidget_opensItsMenuOnce_andDoesNotAlsoTapIt() {
+    @Test fun holdingAWidget_liftsItForEditingOnce_andDoesNotAlsoTapIt() {
         val counts = Counts(); setHome(counts)
         rule.onNodeWithTag("widget").performTouchInput { down(center); advanceEventTime(900); up() }
         rule.waitForIdle()
-        assertThat(counts.menus).isEqualTo(1)
+        assertThat(counts.edits).isEqualTo(1)
+        assertThat(counts.menus).isEqualTo(0)
         assertThat(counts.clicks).isEqualTo(0)
     }
 
@@ -112,7 +113,7 @@ class WidgetLongPressTest {
             up()
         }
         rule.waitForIdle()
-        assertThat(counts.menus).isEqualTo(0)
+        assertThat(counts.menus + counts.edits).isEqualTo(0)
         assertThat(counts.clicks).isEqualTo(0)
     }
 

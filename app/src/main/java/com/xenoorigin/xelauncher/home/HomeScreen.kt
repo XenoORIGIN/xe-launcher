@@ -35,6 +35,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.xenoorigin.xelauncher.widgets.minX
+import com.xenoorigin.xelauncher.widgets.minY
+import com.xenoorigin.xelauncher.widgets.presetSpans
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -105,9 +108,19 @@ class HomeCallbacks(
     val onDoubleTap: () -> Unit,
     val onDrop: (DropRequest) -> Unit,
     val onDragStart: () -> Unit,
+    val onWidgetEdit: (WidgetCell) -> Unit = {},
 )
 
 private data class Drag(val cell: HomeCell, val pos: Offset, val grab: Offset)
+
+/** A widget being moved/resized in place, and what to do with the result. */
+class WidgetEditing(
+    val id: Long,
+    val place: (Placement) -> Unit,
+    val remove: () -> Unit,
+    val done: () -> Unit,
+    val content: @Composable (WidgetCell, com.xenoorigin.xelauncher.widgets.Span) -> Unit,
+)
 
 @Composable
 fun HomeScreen(
@@ -117,6 +130,7 @@ fun HomeScreen(
     editMode: Boolean,
     cb: HomeCallbacks,
     modifier: Modifier = Modifier,
+    widgetEdit: WidgetEditing? = null,
 ) {
     val density = LocalDensity.current
     val haptic = LocalHapticFeedback.current
@@ -164,7 +178,8 @@ fun HomeScreen(
         },
         onLongPress = {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            cb.onItemMenu(cell, app, coords()?.boundsInWindow() ?: Rect.Zero)
+            // Widgets lift straight into in-place editing; apps and folders show their menu.
+            if (cell is WidgetCell && !editMode) cb.onWidgetEdit(cell) else cb.onItemMenu(cell, app, coords()?.boundsInWindow() ?: Rect.Zero)
         },
         onDragStart = { p ->
             val topLeft = coords()?.boundsInRoot()?.topLeft ?: p
@@ -225,7 +240,7 @@ fun HomeScreen(
                         }
                     }
                     .padding(horizontal = 10.dp, vertical = 18.dp).onGloballyPositioned { if (page == pager.currentPage) gridBounds = it.boundsInRoot() }) {
-                    PageGrid(layout.pages.getOrNull(page).orEmpty(), look, editMode, drag?.cell?.id, ::callbacksFor)
+                    PageGrid(layout.pages.getOrNull(page).orEmpty(), look, editMode, drag?.cell?.id ?: widgetEdit?.id, ::callbacksFor)
                 }
             }
             PageDots(pageCount, pager)
@@ -244,6 +259,23 @@ fun HomeScreen(
             }
         }
         lens?.let { GlassLens(it) }
+        widgetEdit?.let { we ->
+            val pageCells = layout.pages.getOrNull(pager.currentPage).orEmpty()
+            val wc = pageCells.filterIsInstance<WidgetCell>().firstOrNull { it.id == we.id }
+            if (wc == null) { androidx.compose.runtime.LaunchedEffect(we.id) { we.done() }; return@let }
+            val kind = com.xenoorigin.xelauncher.widgets.GlassWidgetKind.of(wc.kind)
+            val taken = pageCells.filter { it.id != wc.id }.flatMap { c ->
+                val (w, h) = (c as? WidgetCell)?.let { it.spanX to it.spanY } ?: (1 to 1)
+                (0 until w).flatMap { dx -> (0 until h).map { dy -> (c.x + dx) to (c.y + dy) } }
+            }.toSet()
+            val min = kind?.let { com.xenoorigin.xelauncher.widgets.Span(it.minX, it.minY) } ?: com.xenoorigin.xelauncher.widgets.Span(1, 1)
+            val max = com.xenoorigin.xelauncher.widgets.Span(look.columns, look.rows)
+            val presets = kind?.presetSpans(look.columns, look.rows)
+                ?: listOf(com.xenoorigin.xelauncher.widgets.Span(2, 1), com.xenoorigin.xelauncher.widgets.Span(2, 2), com.xenoorigin.xelauncher.widgets.Span(4, 2), com.xenoorigin.xelauncher.widgets.Span(4, 4))
+                    .map { com.xenoorigin.xelauncher.widgets.Span(it.x.coerceAtMost(look.columns), it.y.coerceAtMost(look.rows)) }.distinct()
+            androidx.activity.compose.BackHandler { we.done() }
+            WidgetEditOverlay(wc, gridBounds, look.columns, look.rows, taken, min, max, presets, { s -> we.content(wc, s) }, we.place, we.remove, we.done)
+        }
     }
 }
 
