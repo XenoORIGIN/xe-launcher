@@ -68,6 +68,15 @@ object IconProcessor {
         return out
     }
 
+    /** [src] shrunk to [scale] and centred on a transparent canvas of the same size. */
+    fun inset(src: Bitmap, scale: Float): Bitmap {
+        val out = Bitmap.createBitmap(src.width, src.height, Bitmap.Config.ARGB_8888)
+        val w = src.width * scale; val h = src.height * scale
+        val l = (src.width - w) / 2f; val t = (src.height - h) / 2f
+        Canvas(out).drawBitmap(src, null, android.graphics.RectF(l, t, l + w, t + h), Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG))
+        return out
+    }
+
     /** Average luminance (0..1) of pixels with alpha >= 128; 1 when none. */
     fun averageLuminance(src: Bitmap): Float {
         var sum = 0.0; var n = 0

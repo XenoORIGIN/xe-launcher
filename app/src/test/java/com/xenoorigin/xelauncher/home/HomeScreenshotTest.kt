@@ -18,6 +18,7 @@ import com.xenoorigin.xelauncher.icons.sampleEntry
 import com.xenoorigin.xelauncher.icons.sampleRepo
 import com.xenoorigin.xelauncher.testutil.SHOT_DIR
 import com.xenoorigin.xelauncher.testutil.TestBackdrop
+import com.xenoorigin.xelauncher.wallpaper.byId
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -45,6 +46,28 @@ class HomeScreenshotTest {
         rule.setContent { XeTheme { CompositionLocalProvider(LocalIconRepository provides repo) { TestBackdrop(black = true) { content() } } } }
         rule.waitForIdle(); Thread.sleep(300); rule.mainClock.advanceTimeBy(1500); rule.waitForIdle()
         rule.onRoot().captureRoboImage("$SHOT_DIR/home_$name.png")
+    }
+
+    private val liquid = look.copy(style = { IconStyle.GLASS_CLEAR })
+
+    private fun liquidShot(name: String, wall: android.graphics.Bitmap, content: @Composable () -> Unit) {
+        val repo = sampleRepo()
+        rule.setContent { XeTheme { CompositionLocalProvider(LocalIconRepository provides repo) { com.xenoorigin.xelauncher.testutil.LiquidBackdrop(wall) { content() } } } }
+        rule.waitForIdle(); Thread.sleep(300); rule.mainClock.advanceTimeBy(1500); rule.waitForIdle()
+        rule.onRoot().captureRoboImage("$SHOT_DIR/home_$name.png")
+    }
+
+    @Test fun homeLiquid() = liquidShot("liquid", com.xenoorigin.xelauncher.testutil.xeWall("ocean")) { HomeScreen(layout, liquid, rememberPagerState { 2 }, false, noop) }
+
+    @Test fun homeLiquidWhite() = liquidShot("liquid_white", android.graphics.Bitmap.createBitmap(1170, 2532, android.graphics.Bitmap.Config.ARGB_8888).apply { eraseColor(android.graphics.Color.rgb(246, 244, 240)) }) {
+        HomeScreen(layout, liquid, rememberPagerState { 2 }, false, noop)
+    }
+
+    @Test fun folderLiquid() = liquidShot("folder_liquid", com.xenoorigin.xelauncher.testutil.xeWall("sunset")) {
+        Box {
+            HomeScreen(layout, liquid, rememberPagerState { 2 }, false, noop)
+            FolderPopup(layout.pages[0][3] as FolderCell, Rect(800f, 300f, 980f, 480f), liquid, {}, { _, _ -> }, { _, _ -> }, {})
+        }
     }
 
     @Test fun home() = shot("main") { HomeScreen(layout, look, rememberPagerState { 2 }, false, noop) }

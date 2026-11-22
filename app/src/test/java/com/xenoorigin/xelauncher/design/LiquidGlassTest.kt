@@ -36,6 +36,14 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
+class GlassDimTest {
+    @Test fun brightBackdropGetsDimmedDarkDoesNot() {
+        assertThat(glassDim(.95f)).isGreaterThan(.15f)
+        assertThat(glassDim(.95f)).isAtMost(.3f)
+        assertThat(glassDim(.4f)).isEqualTo(0f)
+    }
+}
+
 class BackdropSourceTest {
     private val bmp = IntSize(360, 780)
     private val screen = Size(1080f, 2340f)

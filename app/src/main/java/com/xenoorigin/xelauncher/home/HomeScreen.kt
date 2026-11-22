@@ -1,5 +1,6 @@
 package com.xenoorigin.xelauncher.home
 
+import com.xenoorigin.xelauncher.design.liquidGlass
 import com.xenoorigin.xelauncher.design.appear
 
 import androidx.compose.animation.core.LinearEasing
@@ -391,7 +392,9 @@ fun FolderIcon(cell: FolderCell, look: HomeLook, label: Boolean) {
     Column(Modifier.width(size + 22.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         val fs = look.shape.toShape()
         Box {
-            Box(Modifier.size(size).glassTile(fs, LocalGlassStyle.current, Color.White.copy(alpha = .16f))) {
+            val folderGlass = if (com.xenoorigin.xelauncher.design.LocalLiquidGlass.current) Modifier.size(size).liquidGlass(fs, film = .12f)
+                else Modifier.size(size).glassTile(fs, LocalGlassStyle.current, Color.White.copy(alpha = .16f))
+            Box(folderGlass) {
                 val mini = size * .36f
                 Column(Modifier.align(Alignment.Center), verticalArrangement = Arrangement.spacedBy(size * .06f)) {
                     cell.apps.take(4).chunked(2).forEach { row ->

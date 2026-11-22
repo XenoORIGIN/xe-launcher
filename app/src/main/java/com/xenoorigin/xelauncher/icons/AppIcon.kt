@@ -1,5 +1,8 @@
 package com.xenoorigin.xelauncher.icons
 
+import com.xenoorigin.xelauncher.design.liquidGlass
+import androidx.compose.ui.draw.alpha
+
 import com.xenoorigin.xelauncher.design.iconLens
 import com.xenoorigin.xelauncher.design.iconSheen
 import androidx.compose.ui.draw.drawBehind
@@ -121,6 +124,19 @@ fun IconTile(app: AppEntry, size: Dp, style: IconStyle, shape: IconShape, modifi
             i == null && (style == IconStyle.MONO || style == IconStyle.ORIGINAL || style == IconStyle.STUDIO) -> LoadingTile(s, base)
             // A Studio theme brings its own shape, colours and outline: draw it as made.
             i != null && style == IconStyle.STUDIO -> Image(i.bitmap, app.label, Modifier.fillMaxSize().then(pop))
+            // Liquid Glass: a clear block of glass with the milky-white symbol floating in it.
+            style == IconStyle.GLASS_CLEAR -> Box(Modifier.fillMaxSize().liquidGlass(s), contentAlignment = Alignment.Center) {
+                if (i == null) Shimmer(s)
+                else {
+                    // A faint dark copy just below keeps white symbols readable on pale wallpapers.
+                    Image(
+                        i.bitmap, null,
+                        Modifier.fillMaxSize().scale(glyphScale).offset(y = 1.dp).then(pop).alpha(.18f),
+                        colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(Color.Black),
+                    )
+                    Image(i.bitmap, app.label, Modifier.fillMaxSize().scale(glyphScale).then(pop).alpha(.85f))
+                }
+            }
             i != null && i.fillsTile -> Image(
                 i.bitmap, app.label, Modifier.fillMaxSize().then(pop).clip(s).glassFilmAndRim(s, base.copy(rimAlpha = base.rimAlpha * .5f)),
             )
@@ -135,7 +151,6 @@ fun IconTile(app: AppEntry, size: Dp, style: IconStyle, shape: IconShape, modifi
             }
             else -> {
                 val fill = when (style) {
-                    IconStyle.GLASS_CLEAR -> Color.White.copy(alpha = .10f)
                     else -> Color(0xFF1C1C1E).copy(alpha = .78f)
                 }
                 Box(Modifier.fillMaxSize().glassTile(s, base.copy(dark = true), fill), contentAlignment = Alignment.Center) {

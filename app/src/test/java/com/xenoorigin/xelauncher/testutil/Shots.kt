@@ -11,7 +11,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.draw.scale
 import com.xenoorigin.xelauncher.design.LocalHazeState
+import com.xenoorigin.xelauncher.wallpaper.byId
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 
@@ -39,3 +42,33 @@ fun TestBackdrop(black: Boolean = false, content: @Composable () -> Unit) {
         }
     }
 }
+
+/**
+ * A real wallpaper behind Liquid Glass, drawn the way Xe draws it (zoomed by WALL_SCALE),
+ * with the frosted copy provided to the glass and Liquid Glass switched on.
+ */
+@Composable
+fun LiquidBackdrop(wall: android.graphics.Bitmap, content: @Composable () -> Unit) {
+    val img = remember(wall) { wall.asImageBitmap() }
+    val frosted = remember(wall) { com.xenoorigin.xelauncher.wallpaper.WallpaperRenderer.glassBackdrop(wall).asImageBitmap() }
+    val haze = remember { HazeState() }
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
+        val screen = with(androidx.compose.ui.platform.LocalDensity.current) { androidx.compose.ui.geometry.Size(maxWidth.toPx(), maxHeight.toPx()) }
+        CompositionLocalProvider(
+            LocalHazeState provides haze,
+            com.xenoorigin.xelauncher.design.LocalLiquidGlass provides true,
+            com.xenoorigin.xelauncher.design.LocalGlassBackdrop provides com.xenoorigin.xelauncher.design.GlassBackdrop({ frosted }, { Offset.Zero }, { screen }),
+        ) {
+            androidx.compose.foundation.Image(
+                img, null,
+                Modifier.fillMaxSize().hazeSource(haze).scale(com.xenoorigin.xelauncher.wallpaper.WALL_SCALE),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            )
+            content()
+        }
+    }
+}
+
+/** A Xe wallpaper rendered at phone size, for Liquid Glass screenshots. */
+fun xeWall(id: String, w: Int = 1170, h: Int = 2532): android.graphics.Bitmap =
+    com.xenoorigin.xelauncher.wallpaper.WallpaperRenderer.render(com.xenoorigin.xelauncher.wallpaper.XeCollection.byId(id)!!, w, h)

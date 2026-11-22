@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.addOutline
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
@@ -51,6 +52,29 @@ val LocalLiquidGlass = compositionLocalOf { false }
 fun backdropSource(tile: Rect, bmp: IntSize, screen: Size, parallaxPx: Offset): Rect {
     val m = com.xenoorigin.xelauncher.home.wallMapping(bmp, screen, parallaxPx)
     return Rect((tile.left - m.offset.x) / m.scale, (tile.top - m.offset.y) / m.scale, (tile.right - m.offset.x) / m.scale, (tile.bottom - m.offset.y) / m.scale)
+}
+
+/** How much to darken glass over a backdrop this bright (0..1), so white symbols stay readable on pale wallpapers. */
+fun glassDim(luminance: Float): Float = ((luminance - .6f) / .4f).coerceIn(0f, 1f) * .28f
+
+/** Brightness of each backdrop, kept as a coarse grid so a tile can look up what is behind it cheaply. */
+private class LumGrid(val w: Int, val h: Int, val v: FloatArray) {
+    fun average(r: Rect, bw: Int, bh: Int): Float {
+        val x0 = (r.left / bw * w).toInt().coerceIn(0, w - 1); val x1 = (r.right / bw * w).toInt().coerceIn(x0, w - 1)
+        val y0 = (r.top / bh * h).toInt().coerceIn(0, h - 1); val y1 = (r.bottom / bh * h).toInt().coerceIn(y0, h - 1)
+        var t = 0f; var n = 0
+        for (y in y0..y1) for (x in x0..x1) { t += v[y * w + x]; n++ }
+        return t / n
+    }
+}
+private val lumGrids = java.util.WeakHashMap<ImageBitmap, LumGrid>()
+private fun lumGrid(img: ImageBitmap): LumGrid = synchronized(lumGrids) {
+    lumGrids.getOrPut(img) {
+        val w = 24; val h = (24f * img.height / img.width).toInt().coerceAtLeast(1)
+        val small = android.graphics.Bitmap.createScaledBitmap(img.asAndroidBitmap(), w, h, true)
+        val px = IntArray(w * h); small.getPixels(px, 0, w, 0, 0, w, h)
+        LumGrid(w, h, FloatArray(w * h) { i -> val c = px[i]; (((c shr 16) and 255) * .299f + ((c shr 8) and 255) * .587f + (c and 255) * .114f) / 255f })
+    }
 }
 
 /**
@@ -91,6 +115,8 @@ fun Modifier.liquidGlass(shape: Shape, film: Float = .08f): Modifier = composed 
                             filterQuality = FilterQuality.Low,
                         )
                     }
+                    val dim = glassDim(lumGrid(img).average(src, img.width, img.height))
+                    if (dim > 0f) drawOutline(outline, Color.Black.copy(alpha = dim))
                     drawOutline(outline, Color.White.copy(alpha = film))
                 } else {
                     drawOutline(outline, Color.White.copy(alpha = .18f))

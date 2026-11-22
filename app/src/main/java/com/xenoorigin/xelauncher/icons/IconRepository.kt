@@ -106,7 +106,7 @@ class IconRepository(
             val custom = customIcon(key)?.let { BitmapFactory.decodeFile(it.path) }
             val (rendered, fills, color) = if (custom != null) {
                 val whole = IconProcessor.square(custom, sizePx)
-                if (v == Variant.GLYPH_WHITE) Triple(IconProcessor.milkyFromFull(whole), false, IconProcessor.dominantColor(whole))
+                if (v == Variant.GLYPH_WHITE) Triple(IconProcessor.inset(IconProcessor.milkyFromFull(whole), .72f), false, IconProcessor.dominantColor(whole))
                 else {
                     val out = if (v == Variant.FULL_GRAY || v == Variant.GLYPH_GRAY) IconProcessor.grayscale(whole, contrast) else whole
                     Triple(out, true, IconProcessor.dominantColor(whole))
@@ -123,7 +123,7 @@ class IconRepository(
                         when {
                             // Liquid Glass: every symbol milky white; whole-tile icons are whitened and sit inside the glass.
                             v == Variant.GLYPH_WHITE && g.isGlyph -> Triple(IconProcessor.milkyWhite(g.bitmap), false, color)
-                            v == Variant.GLYPH_WHITE -> Triple(IconProcessor.milkyFromFull(whole), false, color)
+                            v == Variant.GLYPH_WHITE -> Triple(IconProcessor.inset(IconProcessor.milkyFromFull(whole), .72f), false, color)
                             !g.isGlyph && v == Variant.GLYPH_GRAY -> Triple(IconProcessor.grayscale(whole, contrast), true, color)
                             !g.isGlyph -> Triple(whole, true, color)
                             v == Variant.GLYPH_GRAY -> Triple(IconProcessor.grayscale(g.bitmap, contrast, lightenDarkGlyphs = true), false, color)
