@@ -24,6 +24,9 @@ data class WallpaperAdjust(
     val blur: Float = 0f,
 )
 
+/** Whole screen pixels per ASCII glyph pixel for a picture [drawnWidth] wide (about 72 glyphs across). */
+fun asciiPixelScale(drawnWidth: Float): Int = maxOf(1, kotlin.math.round(drawnWidth / 360f).toInt())
+
 object WallpaperRenderer {
     fun render(p: WallpaperPreset, w: Int, h: Int): Bitmap = when (p) {
         is WallpaperPreset.Mesh -> mesh(p, w, h)
@@ -31,6 +34,44 @@ object WallpaperRenderer {
         is WallpaperPreset.Image -> image(p, w, h)
         is WallpaperPreset.Liquid -> liquid(p, w, h)
         is WallpaperPreset.Sky -> sky(skyAt(p.minute ?: minuteNow(), sunToday()), w, h)
+        is WallpaperPreset.Ascii -> ascii(p, w, h)
+    }
+
+    /**
+     * A still frame of an ASCII wallpaper. Each glyph pixel becomes a whole [asciiPixelScale] block of
+     * screen pixels (never blurred); the grid is centred and any leftover edge shows the ground colour.
+     * Small sizes (thumbnails) are drawn at phone resolution and scaled down, so they keep the detail.
+     */
+    fun ascii(p: WallpaperPreset.Ascii, w: Int, h: Int, t: Float = 0f): Bitmap {
+        if (w < 360) {
+            val big = ascii(p, 360, (h * 360f / w).toInt().coerceAtLeast(8), t)
+            return Bitmap.createScaledBitmap(big, w, h, true)
+        }
+        val k = asciiPixelScale(w.toFloat())
+        val cols = (w + 5 * k - 1) / (5 * k)
+        val rows = (h + 8 * k - 1) / (8 * k)
+        val f = com.xenoorigin.xelauncher.wallpaper.ascii.AsciiField(cols, rows)
+        val look = if (p.live) skyAt(p.minute ?: minuteNow(), sunToday()) else null
+        f.fill(p.scene, t, look, p.color, p.accent)
+        val rw = cols * 5; val rh = rows * 8
+        val px = IntArray(rw * rh)
+        com.xenoorigin.xelauncher.wallpaper.ascii.AsciiRaster.rasterize(f.cells, px)
+        val raster = Bitmap.createBitmap(px, rw, rh, Bitmap.Config.ARGB_8888)
+        val scaled = Bitmap.createScaledBitmap(raster, rw * k, rh * k, false)
+        val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val c = Canvas(out)
+        c.drawColor(com.xenoorigin.xelauncher.wallpaper.ascii.AsciiRaster.GROUND)
+        val (ox, oy) = asciiOrigin(w, h)
+        c.drawBitmap(scaled, ox.toFloat(), oy.toFloat(), null)
+        return out
+    }
+
+    /** Where the scaled ASCII grid's top-left corner lands for a [w] × [h] picture (≤ 0: centred overflow). */
+    fun asciiOrigin(w: Int, h: Int): Pair<Int, Int> {
+        val k = asciiPixelScale(w.toFloat())
+        val cols = (w + 5 * k - 1) / (5 * k)
+        val rows = (h + 8 * k - 1) / (8 * k)
+        return (w - cols * 5 * k) / 2 to (h - rows * 8 * k) / 2
     }
 
     /** Gradient sky with the sun's or moon's glow and, at night, stars. */

@@ -93,8 +93,8 @@ internal fun AsciiField.paintPines(t: Float) {
     // Moonlit haze behind the trees so the dark silhouettes read.
     for (r in (horizonRow * .55f).toInt() until groundRow) for (c in 0 until cols) {
         val i = idx(c, r)
-        if (r >= near[c] || r >= horizonRow) cells.l[i] = max(cells.l[i], .26f + .16f * n1[i] - .1f * (r - horizonRow).coerceAtLeast(0) / (rows - horizonRow).toFloat())
-        else cells.l[i] = max(cells.l[i], .3f + .14f * n1[i])
+        if (r >= near[c] || r >= horizonRow) cells.l[i] = max(cells.l[i], .34f + .18f * n1[i] - .14f * (r - horizonRow).coerceAtLeast(0) / (rows - horizonRow).toFloat())
+        else cells.l[i] = max(cells.l[i], (.4f + .16f * n1[i]) * ((r - horizonRow * .55f) / (horizonRow * .25f)).coerceIn(0f, 1f))
     }
     val n = 8
     for (k in 0 until n) {
@@ -141,7 +141,7 @@ internal fun AsciiField.paintCity(t: Float) {
         for (r in top until groundRow) for (c in c0..c1) {
             val i = idx(c, r)
             val edge = c == c0 || r == top
-            var l = if (edge) .48f else .24f + .1f * n1[i]
+            var l = if (edge) .55f else .3f + .1f * n1[i]
             amount[i] = 0f
             val wx = (c - c0) % 2 == 1 && c < c1
             val wy = (r - top) % 3 == 2 && r < groundRow - 1

@@ -18,6 +18,20 @@ sealed interface WallpaperPreset {
     /** The sky right now: colours, sun or moon and stars follow the time of day ([minute] fixes a time, for previews). */
     data class Sky(override val id: String = LIVE_SKY_ID, override val name: String = "Live Sky", val minute: Int? = null) : WallpaperPreset
 
+    /**
+     * A scene drawn in Xe's own text glyphs. [live] = moves and follows the time of day ([minute] fixes a time,
+     * for previews). [color] and [accent] come from the settings when applied (see [withColors]).
+     */
+    data class Ascii(
+        override val id: String,
+        override val name: String,
+        val scene: com.xenoorigin.xelauncher.wallpaper.ascii.AsciiScene,
+        val live: Boolean = false,
+        val minute: Int? = null,
+        val color: com.xenoorigin.xelauncher.settings.AsciiColor = com.xenoorigin.xelauncher.settings.AsciiColor.MONO,
+        val accent: Long = 0xFFFFFFFF,
+    ) : WallpaperPreset
+
     data class Image(val file: File) : WallpaperPreset {
         override val id: String get() = "image:${file.name}"
         override val name: String get() = file.nameWithoutExtension
@@ -25,6 +39,26 @@ sealed interface WallpaperPreset {
 }
 
 const val LIVE_SKY_ID = "live_sky"
+const val ASCII_LIVE_ID = "ascii_live"
+
+/** Wallpapers that follow the time of day: Xe keeps the phone's copy of them current. */
+fun isTimeWallpaper(id: String): Boolean = id == LIVE_SKY_ID || id == ASCII_LIVE_ID
+
+fun WallpaperPreset.Ascii.withColors(s: com.xenoorigin.xelauncher.settings.XeSettings) = copy(color = s.asciiColor, accent = s.accent)
+
+/** ASCII wallpapers: one that follows the time, then seven still scenes. */
+val AsciiCollection: List<WallpaperPreset.Ascii> = run {
+    listOf(
+        WallpaperPreset.Ascii(ASCII_LIVE_ID, "ASCII Live", com.xenoorigin.xelauncher.wallpaper.ascii.AsciiScene.LAKE, live = true),
+        WallpaperPreset.Ascii("ascii_lake", "Lake", com.xenoorigin.xelauncher.wallpaper.ascii.AsciiScene.LAKE),
+        WallpaperPreset.Ascii("ascii_rain", "Rain", com.xenoorigin.xelauncher.wallpaper.ascii.AsciiScene.RAIN),
+        WallpaperPreset.Ascii("ascii_dawn", "Dawn", com.xenoorigin.xelauncher.wallpaper.ascii.AsciiScene.DAWN),
+        WallpaperPreset.Ascii("ascii_pines", "Pines", com.xenoorigin.xelauncher.wallpaper.ascii.AsciiScene.PINES),
+        WallpaperPreset.Ascii("ascii_city", "City", com.xenoorigin.xelauncher.wallpaper.ascii.AsciiScene.CITY),
+        WallpaperPreset.Ascii("ascii_space", "Space", com.xenoorigin.xelauncher.wallpaper.ascii.AsciiScene.SPACE),
+        WallpaperPreset.Ascii("ascii_lighthouse", "Lighthouse", com.xenoorigin.xelauncher.wallpaper.ascii.AsciiScene.LIGHTHOUSE),
+    )
+}
 
 enum class LiquidStyle { RIBBONS, AURORA, CHROME }
 
@@ -55,6 +89,6 @@ val SecretCollection: List<WallpaperPreset> = listOf(
     WallpaperPreset.Mesh("supernova", "Supernova", listOf(0xFF0A0014, 0xFFFF3D7F, 0xFFFFB340, 0xFF3D8BFF, 0xFFB03DFF), seed = 127, glow = 1.1f),
 )
 
-fun allWallpapers(): List<WallpaperPreset> = XeCollection + SecretCollection
+fun allWallpapers(): List<WallpaperPreset> = XeCollection + AsciiCollection + SecretCollection
 
 fun List<WallpaperPreset>.byId(id: String): WallpaperPreset? = firstOrNull { it.id == id }

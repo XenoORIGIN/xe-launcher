@@ -227,6 +227,7 @@ private fun WallpaperEditor(
                         SliderRow(stringResource(R.string.glass_lenses), p.lenses.toFloat(), 0f..5f, steps = 4, display = { it.toInt().toString() }) { preset = p.copy(lenses = it.toInt()) }
                     }
                     is WallpaperPreset.Sky -> Text(stringResource(R.string.live_sky_desc), Modifier.padding(top = 10.dp), style = XeType.Caption, color = scheme.textSecondary)
+                    is WallpaperPreset.Ascii -> Unit
                     is WallpaperPreset.Image -> SliderRow(stringResource(R.string.zoom), adjust.zoom, 1f..4f, display = { "%.1f×".format(it) }) { adjust = adjust.copy(zoom = it) }
                 }
                 SliderRow(stringResource(R.string.dim), adjust.dim, 0f..0.7f, display = { "${(it * 100).toInt()}%" }) { adjust = adjust.copy(dim = it) }
