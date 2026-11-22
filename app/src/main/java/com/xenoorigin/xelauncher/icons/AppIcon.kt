@@ -1,5 +1,7 @@
 package com.xenoorigin.xelauncher.icons
 
+import com.xenoorigin.xelauncher.design.iconLens
+import com.xenoorigin.xelauncher.design.iconSheen
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.runtime.remember
@@ -109,7 +111,11 @@ fun IconTile(app: AppEntry, size: Dp, style: IconStyle, shape: IconShape, modifi
     }
     val s = shape.toShape()
     val base = LocalGlassStyle.current
-    Box(modifier.size(size)) {
+    val glass = com.xenoorigin.xelauncher.design.LocalIconGlass.current
+    val lens = if (glass == com.xenoorigin.xelauncher.settings.IconGlass.LENS)
+        Modifier.iconLens(s) { com.xenoorigin.xelauncher.design.lensStrength(com.xenoorigin.xelauncher.design.ScrollFlow.velocity.floatValue) } else Modifier
+    // Light slides across the glass as Home scrolls (and bends it, in Lens mode).
+    Box(modifier.size(size).then(lens).iconSheen(s, glass)) {
         val i = icon
         when {
             i == null && (style == IconStyle.MONO || style == IconStyle.ORIGINAL || style == IconStyle.STUDIO) -> LoadingTile(s, base)

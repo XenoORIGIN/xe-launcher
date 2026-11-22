@@ -140,6 +140,11 @@ fun HomeScreen(
     var gridBounds by remember { mutableStateOf(Rect.Zero) }
     var dockBounds by remember { mutableStateOf(Rect.Zero) }
     val pageCount = layout.pages.size + if (editMode) 1 else 0
+    // Tell icons how Home is scrolling, for the sliding glass light and the lens.
+    LaunchedEffect(pager) {
+        androidx.compose.runtime.snapshotFlow { (pager.currentPage + pager.currentPageOffsetFraction) to pager.isScrollInProgress }
+            .collect { (pos, moving) -> if (moving) com.xenoorigin.xelauncher.design.ScrollFlow.update(pos * gridBounds.width.coerceAtLeast(1f)) else com.xenoorigin.xelauncher.design.ScrollFlow.settle() }
+    }
     var edgeSince by remember { mutableStateOf(0L) }
 
     fun dropFor(p: Offset, cell: HomeCell): DropRequest? {

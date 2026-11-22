@@ -17,6 +17,9 @@ import kotlinx.serialization.Serializable
 @Serializable enum class OnboardingStage { INTRO, LANGUAGE, DEFAULT_HOME, SLIDES, PRACTICE, DONE }
 @Serializable enum class DrawerSort { ALPHABETICAL, MOST_USED, RECENTLY_INSTALLED, CUSTOM }
 
+/** Glass effect on icons: none, a highlight that slides as you scroll, or a lens that bends as you scroll. */
+@Serializable enum class IconGlass { OFF, LIGHT, LENS }
+
 /** How apps are ordered inside one category. FOLLOW uses the drawer's sort. */
 @Serializable enum class CategorySort { FOLLOW, ALPHABETICAL, TIME, NEWEST }
 
@@ -69,6 +72,15 @@ data class XeSettings(
     val liveSkyLock: Boolean = false,
     /** Which drawing of the built-in wallpapers is on screen; older art is redrawn once after an update. */
     val wallpaperArtVersion: Int = 1,
+    val iconGlass: IconGlass = IconGlass.LIGHT,
+    /** Dock icons swell under a sliding finger. */
+    val liquidDock: Boolean = true,
+    /** The wallpaper sits a little behind Home and shifts as pages slide and the phone tilts. */
+    val depthParallax: Boolean = true,
+    /** Apps open from a glass bubble that grows out of their icon. */
+    val glassLaunch: Boolean = true,
+    /** Glass rims pick up the colour of the hour: warm at dusk, cool at night. */
+    val timeTint: Boolean = true,
     /** Per-category app order; missing = follow the drawer sort. */
     val categorySort: Map<Long, CategorySort> = emptyMap(),
     /** Post a notification when a new version is on GitHub. */

@@ -130,6 +130,7 @@ fun XeApp(graph: AppGraph) {
             CompositionLocalProvider(
                 com.xenoorigin.xelauncher.icons.LocalCustomIcons provides customIcons,
                 com.xenoorigin.xelauncher.icons.LocalStudioThemeVersion provides studioTheme?.version,
+                com.xenoorigin.xelauncher.design.LocalIconGlass provides (if (settings.animationSpeed == AnimationSpeed.OFF) com.xenoorigin.xelauncher.settings.IconGlass.OFF else settings.iconGlass),
                 com.xenoorigin.xelauncher.badges.LocalBadgeCounts provides unread,
                 com.xenoorigin.xelauncher.badges.LocalBadgeStyle provides settings.badgeStyle,
             ) { LauncherRoot(graph, settings) }
