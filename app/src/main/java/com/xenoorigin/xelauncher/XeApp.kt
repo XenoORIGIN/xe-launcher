@@ -2,7 +2,6 @@ package com.xenoorigin.xelauncher
 
 import com.xenoorigin.xelauncher.widgets.clamp
 import com.xenoorigin.xelauncher.design.glassTile
-import android.app.ActivityOptions
 import androidx.lifecycle.repeatOnLifecycle
 import android.app.SearchManager
 import android.content.Intent
@@ -156,6 +155,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     val homePager = rememberPagerState { layout.pages.size + 1 }
     var searchOpen by remember { mutableStateOf(false) }
     var drawPad by remember { mutableStateOf(false) }
+    var launchBubble by remember { mutableStateOf<Rect?>(null) }
     var menu by remember { mutableStateOf<MenuState?>(null) }
     var openFolder by remember { mutableStateOf<Pair<Long, Rect>?>(null) }
     var drawerMenu by remember { mutableStateOf(false) }
@@ -397,7 +397,8 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     }
 
     fun launch(app: AppEntry, r: Rect) {
-        val opts = if (r.width > 0) ActivityOptions.makeScaleUpAnimation(view, r.left.toInt(), r.top.toInt(), r.width.toInt(), r.height.toInt()).toBundle() else null
+        val opts = com.xenoorigin.xelauncher.home.launchOptions(view, r, settings.glassLaunch, speed)
+        if (com.xenoorigin.xelauncher.home.showBubble(settings.glassLaunch, speed, r)) launchBubble = r
         graph.apps.launch(app.key, android.graphics.Rect(r.left.toInt(), r.top.toInt(), r.right.toInt(), r.bottom.toInt()), opts)
         scope.launch {
             graph.categories.recordLaunch(app.key)
@@ -857,6 +858,10 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
             )
             com.xenoorigin.xelauncher.settings.ui.GlassBurst(burst, androidx.compose.ui.geometry.Offset(with(density) { maxWidth.toPx() } / 2f, heightPx * .25f))
         }
+        launchBubble?.let { r ->
+            com.xenoorigin.xelauncher.home.LaunchBubble(r, speed, Color(settings.accent.toInt())) { launchBubble = null }
+        }
+
         if (stage < com.xenoorigin.xelauncher.settings.OnboardingStage.PRACTICE) {
             com.xenoorigin.xelauncher.onboarding.OnboardingHost(
                 stage,
