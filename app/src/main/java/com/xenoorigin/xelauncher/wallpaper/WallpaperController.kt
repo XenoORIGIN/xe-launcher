@@ -25,7 +25,17 @@ class WallpaperController(
     private val settings: SettingsStore,
     private val dir: File = File(context.filesDir, "wallpaper"),
     private val screenSize: () -> Pair<Int, Int> = { defaultScreenSize(context) },
+    /** True while "Xe Live Sky" is the phone's live wallpaper: then it draws the home screen itself. */
+    private val liveWallpaperActive: () -> Boolean = { LiveSkyWallpaper.isActive(context) },
+    /** True when the phone's home wallpaper is still the one Xe last set (not changed in another app). */
+    private val systemWallpaperIsOurs: (() -> Boolean)? = null,
 ) {
+    private val idFile get() = File(dir, "system_id")
+    private fun isOurs(): Boolean = systemWallpaperIsOurs?.invoke() ?: runCatching {
+        val mine = idFile.takeIf { it.exists() }?.readText()?.trim()?.toIntOrNull() ?: return@runCatching false
+        WallpaperManager.getInstance(context).getWallpaperId(WallpaperManager.FLAG_SYSTEM) == mine
+    }.getOrDefault(false)
+
     private val _current = MutableStateFlow<ImageBitmap?>(null)
     val current: StateFlow<ImageBitmap?> = _current.asStateFlow()
     private val _backdrop = MutableStateFlow<ImageBitmap?>(null)
@@ -44,7 +54,9 @@ class WallpaperController(
         val bucket = skyBucket(minute)
         if (bucket == skyShown) return@withContext
         val (w, h) = screenSize()
-        applyBitmap(WallpaperRenderer.render(WallpaperPreset.Sky(minute = minute), w, h), WallpaperTarget.HOME)
+        val sky = WallpaperRenderer.render(WallpaperPreset.Sky(minute = minute), w, h)
+        // The phone's live wallpaper already draws the sky: only keep Xe's own copy current.
+        if (liveWallpaperActive()) { save(sky); show(sky) } else applyBitmap(sky, WallpaperTarget.HOME)
         skyShown = bucket
     }
 
@@ -73,7 +85,9 @@ class WallpaperController(
             settings.update { it.copy(wallpaperArtVersion = ART_VERSION) }
             if (preset != null && file.exists()) {
                 val (w, h) = screenSize()
-                applyBitmap(WallpaperRenderer.render(preset, w, h), WallpaperTarget.HOME)
+                val art = WallpaperRenderer.render(preset, w, h)
+                // Never overwrite a wallpaper the person has since set in another app.
+                if (isOurs()) applyBitmap(art, WallpaperTarget.HOME) else { save(art); show(art) }
                 return@withContext
             }
         }
@@ -109,7 +123,10 @@ class WallpaperController(
             WallpaperTarget.BOTH -> WallpaperManager.FLAG_SYSTEM or WallpaperManager.FLAG_LOCK
         }
         runCatching { WallpaperManager.getInstance(context).setBitmap(bmp, null, true, flags) }
-            .onSuccess { systemWallpaperSetCount++ }
+            .onSuccess { id ->
+                systemWallpaperSetCount++
+                if (target != WallpaperTarget.LOCK && id > 0) runCatching { dir.mkdirs(); idFile.writeText(id.toString()) }
+            }
     }
 
     /**

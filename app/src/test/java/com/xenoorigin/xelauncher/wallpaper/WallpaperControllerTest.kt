@@ -89,4 +89,17 @@ class WallpaperControllerTest {
         assertThat(c.imports()).containsExactly(pic)
         sc.cancel()
     }
+
+    @Test fun liveSkyLeavesTheSystemLiveWallpaperAlone() = runBlocking<Unit> {
+        val sc = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val settings = SettingsStore(ctx, sc, "wp_sky_live-${System.nanoTime()}")
+        val dir = File(ctx.filesDir, "wp-${System.nanoTime()}")
+        val c = WallpaperController(ctx, settings, dir, size, liveWallpaperActive = { true })
+        settings.update { it.copy(wallpaperId = LIVE_SKY_ID) }
+        c.refreshLiveSky(minute = 12 * 60)
+        c.refreshLiveSky(minute = 23 * 60)
+        assertThat(c.systemWallpaperSetCount).isEqualTo(0)
+        assertThat(c.current.value).isNotNull() // Xe's own copy still follows the time
+        sc.cancel()
+    }
 }

@@ -65,7 +65,7 @@ class WallpaperArtTest {
         val dir = File(ctx.filesDir, "art-${System.nanoTime()}")
         WallpaperController(ctx, settings, dir, size).apply(XeCollection.byId("midnight")!!, WallpaperTarget.HOME)
         settings.update { it.copy(wallpaperArtVersion = 1) } // as if made by the old version
-        val c = WallpaperController(ctx, settings, dir, size)
+        val c = WallpaperController(ctx, settings, dir, size, systemWallpaperIsOurs = { true })
         c.restore()
         assertThat(c.systemWallpaperSetCount).isEqualTo(1)
         assertThat(settings.current().wallpaperArtVersion).isEqualTo(WallpaperController.ART_VERSION)
@@ -85,6 +85,20 @@ class WallpaperArtTest {
         val c = WallpaperController(ctx, settings, dir, size)
         c.restore()
         assertThat(c.systemWallpaperSetCount).isEqualTo(0)
+        sc.cancel()
+    }
+
+    @Test fun artRedrawSkipsTheSystemWallpaperWhenSomeoneElseSetIt() = runBlocking<Unit> {
+        val sc = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val settings = SettingsStore(ctx, sc, "art3-${System.nanoTime()}")
+        val dir = File(ctx.filesDir, "art3-${System.nanoTime()}")
+        WallpaperController(ctx, settings, dir, size).apply(XeCollection.byId("midnight")!!, WallpaperTarget.HOME)
+        settings.update { it.copy(wallpaperArtVersion = 1) }
+        val c = WallpaperController(ctx, settings, dir, size, systemWallpaperIsOurs = { false })
+        c.restore()
+        assertThat(c.systemWallpaperSetCount).isEqualTo(0)
+        assertThat(c.current.value).isNotNull()
+        assertThat(settings.current().wallpaperArtVersion).isEqualTo(WallpaperController.ART_VERSION)
         sc.cancel()
     }
 }
