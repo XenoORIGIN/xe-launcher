@@ -30,9 +30,9 @@ import kotlin.math.hypot
 fun showBubble(glassLaunch: Boolean, speed: AnimationSpeed, icon: Rect): Boolean =
     glassLaunch && speed != AnimationSpeed.OFF && icon.width > 0f && icon.height > 0f
 
-/** System scale-up from the icon; null keeps the platform's plain open animation. */
-fun launchOptions(view: View, icon: Rect, glassLaunch: Boolean, speed: AnimationSpeed): Bundle? =
-    if (!showBubble(glassLaunch, speed, icon)) null
+/** System scale-up from the icon whenever we know where it is; the glass bubble is drawn on top when on. */
+fun launchOptions(view: View, icon: Rect): Bundle? =
+    if (icon.width <= 0f || icon.height <= 0f) null
     else ActivityOptions.makeScaleUpAnimation(
         view, icon.left.toInt(), icon.top.toInt(), icon.width.toInt(), icon.height.toInt(),
     ).toBundle()

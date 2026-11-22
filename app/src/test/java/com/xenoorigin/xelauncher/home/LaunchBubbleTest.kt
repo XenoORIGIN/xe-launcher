@@ -26,10 +26,9 @@ class LaunchBubbleTest {
     private val icon = Rect(100f, 200f, 260f, 360f)
 
     @Test fun launchPassesScaleUpOptions() {
-        assertThat(launchOptions(view, icon, glassLaunch = true, speed = AnimationSpeed.NORMAL)).isNotNull()
-        assertThat(launchOptions(view, icon, glassLaunch = false, speed = AnimationSpeed.NORMAL)).isNull()
-        assertThat(launchOptions(view, icon, glassLaunch = true, speed = AnimationSpeed.OFF)).isNull()
-        assertThat(launchOptions(view, Rect.Zero, glassLaunch = true, speed = AnimationSpeed.NORMAL)).isNull()
+        // The zoom-from-icon open is kept whether or not the glass bubble is on.
+        assertThat(launchOptions(view, icon)).isNotNull()
+        assertThat(launchOptions(view, Rect.Zero)).isNull()
     }
 
     @Test fun bubbleOnlyWhenGlassLaunchOn() {

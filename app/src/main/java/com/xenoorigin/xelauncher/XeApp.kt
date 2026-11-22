@@ -400,7 +400,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     }
 
     fun launch(app: AppEntry, r: Rect) {
-        val opts = com.xenoorigin.xelauncher.home.launchOptions(view, r, settings.glassLaunch, speed)
+        val opts = com.xenoorigin.xelauncher.home.launchOptions(view, r)
         if (com.xenoorigin.xelauncher.home.showBubble(settings.glassLaunch, speed, r)) launchBubble = r
         graph.apps.launch(app.key, android.graphics.Rect(r.left.toInt(), r.top.toInt(), r.right.toInt(), r.bottom.toInt()), opts)
         scope.launch {
