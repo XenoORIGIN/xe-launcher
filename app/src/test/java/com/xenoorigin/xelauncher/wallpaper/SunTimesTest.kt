@@ -7,14 +7,14 @@ import java.time.ZoneId
 
 class SunTimesTest {
     @Test fun bangkokSunriseIsAroundSixFifteenInNovember() {
-        val (lat, lon) = latLonFor(ZoneId.of("Asia/Bangkok"))
+        val (lat, lon) = latLonFor(ZoneId.of("Asia/Bangkok"))!!
         val t = sunTimes(LocalDate.of(2026, 11, 22), lat, lon, utcOffsetMin = 7 * 60)
         assertThat(t.sunrise).isIn(6 * 60 + 10..6 * 60 + 25)
         assertThat(t.sunset).isIn(17 * 60 + 40..17 * 60 + 55)
     }
 
     @Test fun londonSummerDayIsLong() {
-        val (lat, lon) = latLonFor(ZoneId.of("Europe/London"))
+        val (lat, lon) = latLonFor(ZoneId.of("Europe/London"))!!
         val t = sunTimes(LocalDate.of(2026, 6, 21), lat, lon, utcOffsetMin = 60)
         assertThat(t.sunset - t.sunrise).isGreaterThan(16 * 60)
     }
@@ -24,8 +24,11 @@ class SunTimesTest {
         assertThat(t).isEqualTo(SunTimes.FALLBACK)
     }
 
-    @Test fun unknownZoneUsesBangkok() {
-        assertThat(latLonFor(ZoneId.of("Pacific/Galapagos")).first).isWithin(.5).of(13.75)
+    @Test fun unknownZoneUsesTheSixToSixFallback() {
+        // Bangkok's position with Madrid's clock would put sunset at noon.
+        assertThat(sunToday(ZoneId.of("Europe/Madrid"), LocalDate.of(2026, 11, 22))).isEqualTo(SunTimes.FALLBACK)
+        assertThat(sunToday(ZoneId.of("Europe/Moscow"), LocalDate.of(2026, 11, 22))).isEqualTo(SunTimes.FALLBACK)
+        assertThat(sunToday(ZoneId.of("Asia/Bangkok"), LocalDate.of(2026, 11, 22))).isNotEqualTo(SunTimes.FALLBACK)
     }
 
     @Test fun skyIsDarkAfterDuskAndBlueAtNoon() {

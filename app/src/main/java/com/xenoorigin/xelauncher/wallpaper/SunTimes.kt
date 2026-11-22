@@ -47,11 +47,12 @@ private val ZoneCentres = mapOf(
     "America/Chicago" to (41.9 to -87.6), "Australia/Sydney" to (-33.9 to 151.2),
 )
 
-fun latLonFor(zone: ZoneId): Pair<Double, Double> = ZoneCentres[zone.id] ?: ZoneCentres.getValue("Asia/Bangkok")
+/** Where the zone's clock is set for, or null for zones Xe doesn't know (then the sky uses 06:00/18:00). */
+fun latLonFor(zone: ZoneId): Pair<Double, Double>? = ZoneCentres[zone.id]
 
 /** Today's sun times where the phone is (by its time zone). */
 fun sunToday(zone: ZoneId = ZoneId.systemDefault(), date: LocalDate = LocalDate.now(zone)): SunTimes {
-    val (lat, lon) = latLonFor(zone)
+    val (lat, lon) = latLonFor(zone) ?: return SunTimes.FALLBACK
     val offset = zone.rules.getOffset(date.atStartOfDay(zone).toInstant()).totalSeconds / 60
     return sunTimes(date, lat, lon, offset)
 }
