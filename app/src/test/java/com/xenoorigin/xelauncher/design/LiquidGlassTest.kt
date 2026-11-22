@@ -18,6 +18,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.scale
@@ -40,8 +41,10 @@ import org.robolectric.annotation.GraphicsMode
 
 class GlassDimTest {
     @Test fun brightBackdropGetsDimmedDarkDoesNot() {
-        assertThat(glassDim(.95f)).isGreaterThan(.15f)
-        assertThat(glassDim(.95f)).isAtMost(.3f)
+        // Near-white wallpaper: dark enough that a white symbol reaches about 3:1 contrast.
+        assertThat(glassDim(1f)).isAtLeast(.38f)
+        assertThat(glassDim(1f)).isAtMost(.42f)
+        assertThat(glassDim(.75f)).isGreaterThan(.1f)
         assertThat(glassDim(.4f)).isEqualTo(0f)
     }
 }
@@ -144,5 +147,32 @@ class LiquidGlassTest {
         val c = windowBitmap().getPixel(r.center.x.toInt(), r.center.y.toInt())
         // No backdrop yet: a frosted film over the blue, so still clearly blue (not the dark glass panel).
         assertThat(android.graphics.Color.blue(c)).isGreaterThan(android.graphics.Color.red(c) + 60)
+    }
+
+    @Test fun glassFollowsATileMovedByItsLayer() {
+        // Wallpaper: red top half, blue bottom half. The tile starts at the top and slides down
+        // by a layer transform only (like the drawer opening or a folder popping out).
+        val half = Bitmap.createBitmap(360, 640, Bitmap.Config.ARGB_8888).apply {
+            val c = android.graphics.Canvas(this); val p = android.graphics.Paint()
+            p.color = android.graphics.Color.RED; c.drawRect(0f, 0f, 360f, 320f, p)
+            p.color = android.graphics.Color.BLUE; c.drawRect(0f, 320f, 360f, 640f, p)
+        }.asImageBitmap()
+        var down by androidx.compose.runtime.mutableStateOf(0f)
+        rule.setContent {
+            XeTheme {
+                val screen = with(androidx.compose.ui.platform.LocalDensity.current) { Size(360.dp.toPx(), 640.dp.toPx()) }
+                CompositionLocalProvider(LocalGlassBackdrop provides GlassBackdrop({ half }, { Offset.Zero }, { screen })) {
+                    Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black)) {
+                        Box(Modifier.padding(start = 150.dp, top = 60.dp).graphicsLayer { translationY = down }.size(60.dp).testTag("t").liquidGlass(RoundedCornerShape(12.dp)))
+                    }
+                }
+            }
+        }
+        rule.waitForIdle()
+        down = with(rule.density) { 440.dp.toPx() }
+        rule.waitForIdle(); rule.mainClock.advanceTimeBy(100); rule.waitForIdle()
+        val r = rule.onNodeWithTag("t").fetchSemanticsNode().boundsInRoot
+        val c = windowBitmap().getPixel(r.center.x.toInt(), r.center.y.toInt())
+        assertThat(android.graphics.Color.blue(c)).isGreaterThan(android.graphics.Color.red(c))
     }
 }

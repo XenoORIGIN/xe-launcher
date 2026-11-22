@@ -29,8 +29,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.onLayoutRectChanged
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -55,7 +54,7 @@ fun backdropSource(tile: Rect, bmp: IntSize, screen: Size, parallaxPx: Offset): 
 }
 
 /** How much to darken glass over a backdrop this bright (0..1), so white symbols stay readable on pale wallpapers. */
-fun glassDim(luminance: Float): Float = ((luminance - .6f) / .4f).coerceIn(0f, 1f) * .28f
+fun glassDim(luminance: Float): Float { val k = ((luminance - .6f) / .4f).coerceIn(0f, 1f); return k * k * .40f + k * (1f - k) * .30f }
 
 /** Brightness of each backdrop, kept as a coarse grid so a tile can look up what is behind it cheaply. */
 private class LumGrid(val w: Int, val h: Int, val v: FloatArray) {
@@ -85,9 +84,14 @@ private fun lumGrid(img: ImageBitmap): LumGrid = synchronized(lumGrids) {
 fun Modifier.liquidGlass(shape: Shape, film: Float = .08f): Modifier = composed {
     val backdrop = LocalGlassBackdrop.current
     val style = LocalGlassStyle.current
-    var at by remember { mutableStateOf(Offset.Zero) }
+    // Where the tile really is on screen, including layer moves and scales (drawer sliding up,
+    // folder popping out, edit-mode shrink), which plain positioning callbacks don't report.
+    var at by remember { mutableStateOf(Rect.Zero) }
     this
-        .onGloballyPositioned { at = it.positionInRoot() }
+        .onLayoutRectChanged(throttleMillis = 0, debounceMillis = 0) { b ->
+            val r = b.boundsInRoot
+            at = Rect(r.left.toFloat(), r.top.toFloat(), r.right.toFloat(), r.bottom.toFloat())
+        }
         .drawWithCache {
             val outline: Outline = shape.createOutline(size, layoutDirection, this)
             val clip = Path().apply { addOutline(outline) }
@@ -104,9 +108,10 @@ fun Modifier.liquidGlass(shape: Shape, film: Float = .08f): Modifier = composed 
                 // Soft shadow under the block.
                 for (i in 1..3) translate(0f, shadowStep * i) { drawOutline(outline, Color.Black.copy(alpha = .09f - .02f * i)) }
                 val img = backdrop?.image()
-                if (img != null) {
-                    val src = backdropSource(Rect(at, size), IntSize(img.width, img.height), backdrop.screen(), backdrop.parallaxPx())
-                    clipPath(clip) {
+                // One clip for everything inside the glass (each anti-aliased clip costs on the GPU).
+                clipPath(clip) {
+                    if (img != null) {
+                        val src = backdropSource(if (at.isEmpty) Rect(Offset.Zero, size) else at, IntSize(img.width, img.height), backdrop.screen(), backdrop.parallaxPx())
                         drawImage(
                             img,
                             srcOffset = IntOffset(src.left.roundToInt().coerceIn(0, img.width - 1), src.top.roundToInt().coerceIn(0, img.height - 1)),
@@ -114,18 +119,20 @@ fun Modifier.liquidGlass(shape: Shape, film: Float = .08f): Modifier = composed 
                             dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()),
                             filterQuality = FilterQuality.Low,
                         )
+                        val dim = glassDim(lumGrid(img).average(src, img.width, img.height))
+                        if (dim > 0f) drawRect(Color.Black.copy(alpha = dim))
+                        drawRect(Color.White.copy(alpha = film))
+                    } else {
+                        drawRect(Color.White.copy(alpha = .18f))
                     }
-                    val dim = glassDim(lumGrid(img).average(src, img.width, img.height))
-                    if (dim > 0f) drawOutline(outline, Color.Black.copy(alpha = dim))
-                    drawOutline(outline, Color.White.copy(alpha = film))
-                } else {
-                    drawOutline(outline, Color.White.copy(alpha = .18f))
+                    drawRect(sheen)
                 }
-                drawOutline(outline, sheen)
                 drawContent()
-                // Thick bevel: dark inner line for depth, then the bright rim.
-                clipPath(clip) { drawOutline(outline, Color.Black.copy(alpha = .10f), style = Stroke(rimW * 2.2f)) }
-                clipPath(clip) { drawOutline(outline, rim, style = Stroke(rimW * 2f)) }
+                // Thick bevel: dark inner line for depth, then the bright rim (clipped once).
+                clipPath(clip) {
+                    drawOutline(outline, Color.Black.copy(alpha = .10f), style = Stroke(rimW * 2.2f))
+                    drawOutline(outline, rim, style = Stroke(rimW * 2f))
+                }
             }
         }
 }

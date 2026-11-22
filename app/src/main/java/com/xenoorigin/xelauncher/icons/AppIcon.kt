@@ -1,7 +1,6 @@
 package com.xenoorigin.xelauncher.icons
 
 import com.xenoorigin.xelauncher.design.liquidGlass
-import androidx.compose.ui.draw.alpha
 
 import com.xenoorigin.xelauncher.design.iconLens
 import com.xenoorigin.xelauncher.design.iconSheen
@@ -128,13 +127,13 @@ fun IconTile(app: AppEntry, size: Dp, style: IconStyle, shape: IconShape, modifi
             style == IconStyle.GLASS_CLEAR -> Box(Modifier.fillMaxSize().liquidGlass(s), contentAlignment = Alignment.Center) {
                 if (i == null) Shimmer(s)
                 else {
-                    // A faint dark copy just below keeps white symbols readable on pale wallpapers.
+                    // A faint dark halo just around the symbol keeps it readable on pale wallpapers.
+                    // Alpha goes through the Image itself, so no offscreen layer per icon.
                     Image(
-                        i.bitmap, null,
-                        Modifier.fillMaxSize().scale(glyphScale).offset(y = 1.dp).then(pop).alpha(.18f),
-                        colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(Color.Black),
+                        i.bitmap, null, Modifier.fillMaxSize().scale(glyphScale * 1.06f).then(pop),
+                        alpha = .22f, colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(Color.Black),
                     )
-                    Image(i.bitmap, app.label, Modifier.fillMaxSize().scale(glyphScale).then(pop).alpha(.85f))
+                    Image(i.bitmap, app.label, Modifier.fillMaxSize().scale(glyphScale).then(pop), alpha = .85f)
                 }
             }
             i != null && i.fillsTile -> Image(
