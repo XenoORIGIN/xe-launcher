@@ -28,28 +28,41 @@ import com.xenoorigin.xelauncher.wallpaper.skyAt
 import com.xenoorigin.xelauncher.wallpaper.skyLoopRuns
 import com.xenoorigin.xelauncher.wallpaper.sunToday
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
 /** Counts frames drawn, for tests. */
-internal object AsciiLayerProbe { @Volatile var frames = 0 }
+internal object AsciiLayerProbe {
+    @Volatile var frames = 0
+    /** True if a frame's pixels were last computed on the main thread. */
+    @Volatile var computedOnMain = false
+}
 
-/** One reusable frame: the field, its pixels and the bitmap they are shown from. */
+/**
+ * One reusable frame. [compute] fills the field and rasterizes into a back buffer (any thread);
+ * [show] copies it into the bitmap on the main thread. The noise is made once per grid size.
+ */
 private class AsciiFrame(val cols: Int, val rows: Int) {
     val field = AsciiField(cols, rows)
     val rw = cols * AsciiGlyphs.CW
     val rh = rows * AsciiGlyphs.CH
-    private val pixels = IntArray(rw * rh)
+    private val back = IntArray(rw * rh)
     private val bitmap: Bitmap = Bitmap.createBitmap(rw, rh, Bitmap.Config.ARGB_8888)
     val image: ImageBitmap = bitmap.asImageBitmap()
 
-    fun draw(p: WallpaperPreset.Ascii, t: Float, minute: Int) {
-        val look = if (p.live) skyAt(p.minute ?: minute, sunToday()) else null
+    fun compute(p: WallpaperPreset.Ascii, t: Float, look: com.xenoorigin.xelauncher.wallpaper.SkyLook?) {
+        AsciiLayerProbe.computedOnMain = android.os.Looper.myLooper() == android.os.Looper.getMainLooper()
         field.fill(p.scene, t, look, p.color, p.accent)
-        AsciiRaster.rasterize(field.cells, pixels)
-        bitmap.setPixels(pixels, 0, rw, 0, 0, rw, rh)
+        AsciiRaster.rasterize(field.cells, back)
+    }
+
+    fun show() {
+        bitmap.setPixels(back, 0, rw, 0, 0, rw, rh)
         AsciiLayerProbe.frames++
     }
 }
+
+private fun lookFor(p: WallpaperPreset.Ascii) = if (p.live) skyAt(p.minute ?: minuteNow(), sunToday()) else null
 
 /**
  * An ASCII wallpaper drawn on Home. Each glyph pixel is a whole block of screen pixels (never blurred) and the
@@ -58,7 +71,11 @@ private class AsciiFrame(val cols: Int, val rows: Int) {
  * animations are on; otherwise they redraw once a minute. Still wallpapers draw once.
  */
 @Composable
-fun AsciiLayer(preset: WallpaperPreset.Ascii, parallaxPx: () -> Offset, animate: Boolean, modifier: Modifier = Modifier) {
+fun AsciiLayer(
+    preset: WallpaperPreset.Ascii, parallaxPx: () -> Offset, animate: Boolean, modifier: Modifier = Modifier,
+    /** Where frames are computed; off the main thread so swipes stay smooth. */
+    compute: kotlinx.coroutines.CoroutineDispatcher = kotlinx.coroutines.Dispatchers.Default,
+) {
     BoxWithConstraints(modifier) {
         val wPx = constraints.maxWidth
         val hPx = constraints.maxHeight
@@ -68,17 +85,34 @@ fun AsciiLayer(preset: WallpaperPreset.Ascii, parallaxPx: () -> Offset, animate:
         val k = asciiPixelScale(drawnW)
         val cols = kotlin.math.ceil(drawnW / (AsciiGlyphs.CW * k)).toInt()
         val rows = kotlin.math.ceil(drawnH / (AsciiGlyphs.CH * k)).toInt()
-        val frame = remember(cols, rows, preset) { AsciiFrame(cols, rows).also { it.draw(preset, 0f, minuteNow()) } }
+        val frame = remember(cols, rows) { AsciiFrame(cols, rows) }
+        // The first picture of a preset is drawn at once, so Home never shows an empty ground.
+        remember(frame, preset) { frame.compute(preset, 0f, lookFor(preset)); frame.show(); preset }
         var tick by remember { mutableIntStateOf(0) }
         val state by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+        val visible = state.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)
         val running = preset.live && skyLoopRuns(animate, state)
-        LaunchedEffect(frame, running) {
-            if (!preset.live) return@LaunchedEffect
+        LaunchedEffect(frame, preset, running, visible) {
+            // Nothing at all while Xe is hidden; still wallpapers never redraw.
+            if (!preset.live || !visible) return@LaunchedEffect
             var t = 0f
+            var look = lookFor(preset)
+            var lookAt = 0L
             if (running) {
-                while (true) { delay(125); t += .125f; frame.draw(preset, t, minuteNow()); tick++ }
+                while (true) {
+                    delay(125); t += .125f; lookAt += 125
+                    if (lookAt >= 60_000) { look = lookFor(preset); lookAt = 0 }
+                    val l = look
+                    withContext(compute) { frame.compute(preset, t, l) }
+                    frame.show(); tick++
+                }
             } else {
-                while (true) { delay(60_000); frame.draw(preset, t, minuteNow()); tick++ }
+                while (true) {
+                    delay(60_000)
+                    val l = lookFor(preset)
+                    withContext(compute) { frame.compute(preset, t, l) }
+                    frame.show(); tick++
+                }
             }
         }
         Canvas(

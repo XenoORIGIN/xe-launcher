@@ -52,7 +52,7 @@ class AsciiLayerTest {
 
     @Test fun stillPresetDrawsOnce() {
         rule.mainClock.autoAdvance = false
-        rule.setContent { AsciiLayer(still, { Offset.Zero }, animate = true, modifier = Modifier.fillMaxSize()) }
+        rule.setContent { AsciiLayer(still, { Offset.Zero }, animate = true, modifier = Modifier.fillMaxSize(), compute = kotlinx.coroutines.Dispatchers.Unconfined) }
         rule.mainClock.advanceTimeBy(2_000)
         rule.waitForIdle()
         assertThat(AsciiLayerProbe.frames).isEqualTo(1)
@@ -60,7 +60,7 @@ class AsciiLayerTest {
 
     @Test fun livePresetAnimatesWhenAllowed() {
         rule.mainClock.autoAdvance = false
-        rule.setContent { AsciiLayer(live, { Offset.Zero }, animate = true, modifier = Modifier.fillMaxSize()) }
+        rule.setContent { AsciiLayer(live, { Offset.Zero }, animate = true, modifier = Modifier.fillMaxSize(), compute = kotlinx.coroutines.Dispatchers.Unconfined) }
         rule.mainClock.advanceTimeBy(1_000)
         rule.waitForIdle()
         assertThat(AsciiLayerProbe.frames).isAtLeast(4)
@@ -68,7 +68,7 @@ class AsciiLayerTest {
 
     @Test fun livePresetStaysStillWhenAnimationIsOff() {
         rule.mainClock.autoAdvance = false
-        rule.setContent { AsciiLayer(live, { Offset.Zero }, animate = false, modifier = Modifier.fillMaxSize()) }
+        rule.setContent { AsciiLayer(live, { Offset.Zero }, animate = false, modifier = Modifier.fillMaxSize(), compute = kotlinx.coroutines.Dispatchers.Unconfined) }
         rule.mainClock.advanceTimeBy(1_000)
         rule.waitForIdle()
         assertThat(AsciiLayerProbe.frames).isEqualTo(1)
@@ -85,5 +85,21 @@ class AsciiLayerTest {
         val y = a.height / 2
         val same = (300 until 700).count { b.getPixel(it + 7, y) == a.getPixel(it, y) }
         assertThat(same).isEqualTo(400)
+    }
+    @Test fun stopsDrawingWhileXeIsHidden() {
+        rule.mainClock.autoAdvance = false
+        rule.setContent { AsciiLayer(live, { Offset.Zero }, animate = true, modifier = Modifier.fillMaxSize(), compute = kotlinx.coroutines.Dispatchers.Unconfined) }
+        rule.mainClock.advanceTimeBy(500); rule.waitForIdle()
+        rule.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.CREATED)
+        rule.waitForIdle()
+        val before = AsciiLayerProbe.frames
+        rule.mainClock.advanceTimeBy(130_000); rule.waitForIdle()
+        assertThat(AsciiLayerProbe.frames).isEqualTo(before)
+    }
+
+    @Test fun framesAreComputedOffTheMainThread() {
+        rule.setContent { AsciiLayer(live, { Offset.Zero }, animate = true, modifier = Modifier.fillMaxSize()) }
+        rule.waitUntil(5_000) { AsciiLayerProbe.frames >= 3 }
+        assertThat(AsciiLayerProbe.computedOnMain).isFalse()
     }
 }

@@ -129,6 +129,8 @@ class WallpaperController(
         settings.update { it.copy(wallpaperArtVersion = ART_VERSION) }
         // Remember whether the lock screen shows the live sky, so screen-on can keep it current.
         val timed = isTimeWallpaper(preset.id)
+        // A still put on the lock screen only: Home keeps its wallpaper (and stays live if it is).
+        if (target == WallpaperTarget.LOCK && !timed) { settings.update { it.copy(liveSkyLock = false) }; return@withContext }
         settings.update {
             it.copy(
                 wallpaperId = preset.id,
@@ -191,7 +193,8 @@ class WallpaperController(
         val (w, h) = screenSize()
         val src = BitmapFactory.decodeFile(file.path) ?: return@withContext
         applyBitmap(WallpaperRenderer.compose(src, w, h, adjust), target)
-        settings.update { it.copy(wallpaperId = "image:${file.name}", liveSkyLock = it.liveSkyLock && target == WallpaperTarget.HOME) }
+        if (target == WallpaperTarget.LOCK) { settings.update { it.copy(liveSkyLock = false) }; return@withContext }
+        settings.update { it.copy(wallpaperId = "image:${file.name}", liveOnHome = true, liveSkyLock = it.liveSkyLock && target == WallpaperTarget.HOME) }
     }
 
     /** Recently imported pictures, newest first. */

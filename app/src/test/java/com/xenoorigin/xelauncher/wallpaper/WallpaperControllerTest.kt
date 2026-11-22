@@ -197,4 +197,18 @@ class WallpaperControllerTest {
         assertThat(shouldMirrorHome(true, false, false)).isFalse()
         assertThat(shouldMirrorHome(true, true, true)).isFalse()
     }
+    @Test fun lockOnlyStill_keepsTheHomeAsciiWallpaper() = runBlocking<Unit> {
+        val sc = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val (c, settings, dir) = newController("wp_keep", sc)
+        c.apply(AsciiCollection.first().copy(minute = 12 * 60), WallpaperTarget.HOME)
+        c.apply(XeCollection.byId("xe_blue")!!, WallpaperTarget.LOCK)
+        assertThat(settings.current().wallpaperId).isEqualTo(ASCII_LIVE_ID)
+        assertThat(settings.current().liveOnHome).isTrue()
+        assertThat(settings.current().liveSkyLock).isFalse()
+        val pic = File(dir, "imported_9.jpg").also { dir.mkdirs() }
+        android.graphics.Bitmap.createBitmap(40, 40, android.graphics.Bitmap.Config.ARGB_8888).let { b -> pic.outputStream().use { b.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, it) } }
+        c.applyImage(pic, WallpaperAdjust(), WallpaperTarget.LOCK)
+        assertThat(settings.current().wallpaperId).isEqualTo(ASCII_LIVE_ID)
+        sc.cancel()
+    }
 }
