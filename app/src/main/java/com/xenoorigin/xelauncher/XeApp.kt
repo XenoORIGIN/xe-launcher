@@ -313,7 +313,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     val styleOf: (AppEntry) -> IconStyle = remember(settings.iconOverrides, settings.iconStyle) {
         { a -> settings.iconOverrides[a.key.encode()] ?: settings.iconStyle }
     }
-    val homeLook = remember(settings, styleOf) { HomeLook(settings.homeColumns, settings.homeRows, settings.dockSize, settings.iconSizeDp, settings.showLabels, settings.iconShape, styleOf) }
+    val homeLook = remember(settings, styleOf) { HomeLook(settings.homeColumns, settings.homeRows, settings.dockSize, settings.iconSizeDp, settings.showLabels, settings.iconShape, styleOf, settings.liquidDock && settings.animationSpeed != AnimationSpeed.OFF) }
     val usageTick by graph.usageTick.collectAsState()
     // "Most used" = time spent in the app when Usage access is on, else how often it was opened.
     val useCounts = remember(launchStats, usageTick, apps) {

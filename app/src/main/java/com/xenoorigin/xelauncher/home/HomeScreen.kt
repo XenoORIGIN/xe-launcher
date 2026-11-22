@@ -12,6 +12,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.ui.zIndex
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -97,6 +99,7 @@ val LocalWidgetContent = androidx.compose.runtime.staticCompositionLocalOf<@Comp
 data class HomeLook(
     val columns: Int, val rows: Int, val dockSize: Int,
     val iconSize: Int, val labels: Boolean, val shape: IconShape, val style: (AppEntry) -> IconStyle,
+    val liquidDock: Boolean = true,
 )
 
 class HomeCallbacks(
@@ -249,7 +252,15 @@ fun HomeScreen(
                 }
             }
             PageDots(pageCount, pager)
-            Dock(layout.dock, look, editMode, drag?.cell?.id, Modifier.onGloballyPositioned { dockBounds = it.boundsInRoot() }, ::callbacksFor)
+            Dock(
+                layout.dock, look, editMode, drag?.cell?.id, Modifier.onGloballyPositioned { dockBounds = it.boundsInRoot() }, ::callbacksFor,
+                onLiquidLaunch = { cell, slot ->
+                    val w = dockBounds.width / look.dockSize
+                    val r = Rect(dockBounds.left + slot * w, dockBounds.top, dockBounds.left + (slot + 1) * w, dockBounds.bottom)
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    when (cell) { is AppCell -> cb.onLaunch(cell.app, r); is FolderCell -> cb.onFolderOpen(cell, r); else -> Unit }
+                },
+            )
         }
         // The icon being dragged floats above everything.
         drag?.let { d ->
@@ -404,11 +415,60 @@ fun FolderIcon(cell: FolderCell, look: HomeLook, label: Boolean) {
 private fun Dock(
     cells: List<HomeCell>, look: HomeLook, editMode: Boolean, draggingId: Long?, modifier: Modifier,
     callbacksFor: (HomeCell, () -> LayoutCoordinates?, AppEntry?) -> ItemGestureCallbacks,
+    onLiquidLaunch: (HomeCell, Int) -> Unit = { _, _ -> },
 ) {
+    val haptic = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
+    // Liquid dock: slide a finger along it and the icons swell under it; lift to open the one beneath.
+    var fingerX by remember { mutableStateOf<Float?>(null) }
+    val lift = remember { androidx.compose.animation.core.Animatable(0f) }
+    var rowWidth by remember { mutableStateOf(1f) }
+    val liquid = look.liquidDock && !editMode
     GlassSurface(RoundedCornerShape(36.dp), modifier.fillMaxWidth().padding(horizontal = 14.dp).padding(bottom = 10.dp).height(look.iconSize.dp + 30.dp)) {
-        Row(Modifier.fillMaxSize().padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier.fillMaxSize().padding(horizontal = 10.dp).testTag("dock")
+                .onGloballyPositioned { rowWidth = it.size.width.toFloat().coerceAtLeast(1f) }
+                .then(if (!liquid) Modifier else Modifier.pointerInput(cells) {
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false, pass = androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                        var active = false
+                        var x = down.position.x
+                        while (true) {
+                            val ev = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                            val c = ev.changes.firstOrNull { it.id == down.id } ?: break
+                            if (!c.pressed) {
+                                if (active) {
+                                    c.consume()
+                                    val slot = (x / (rowWidth / look.dockSize)).toInt().coerceIn(0, look.dockSize - 1)
+                                    cells.getOrNull(slot)?.let { onLiquidLaunch(it, slot) }
+                                }
+                                break
+                            }
+                            x = c.position.x
+                            val d = c.position - down.position
+                            if (!active && kotlin.math.abs(d.x) > viewConfiguration.touchSlop && kotlin.math.abs(d.x) > kotlin.math.abs(d.y)) {
+                                active = true
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                scope.launch { lift.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = .7f, stiffness = 600f)) }
+                            }
+                            if (active) { fingerX = x; c.consume() }
+                        }
+                        scope.launch { lift.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = .55f, stiffness = 380f)) }
+                    }
+                }),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             (0 until look.dockSize).forEach { slot ->
-                Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                Box(
+                    Modifier.weight(1f).zIndex(if (fingerX != null) 1f else 0f).graphicsLayer {
+                        val w = rowWidth / look.dockSize
+                        val sc = 1f + (dockScale(fingerX, (slot + .5f) * w, w) - 1f) * lift.value
+                        scaleX = sc; scaleY = sc
+                        transformOrigin = androidx.compose.ui.graphics.TransformOrigin(.5f, 1f)
+                        translationY = -(sc - 1f) * size.height * .35f
+                    },
+                    contentAlignment = Alignment.Center,
+                ) {
                     cells.getOrNull(slot)?.let { HomeItem(it, look, editMode, draggingId == it.id, label = false, callbacksFor) }
                 }
             }
