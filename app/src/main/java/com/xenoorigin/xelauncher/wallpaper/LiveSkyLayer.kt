@@ -12,6 +12,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.scale
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.currentStateAsState
 import kotlinx.coroutines.delay
 import kotlin.math.sin
 import kotlin.random.Random
@@ -40,11 +43,23 @@ private val Clouds = listOf(
  * clouds drifting slowly. With [animate] off it is a still picture that only changes with [minute].
  * While animating it redraws about 8 times a second, not every frame, to keep the glass blur cheap.
  */
+/** The sky's timers only run while Xe is on screen; in the background they would wake the phone for nothing. */
+fun skyLoopRuns(animate: Boolean, state: Lifecycle.State): Boolean = animate && state.isAtLeast(Lifecycle.State.STARTED)
+
+/** Whether Xe is currently visible (started), as state. */
+@Composable
+fun rememberXeVisible(): Boolean {
+    val state by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    return state.isAtLeast(Lifecycle.State.STARTED)
+}
+
 @Composable
 fun LiveSkyLayer(sun: SunTimes, minute: () -> Int, animate: Boolean, modifier: Modifier = Modifier) {
     var t by remember { mutableFloatStateOf(0f) }
-    LaunchedEffect(animate) {
-        if (!animate) return@LaunchedEffect
+    val state by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    val running = skyLoopRuns(animate, state)
+    LaunchedEffect(running) {
+        if (!running) return@LaunchedEffect
         val start = System.nanoTime()
         while (true) { t = (System.nanoTime() - start) / 1e9f; delay(125) }
     }

@@ -30,7 +30,11 @@ fun WallpaperLayer(
         if (liveSky) {
             var minute by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(minuteNow()) }
             val sun = androidx.compose.runtime.remember(minute / 60) { sunToday() }
-            androidx.compose.runtime.LaunchedEffect(Unit) { while (true) { kotlinx.coroutines.delay(15_000); minute = minuteNow() } }
+            val visible = rememberXeVisible()
+            androidx.compose.runtime.LaunchedEffect(visible) {
+                if (!visible) return@LaunchedEffect
+                while (true) { minute = minuteNow(); kotlinx.coroutines.delay(15_000) }
+            }
             LiveSkyLayer(sun, { minute }, animate, Modifier.fillMaxSize().graphicsLayer { val p = parallaxPx(); translationX = p.x; translationY = p.y; scaleX = WALL_SCALE; scaleY = WALL_SCALE })
             return@Box
         }
