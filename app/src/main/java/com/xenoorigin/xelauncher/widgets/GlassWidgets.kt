@@ -119,21 +119,22 @@ private fun rememberNow(stepMs: Long = 60_000): Long {
 /** [itemId] identifies this widget on Home (photo and note widgets keep their own content). */
 @Composable
 fun GlassWidget(kind: GlassWidgetKind, itemId: Long = -1, modifier: Modifier = Modifier) {
-    val shape = RoundedCornerShape(if (kind.spanY == 1) 32.dp else 28.dp)
+    val span = LocalWidgetSpan.current ?: Span(kind.spanX, kind.spanY)
+    val shape = RoundedCornerShape(if (span.y == 1) 32.dp else 28.dp)
     if (kind == GlassWidgetKind.PHOTO) { PhotoWidget(itemId, shape, modifier); return }
     GlassSurface(shape, modifier.fillMaxSize()) {
         // A soft light from the top-left gives every widget the same depth.
         Box(Modifier.fillMaxSize().clip(shape).background(Brush.radialGradient(listOf(Color.White.copy(alpha = .10f), Color.Transparent), Offset.Zero, 700f)))
         when (kind) {
-            GlassWidgetKind.CLOCK -> ClockWidget()
-            GlassWidgetKind.ANALOG -> AnalogWidget()
-            GlassWidgetKind.DATE -> DateWidget()
-            GlassWidgetKind.MONTH -> MonthWidget()
-            GlassWidgetKind.SEARCH -> SearchWidget()
-            GlassWidgetKind.SUGGESTED -> SuggestedWidget()
-            GlassWidgetKind.NOTE -> NoteWidget(itemId)
-            GlassWidgetKind.BATTERY -> BatteryWidget()
-            GlassWidgetKind.STORAGE -> StorageWidget()
+            GlassWidgetKind.CLOCK -> ClockWidget(span)
+            GlassWidgetKind.ANALOG -> AnalogWidget(span)
+            GlassWidgetKind.DATE -> DateWidget(span)
+            GlassWidgetKind.MONTH -> MonthWidget(span)
+            GlassWidgetKind.SEARCH -> SearchWidget(span)
+            GlassWidgetKind.SUGGESTED -> SuggestedWidget(span)
+            GlassWidgetKind.NOTE -> NoteWidget(itemId, span)
+            GlassWidgetKind.BATTERY -> BatteryWidget(span)
+            GlassWidgetKind.STORAGE -> StorageWidget(span)
             GlassWidgetKind.PHOTO -> Unit
         }
     }
@@ -143,26 +144,45 @@ private fun Modifier.background(b: Brush) = this.then(Modifier.drawBehindBrush(b
 private fun Modifier.drawBehindBrush(b: Brush) = this.drawBehind { drawRect(b) }
 
 @Composable
-private fun ClockWidget() {
+private fun ClockWidget(span: Span) {
     val now = rememberNow()
     val locale = Locale.getDefault()
-    BoxWithConstraints(Modifier.fillMaxSize().padding(horizontal = 22.dp, vertical = 16.dp), contentAlignment = Alignment.CenterStart) {
-        val big = (maxHeight.value * .5f).coerceIn(30f, 96f)
-        Column {
-            Text(
-                SimpleDateFormat("HH:mm", locale).format(Date(now)), color = Color.White,
-                style = XeType.LargeTitle.copy(fontSize = big.sp, lineHeight = (big * 1.02f).sp, fontWeight = FontWeight.Light, letterSpacing = (-1.5).sp),
-            )
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(6.dp).clip(CircleShape).drawBehindBrush(Brush.linearGradient(listOf(Accent, Accent))))
-                Text(SimpleDateFormat("EEEE d MMMM", locale).format(Date(now)), color = Color.White.copy(alpha = .78f), style = XeType.Headline, modifier = Modifier.padding(start = 8.dp))
+    val time = SimpleDateFormat("HH:mm", locale).format(Date(now))
+    BoxWithConstraints(Modifier.fillMaxSize().padding(horizontal = if (span.isSmall) 8.dp else 22.dp, vertical = if (span.isSmall) 8.dp else 16.dp), contentAlignment = if (span.x == 1) Alignment.Center else Alignment.CenterStart) {
+        // Size the time to the space: the whole width on small widgets, half the height on big ones.
+        val big = minOf(maxHeight.value * (if (span.isRow) .62f else .5f), maxWidth.value / (if (span.isRow && span.x >= 3) 4.6f else 2.9f)).coerceIn(22f, 120f)
+        val timeStyle = XeType.LargeTitle.copy(fontSize = big.sp, lineHeight = (big * 1.02f).sp, fontWeight = FontWeight.Light, letterSpacing = (-1.5).sp)
+        when {
+            span.isSmall -> Text(time, color = Color.White, style = timeStyle, maxLines = 1)
+            span.isRow -> Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(time, color = Color.White, style = timeStyle, maxLines = 1)
+                if (span.x >= 2) Text(
+                    SimpleDateFormat(if (span.x >= 3) "EEEE d MMM" else "EEE d", locale).format(Date(now)),
+                    color = Color.White.copy(alpha = .72f), style = XeType.Headline, maxLines = 1, modifier = Modifier.padding(start = 12.dp),
+                )
+            }
+            else -> Column(verticalArrangement = Arrangement.Center) {
+                Text(time, color = Color.White, style = timeStyle, maxLines = 1)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(6.dp).clip(CircleShape).drawBehindBrush(Brush.linearGradient(listOf(Accent, Accent))))
+                    Text(SimpleDateFormat(if (span.x >= 3) "EEEE d MMMM" else "EEE d MMM", locale).format(Date(now)), color = Color.White.copy(alpha = .78f), style = XeType.Headline, maxLines = 1, modifier = Modifier.padding(start = 8.dp))
+                }
+                // Tall clocks have room for the year's progress through the day.
+                if (span.isTall) {
+                    val c = Calendar.getInstance().apply { timeInMillis = now }
+                    val dayFrac = (c.get(Calendar.HOUR_OF_DAY) * 60 + c.get(Calendar.MINUTE)) / 1440f
+                    Box(Modifier.padding(top = 16.dp).fillMaxWidth().size(height = 6.dp, width = 0.dp).clip(CircleShape).drawBehindBrush(Brush.linearGradient(listOf(Color.White.copy(alpha = .14f), Color.White.copy(alpha = .14f))))) {
+                        Box(Modifier.fillMaxWidth(dayFrac).fillMaxSize().clip(CircleShape).drawBehindBrush(Brush.linearGradient(listOf(Accent, Color(0xFFFF8E53)))))
+                    }
+                    Text(stringResource(R.string.widget_day_left, (100 - dayFrac * 100).toInt()), color = Color.White.copy(alpha = .55f), style = XeType.Label, modifier = Modifier.padding(top = 6.dp))
+                }
             }
         }
     }
 }
 
 @Composable
-private fun AnalogWidget() {
+private fun AnalogWidget(span: Span) {
     val now = rememberNow(1000)
     val c = remember(now) { Calendar.getInstance().apply { timeInMillis = now } }
     val h = c.get(Calendar.HOUR) + c.get(Calendar.MINUTE) / 60f
@@ -191,18 +211,32 @@ private fun AnalogWidget() {
 }
 
 @Composable
-private fun DateWidget() {
+private fun DateWidget(span: Span) {
     val now = rememberNow()
     val locale = Locale.getDefault()
-    Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(SimpleDateFormat("EEEE", locale).format(Date(now)), color = Accent, style = XeType.Headline)
-        Text(SimpleDateFormat("d", locale).format(Date(now)), color = Color.White, style = XeType.LargeTitle.copy(fontSize = 58.sp, lineHeight = 62.sp, fontWeight = FontWeight.Light))
-        Text(SimpleDateFormat("MMMM yyyy", locale).format(Date(now)), color = Color.White.copy(alpha = .7f), style = XeType.Label)
+    fun f(p: String) = SimpleDateFormat(p, locale).format(Date(now))
+    if (span.isRow) {
+        Row(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = if (span.x == 1) Arrangement.Center else Arrangement.Start) {
+            Text(f("d"), color = Color.White, style = XeType.LargeTitle.copy(fontSize = 34.sp, fontWeight = FontWeight.Light))
+            if (span.x >= 2) Column(Modifier.padding(start = 10.dp)) {
+                Text(f("EEEE"), color = Accent, style = XeType.Label, maxLines = 1)
+                Text(f(if (span.x >= 3) "MMMM yyyy" else "MMM"), color = Color.White.copy(alpha = .7f), style = XeType.Label, maxLines = 1)
+            }
+        }
+        return
+    }
+    BoxWithConstraints(Modifier.fillMaxSize().padding(if (span.isSmall) 6.dp else 16.dp), contentAlignment = Alignment.Center) {
+        val day = (minOf(maxHeight.value * .42f, maxWidth.value * .55f)).coerceIn(26f, 110f)
+        Column(verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(f(if (span.isSmall) "EEE" else "EEEE"), color = Accent, style = XeType.Headline, maxLines = 1)
+            Text(f("d"), color = Color.White, style = XeType.LargeTitle.copy(fontSize = day.sp, lineHeight = (day * 1.05f).sp, fontWeight = FontWeight.Light))
+            if (!span.isSmall) Text(f("MMMM yyyy"), color = Color.White.copy(alpha = .7f), style = XeType.Label)
+        }
     }
 }
 
 @Composable
-private fun MonthWidget() {
+private fun MonthWidget(span: Span) {
     val now = rememberNow()
     val locale = Locale.getDefault()
     val cal = remember(now) { Calendar.getInstance().apply { timeInMillis = now } }
@@ -217,7 +251,7 @@ private fun MonthWidget() {
     }
     Column(Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp)) {
         Text(SimpleDateFormat("MMMM yyyy", locale).format(Date(now)), color = Accent, style = XeType.Headline)
-        Row(Modifier.fillMaxWidth().padding(top = 6.dp)) {
+        if (span.y >= 3) Row(Modifier.fillMaxWidth().padding(top = 6.dp)) {
             names.forEach { Text(it, Modifier.weight(1f), color = Color.White.copy(alpha = .5f), style = XeType.Label, textAlign = TextAlign.Center) }
         }
         val cells = lead + days
@@ -230,7 +264,7 @@ private fun MonthWidget() {
                         if (d in 1..days) {
                             val isToday = d == today
                             Box(
-                                Modifier.size(24.dp).clip(CircleShape).then(if (isToday) Modifier.drawBehindBrush(Brush.linearGradient(listOf(Accent, Color(0xFFFF8E53)))) else Modifier),
+                                Modifier.size(if (span.y >= 3) 24.dp else 18.dp).clip(CircleShape).then(if (isToday) Modifier.drawBehindBrush(Brush.linearGradient(listOf(Accent, Color(0xFFFF8E53)))) else Modifier),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text("$d", color = Color.White.copy(alpha = if (isToday) 1f else .86f), style = XeType.Label.copy(fontWeight = if (isToday) FontWeight.Bold else FontWeight.Medium))
@@ -244,8 +278,14 @@ private fun MonthWidget() {
 }
 
 @Composable
-private fun SearchWidget() {
+private fun SearchWidget(span: Span) {
     val actions = LocalWidgetActions.current
+    if (span.x == 1) {
+        Box(Modifier.fillMaxSize().clickable { actions.openSearch() }, contentAlignment = Alignment.Center) {
+            Icon(painterResource(R.drawable.ti_search), stringResource(R.string.search_hint), Modifier.size(28.dp), tint = Color.White)
+        }
+        return
+    }
     Row(
         Modifier.fillMaxSize().clickable { actions.openSearch() }.padding(horizontal = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -257,14 +297,26 @@ private fun SearchWidget() {
 }
 
 @Composable
-private fun SuggestedWidget() {
+private fun SuggestedWidget(span: Span) {
     val actions = LocalWidgetActions.current
-    val apps = remember(actions) { actions.suggested().take(4) }
-    Row(Modifier.fillMaxSize().padding(horizontal = 10.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-        if (apps.isEmpty()) Text(stringResource(R.string.suggested_empty), color = Color.White.copy(alpha = .6f), style = XeType.Label, textAlign = TextAlign.Center)
-        apps.forEach { a ->
-            Box(Modifier.clip(RoundedCornerShape(16.dp)).clickable { actions.launch(a) }.padding(4.dp)) {
-                IconTile(a, 46.dp, actions.style(a), actions.shape)
+    // One app per cell: a 1×1 shows your top app, a 4×2 shows eight.
+    val perRow = span.x.coerceAtLeast(1)
+    val rows = span.y.coerceIn(1, 2)
+    val apps = remember(actions, perRow, rows) { actions.suggested().take(perRow * rows) }
+    if (apps.isEmpty()) {
+        Box(Modifier.fillMaxSize().padding(8.dp), contentAlignment = Alignment.Center) {
+            Text(stringResource(R.string.suggested_empty), color = Color.White.copy(alpha = .6f), style = XeType.Label, textAlign = TextAlign.Center)
+        }
+        return
+    }
+    Column(Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 6.dp), verticalArrangement = Arrangement.SpaceEvenly) {
+        apps.chunked(perRow).forEach { row ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+                row.forEach { a ->
+                    Box(Modifier.clip(RoundedCornerShape(16.dp)).clickable { actions.launch(a) }.padding(4.dp)) {
+                        IconTile(a, 46.dp, actions.style(a), actions.shape)
+                    }
+                }
             }
         }
     }
@@ -293,9 +345,16 @@ private fun PhotoWidget(itemId: Long, shape: RoundedCornerShape, modifier: Modif
 }
 
 @Composable
-private fun NoteWidget(itemId: Long) {
+private fun NoteWidget(itemId: Long, span: Span) {
     val actions = LocalWidgetActions.current
     val text = actions.note(itemId)
+    if (span.isSmall) {
+        Column(Modifier.fillMaxSize().clickable { actions.editNote(itemId) }.padding(10.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(painterResource(R.drawable.ti_pencil), stringResource(R.string.widget_note), Modifier.size(20.dp), tint = Color(0xFFFFD60A))
+            if (text.isNotBlank()) Text(text, color = Color.White, style = XeType.Label, maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 4.dp))
+        }
+        return
+    }
     Column(Modifier.fillMaxSize().clickable { actions.editNote(itemId) }.padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(painterResource(R.drawable.ti_pencil), null, Modifier.size(16.dp), tint = Color(0xFFFFD60A))
@@ -321,7 +380,7 @@ private fun Ring(fraction: Float, color: Color, modifier: Modifier) {
 }
 
 @Composable
-private fun BatteryWidget() {
+private fun BatteryWidget(span: Span) {
     val ctx = LocalContext.current
     val now = rememberNow()
     var level by remember { mutableIntStateOf(-1) }
@@ -333,18 +392,12 @@ private fun BatteryWidget() {
         level = if (l < 0) -1 else l * 100 / s.coerceAtLeast(1)
         charging = i?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) ?: 0
     }
-    Column(Modifier.fillMaxSize().padding(14.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(Modifier.size(80.dp), contentAlignment = Alignment.Center) {
-            val c = when { charging != 0 -> Color(0xFF30D158); level in 0..20 -> Color(0xFFFF453A); else -> Color.White }
-            Ring(level.coerceAtLeast(0) / 100f, c, Modifier.fillMaxSize())
-            Text(if (level < 0) "–" else "$level%", color = Color.White, style = XeType.Headline)
-        }
-        Text(stringResource(if (charging != 0) R.string.charging else R.string.widget_battery), color = Color.White.copy(alpha = .7f), style = XeType.Label, modifier = Modifier.padding(top = 6.dp))
-    }
+    val c = when { charging != 0 -> Color(0xFF30D158); level in 0..20 -> Color(0xFFFF453A); else -> Color.White }
+    RingLayout(span, level.coerceAtLeast(0) / 100f, c, if (level < 0) "–" else "$level%", stringResource(if (charging != 0) R.string.charging else R.string.widget_battery))
 }
 
 @Composable
-private fun StorageWidget() {
+private fun StorageWidget(span: Span) {
     val now = rememberNow()
     val used by produceState(-1f to "", now) {
         value = withContext(Dispatchers.IO) {
@@ -356,12 +409,31 @@ private fun StorageWidget() {
             }.getOrDefault(-1f to "")
         }
     }
-    Column(Modifier.fillMaxSize().padding(14.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(Modifier.size(80.dp), contentAlignment = Alignment.Center) {
-            Ring(used.first.coerceAtLeast(0f), Color(0xFF64D2FF), Modifier.fillMaxSize())
-            Text(if (used.first < 0) "–" else "${(used.first * 100).toInt()}%", color = Color.White, style = XeType.Headline)
-        }
-        Text(used.second.ifEmpty { stringResource(R.string.widget_storage) }, color = Color.White.copy(alpha = .7f), style = XeType.Label, modifier = Modifier.padding(top = 6.dp))
-    }
+    RingLayout(span, used.first.coerceAtLeast(0f), Color(0xFF64D2FF), if (used.first < 0) "–" else "${(used.first * 100).toInt()}%", used.second.ifEmpty { stringResource(R.string.widget_storage) })
 }
 
+
+/** A ring with its value: just the ring on 1×1, ring beside the label on wide sizes, stacked otherwise. */
+@Composable
+private fun RingLayout(span: Span, fraction: Float, color: Color, value: String, label: String) {
+    val ring = @Composable { size: androidx.compose.ui.unit.Dp ->
+        Box(Modifier.size(size), contentAlignment = Alignment.Center) {
+            Ring(fraction, color, Modifier.fillMaxSize())
+            Text(value, color = Color.White, style = if (size < 70.dp) XeType.Label else XeType.Headline)
+        }
+    }
+    when {
+        span.isSmall -> Box(Modifier.fillMaxSize().padding(8.dp), contentAlignment = Alignment.Center) { ring(64.dp) }
+        span.x > span.y -> Row(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+            ring(if (span.y == 1) 54.dp else 84.dp)
+            Column(Modifier.padding(start = 14.dp)) {
+                Text(value, color = Color.White, style = XeType.Title)
+                Text(label, color = Color.White.copy(alpha = .7f), style = XeType.Label, maxLines = 1)
+            }
+        }
+        else -> Column(Modifier.fillMaxSize().padding(14.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+            ring(if (span.y >= 3) 120.dp else 80.dp)
+            Text(label, color = Color.White.copy(alpha = .7f), style = XeType.Label, modifier = Modifier.padding(top = 6.dp))
+        }
+    }
+}

@@ -42,7 +42,8 @@ fun WidgetContent(cell: WidgetCell, host: XeWidgetHost) {
     var bounds by remember { mutableStateOf(Rect.Zero) }
     val density = LocalDensity.current
     if (kind != null) {
-        GlassWidget(kind, cell.id)
+        // The widget lays itself out for the size it was given on Home.
+        androidx.compose.runtime.CompositionLocalProvider(LocalWidgetSpan provides kind.clamp(Span(cell.spanX, cell.spanY))) { GlassWidget(kind, cell.id) }
         return
     }
     AndroidView(
