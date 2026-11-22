@@ -67,6 +67,8 @@ data class XeSettings(
     val categoryAccent: Map<Long, Long> = emptyMap(),
     /** The live sky was also put on the lock screen; Xe refreshes it there when the screen turns on. */
     val liveSkyLock: Boolean = false,
+    /** Which drawing of the built-in wallpapers is on screen; older art is redrawn once after an update. */
+    val wallpaperArtVersion: Int = 1,
     /** Per-category app order; missing = follow the drawer sort. */
     val categorySort: Map<Long, CategorySort> = emptyMap(),
     /** Post a notification when a new version is on GitHub. */

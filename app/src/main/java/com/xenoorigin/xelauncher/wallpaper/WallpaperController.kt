@@ -66,6 +66,17 @@ class WallpaperController(
         private set
 
     suspend fun restore() = withContext(Dispatchers.IO) {
+        val s = settings.current()
+        // Built-in wallpapers got a new look: redraw the one in use once. Photos are never touched.
+        if (s.wallpaperArtVersion < ART_VERSION) {
+            val preset = allWallpapers().byId(s.wallpaperId)?.takeIf { it !is WallpaperPreset.Image && it !is WallpaperPreset.Sky }
+            settings.update { it.copy(wallpaperArtVersion = ART_VERSION) }
+            if (preset != null && file.exists()) {
+                val (w, h) = screenSize()
+                applyBitmap(WallpaperRenderer.render(preset, w, h), WallpaperTarget.HOME)
+                return@withContext
+            }
+        }
         val saved = if (file.exists()) BitmapFactory.decodeFile(file.path) else null
         if (saved != null) { show(saved); return@withContext }
         val (w, h) = screenSize()
@@ -80,6 +91,7 @@ class WallpaperController(
         val raw = WallpaperRenderer.render(preset, w, h)
         val bmp = if (adjust == WallpaperAdjust()) raw else WallpaperRenderer.compose(raw, w, h, adjust)
         applyBitmap(bmp, target)
+        settings.update { it.copy(wallpaperArtVersion = ART_VERSION) }
         // Remember whether the lock screen shows the live sky, so screen-on can keep it current.
         settings.update { it.copy(wallpaperId = preset.id, liveSkyLock = if (preset is WallpaperPreset.Sky) target != WallpaperTarget.HOME else it.liveSkyLock && target == WallpaperTarget.HOME) }
         skyShown = if (preset is WallpaperPreset.Sky) skyBucket(preset.minute ?: minuteNow()) else -1
@@ -153,6 +165,8 @@ class WallpaperController(
     }
 
     companion object {
+        /** Bumped when the built-in wallpapers are redrawn with new art. */
+        const val ART_VERSION = 2
         fun defaultScreenSize(context: Context): Pair<Int, Int> {
             val wm = context.getSystemService(WindowManager::class.java)
             val (w, h) = if (android.os.Build.VERSION.SDK_INT >= 30) {

@@ -29,6 +29,7 @@ object WallpaperRenderer {
         is WallpaperPreset.Mesh -> mesh(p, w, h)
         is WallpaperPreset.Abstract -> abstract(p, w, h)
         is WallpaperPreset.Image -> image(p, w, h)
+        is WallpaperPreset.Liquid -> liquid(p, w, h)
         is WallpaperPreset.Sky -> sky(skyAt(p.minute ?: minuteNow(), sunToday()), w, h)
     }
 
@@ -95,8 +96,124 @@ object WallpaperRenderer {
             paint.shader = RadialGradient(cx, cy, r, intArrayOf(core, core and 0x00FFFFFF), null, Shader.TileMode.CLAMP)
             c.drawCircle(cx, cy, r, paint)
         }
+        depth(c, w, h, rnd, p.colors, p.glow)
         grain(out, p.grain, p.seed)
         return out
+    }
+
+    /**
+     * Finishing touches that give flat colour fields depth: a soft light leak from a corner, a few
+     * out-of-focus glass orbs, and a gentle vignette.
+     */
+    private fun depth(c: Canvas, w: Int, h: Int, rnd: Random, colors: List<Long>, strength: Float = 1f) {
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
+        val leak = colors.getOrElse(1) { 0xFFFFFFFF }.argb()
+        val lx = if (rnd.nextBoolean()) 0f else w.toFloat()
+        paint.shader = RadialGradient(lx, 0f, max(w, h) * .7f, intArrayOf((leak and 0x00FFFFFF) or ((60 * strength).toInt().coerceIn(0, 255) shl 24), leak and 0x00FFFFFF), null, Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, w.toFloat(), h.toFloat(), paint)
+        repeat(5) {
+            val r = w * (.03f + rnd.nextFloat() * .07f)
+            val cx = rnd.nextFloat() * w; val cy = rnd.nextFloat() * h
+            val tint = colors[1 + rnd.nextInt(colors.size - 1)].argb() and 0x00FFFFFF
+            paint.shader = RadialGradient(cx, cy, r, intArrayOf(tint or 0x10000000, tint or 0x2A000000, tint or 0x08000000), floatArrayOf(0f, .8f, 1f), Shader.TileMode.CLAMP)
+            c.drawCircle(cx, cy, r, paint)
+        }
+        paint.shader = RadialGradient(w / 2f, h * .45f, max(w, h) * .8f, intArrayOf(0x00000000, 0x00000000, 0x55000000), floatArrayOf(0f, .6f, 1f), Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, w.toFloat(), h.toFloat(), paint)
+        paint.shader = null
+    }
+
+    /** Liquid glass art; soft shapes are painted small and scaled up (a cheap, smooth blur), crisp light on top. */
+    private fun liquid(p: WallpaperPreset.Liquid, w: Int, h: Int): Bitmap {
+        val rnd = Random(p.seed.toLong())
+        val sw = max(24, w / 9); val sh = max(48, h / 9)
+        val small = Bitmap.createBitmap(sw, sh, Bitmap.Config.ARGB_8888)
+        val sc = Canvas(small)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
+        val bg = p.colors.first().argb()
+        val accents = p.colors.drop(1).map { it.argb() }
+        // A deep base that is a little lighter at the top, so the art floats on something.
+        paint.shader = LinearGradient(0f, 0f, 0f, sh.toFloat(), intArrayOf(blend(bg, accents[0], .18f), bg, bg), floatArrayOf(0f, .55f, 1f), Shader.TileMode.CLAMP)
+        sc.drawRect(0f, 0f, sw.toFloat(), sh.toFloat(), paint)
+        paint.xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.SCREEN)
+        when (p.style) {
+            LiquidStyle.RIBBONS -> repeat(3) { i ->
+                // Wide, soft ribbons that cross each other, each with colour flowing along it.
+                val y0 = sh * (.18f + i * .26f + rnd.nextFloat() * .06f)
+                val thick = sh * (.16f + rnd.nextFloat() * .10f)
+                val bend = sh * (.18f + rnd.nextFloat() * .14f) * (if (i % 2 == 0) 1 else -1)
+                val path = Path().apply {
+                    moveTo(-sw * .3f, y0 + bend * .4f)
+                    cubicTo(sw * .25f, y0 - bend, sw * .75f, y0 + bend, sw * 1.3f, y0 - bend * .3f)
+                    lineTo(sw * 1.3f, y0 - bend * .3f + thick * .6f)
+                    cubicTo(sw * .75f, y0 + bend + thick, sw * .25f, y0 - bend + thick * .7f, -sw * .3f, y0 + bend * .4f + thick)
+                    close()
+                }
+                val a = accents[i % accents.size]; val b = accents[(i + 1) % accents.size]
+                paint.shader = LinearGradient(0f, 0f, sw.toFloat(), 0f, intArrayOf(alpha(a, .55f), alpha(b, .85f), alpha(a, .45f)), null, Shader.TileMode.CLAMP)
+                sc.drawPath(path, paint)
+            }
+            LiquidStyle.AURORA -> {
+                // Curtains: vertical rays rising from a wavy line, brighter at their foot, fading upwards.
+                repeat(3) { band ->
+                    val col = accents[band % accents.size]
+                    val base = sh * (.42f + band * .1f)
+                    val amp = sh * (.06f + rnd.nextFloat() * .05f)
+                    val ph = rnd.nextFloat() * 6.28f
+                    val height = sh * (.30f + rnd.nextFloat() * .12f)
+                    for (x in 0 until sw) {
+                        val t = x.toFloat() / sw
+                        val y = base + amp * kotlin.math.sin(t * 6.28f * 1.1f + ph) + amp * .4f * kotlin.math.sin(t * 6.28f * 3.3f + ph * 2)
+                        val strength = (.35f + .65f * ((kotlin.math.sin(t * 6.28f * 2.4f + ph * 3) + 1f) / 2f)) * .75f
+                        // Bright at the foot, fading up into the night and softly down below the foot.
+                        val foot = sh * .05f
+                        paint.shader = LinearGradient(0f, y + foot, 0f, y - height, intArrayOf(alpha(col, 0f), alpha(col, strength), alpha(col, strength * .5f), alpha(col, 0f)), floatArrayOf(0f, foot / (foot + height), .45f, 1f), Shader.TileMode.CLAMP)
+                        sc.drawRect(x.toFloat(), y - height, x + 1.2f, y + foot, paint)
+                    }
+                }
+            }
+            LiquidStyle.CHROME -> repeat(4) { i ->
+                // Polished metal swells: wide bands with one narrow bright highlight each.
+                val top = sh * (i / 4f) - sh * .04f
+                val amp = sh * (.05f + rnd.nextFloat() * .04f)
+                val band = sh * .3f
+                val path = Path().apply {
+                    moveTo(-sw * .2f, top)
+                    cubicTo(sw * .3f, top - amp * 2, sw * .7f, top + amp * 2, sw * 1.2f, top - amp * .5f)
+                    lineTo(sw * 1.2f, top + band)
+                    cubicTo(sw * .7f, top + band + amp * 2, sw * .3f, top + band - amp * 2, -sw * .2f, top + band)
+                    close()
+                }
+                val hi = accents[0]; val mid = accents[1 + i % (accents.size - 1)]
+                paint.shader = LinearGradient(0f, top, 0f, top + band, intArrayOf(alpha(mid, .0f), alpha(mid, .55f), alpha(hi, .95f), alpha(mid, .45f), alpha(mid, 0f)), floatArrayOf(0f, .35f, .5f, .62f, 1f), Shader.TileMode.CLAMP)
+                sc.drawPath(path, paint)
+            }
+        }
+        paint.xfermode = null
+        val mid = Bitmap.createScaledBitmap(small, sw * 3, sh * 3, true)
+        val out = Bitmap.createScaledBitmap(mid, w, h, true).copy(Bitmap.Config.ARGB_8888, true)
+        val c = Canvas(out)
+        // A couple of crisp specular glints over the soft shapes: the "glass" in Liquid Glass.
+        paint.shader = null; paint.style = Paint.Style.STROKE; paint.strokeCap = Paint.Cap.ROUND
+        repeat(2) {
+            val y = h * (.25f + rnd.nextFloat() * .5f)
+            paint.strokeWidth = max(1f, w / 300f)
+            paint.shader = LinearGradient(0f, y, w.toFloat(), y, intArrayOf(0x00FFFFFF, 0x55FFFFFF, 0x00FFFFFF), floatArrayOf(.1f, .45f, .8f), Shader.TileMode.CLAMP)
+            val path = Path().apply { moveTo(-w * .1f, y); cubicTo(w * .3f, y - h * .06f, w * .7f, y + h * .06f, w * 1.1f, y - h * .02f) }
+            c.drawPath(path, paint)
+        }
+        paint.style = Paint.Style.FILL; paint.shader = null
+        depth(c, w, h, rnd, p.colors, .6f)
+        grain(out, .028f, p.seed)
+        return out
+    }
+
+    private fun alpha(c: Int, a: Float) = (c and 0x00FFFFFF) or ((a.coerceIn(0f, 1f) * 255).toInt() shl 24)
+
+    private fun blend(a: Int, b: Int, t: Float): Int {
+        fun ch(c: Int, s: Int) = (c shr s) and 0xFF
+        fun m(s: Int) = (ch(a, s) + (ch(b, s) - ch(a, s)) * t).toInt().coerceIn(0, 255)
+        return (0xFF shl 24) or (m(16) shl 16) or (m(8) shl 8) or m(0)
     }
 
     private fun abstract(p: WallpaperPreset.Abstract, w: Int, h: Int): Bitmap {

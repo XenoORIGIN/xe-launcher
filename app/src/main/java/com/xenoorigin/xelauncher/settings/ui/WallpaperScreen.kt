@@ -219,6 +219,9 @@ private fun WallpaperEditor(
                         GlassPillButton(stringResource(R.string.shuffle), { preset = p.copy(seed = p.seed + 101) }, Modifier.fillMaxWidth().padding(top = 8.dp), icon = R.drawable.ti_refresh)
                         SliderRow(stringResource(R.string.glow), p.glow, .2f..1.4f, display = { "${(it * 100).toInt()}%" }) { preset = p.copy(glow = it) }
                     }
+                    is WallpaperPreset.Liquid -> {
+                        GlassPillButton(stringResource(R.string.shuffle), { preset = p.copy(seed = p.seed + 101) }, Modifier.fillMaxWidth().padding(top = 8.dp), icon = R.drawable.ti_refresh)
+                    }
                     is WallpaperPreset.Abstract -> {
                         GlassPillButton(stringResource(R.string.shuffle), { preset = p.copy(seed = p.seed + 101) }, Modifier.fillMaxWidth().padding(top = 8.dp), icon = R.drawable.ti_refresh)
                         SliderRow(stringResource(R.string.glass_lenses), p.lenses.toFloat(), 0f..5f, steps = 4, display = { it.toInt().toString() }) { preset = p.copy(lenses = it.toInt()) }

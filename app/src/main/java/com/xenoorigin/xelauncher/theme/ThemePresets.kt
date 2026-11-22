@@ -26,6 +26,9 @@ val XeThemes: List<ThemePreset> = listOf(
     ThemePreset("ember", "Ember", "ember", IconStyle.GLASS_DARK, IconShape.CIRCLE),
     ThemePreset("rose", "Rose", "rose", IconStyle.ORIGINAL, IconShape.CIRCLE, light = true),
     ThemePreset("mint", "Mint", "mint", IconStyle.ORIGINAL, IconShape.ROUNDED, light = true),
+    ThemePreset("liquid_azure", "Liquid Azure", "liquid_azure", IconStyle.GLASS_CLEAR, IconShape.SQUIRCLE),
+    ThemePreset("frost_aurora", "Frost Aurora", "frost_aurora", IconStyle.GLASS_COLOR, IconShape.CIRCLE),
+    ThemePreset("chrome_night", "Chrome Night", "chrome_night", IconStyle.MONO, IconShape.SQUIRCLE),
 )
 
 val Supernova = ThemePreset("nova", "Supernova", "supernova", IconStyle.GLASS_COLOR, IconShape.TEARDROP, secret = true)
