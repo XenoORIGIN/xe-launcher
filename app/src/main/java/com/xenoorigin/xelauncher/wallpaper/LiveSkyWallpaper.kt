@@ -45,7 +45,8 @@ class SkyTicker(
 fun lockNeedsUpdate(lastWrittenBucket: Int, minute: Int): Boolean = skyBucket(minute) != lastWrittenBucket
 
 /** The background job keeps the phone's home wallpaper fresh only when our live wallpaper isn't doing it. */
-fun shouldMirrorHome(liveSkyChosen: Boolean, liveWallpaperActive: Boolean): Boolean = liveSkyChosen && !liveWallpaperActive
+fun shouldMirrorHome(liveSkyChosen: Boolean, liveWallpaperActive: Boolean, onHome: Boolean = true): Boolean =
+    liveSkyChosen && onHome && !liveWallpaperActive
 
 object LiveSkyWallpaper {
     private const val JOB_ID = 4207
@@ -89,7 +90,7 @@ object LiveSkyWallpaper {
                     try {
                         val s = graph.settings.current()
                         val minute = minuteNow()
-                        if (s.wallpaperId == LIVE_SKY_ID && s.liveSkyLock && lockNeedsUpdate(lastLockBucket, minute)) {
+                        if (isTimeWallpaper(s.wallpaperId) && s.liveSkyLock && lockNeedsUpdate(lastLockBucket, minute)) {
                             lastLockBucket = skyBucket(minute)
                             graph.wallpaper.refreshLockSky(minute)
                         }
@@ -108,7 +109,7 @@ class SkyMirrorJob : JobService() {
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             try {
                 val s = graph.settings.current()
-                if (shouldMirrorHome(s.wallpaperId == LIVE_SKY_ID, LiveSkyWallpaper.isActive(this@SkyMirrorJob))) graph.wallpaper.refreshLiveSky()
+                if (shouldMirrorHome(isTimeWallpaper(s.wallpaperId), s.wallpaperId == LIVE_SKY_ID && LiveSkyWallpaper.isActive(this@SkyMirrorJob), s.liveOnHome)) graph.wallpaper.refreshLiveSky()
             } finally { jobFinished(params, false) }
         }
         return true

@@ -126,4 +126,6 @@ data class XeSettings(
     val playVersion: Int = 0,
     /** Colour mode of the ASCII wallpapers. */
     val asciiColor: AsciiColor = AsciiColor.MONO,
+    /** The chosen wallpaper is on the Home screen (false = it was applied to the lock screen only). */
+    val liveOnHome: Boolean = true,
 )

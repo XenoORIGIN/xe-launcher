@@ -125,4 +125,76 @@ class WallpaperControllerTest {
         assertThat(c.glassBackdrop.value).isNotNull()
         sc.cancel()
     }
+    private fun newController(tag: String, sc: CoroutineScope): Triple<WallpaperController, SettingsStore, File> {
+        val settings = SettingsStore(ctx, sc, "$tag-${System.nanoTime()}")
+        val dir = File(ctx.filesDir, "wp-${System.nanoTime()}")
+        return Triple(WallpaperController(ctx, settings, dir, size), settings, dir)
+    }
+
+    @Test fun asciiLive_refreshesOnTheQuarterHour() = runBlocking<Unit> {
+        val sc = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val (c, _, _) = newController("wp_al", sc)
+        c.apply(AsciiCollection.first().copy(minute = 12 * 60), WallpaperTarget.HOME)
+        val afterApply = c.systemWallpaperSetCount
+        c.refreshLiveSky(minute = 12 * 60 + 5)
+        assertThat(c.systemWallpaperSetCount).isEqualTo(afterApply)
+        val noon = c.current.value!!.asAndroidBitmap().let { b -> (0 until b.height).sumOf { y -> (0 until b.width).sumOf { x -> android.graphics.Color.red(b.getPixel(x, y)) } } }
+        c.refreshLiveSky(minute = 23 * 60)
+        assertThat(c.systemWallpaperSetCount).isEqualTo(afterApply + 1)
+        val night = c.current.value!!.asAndroidBitmap().let { b -> (0 until b.height).sumOf { y -> (0 until b.width).sumOf { x -> android.graphics.Color.red(b.getPixel(x, y)) } } }
+        assertThat(night).isNotEqualTo(noon)
+        sc.cancel()
+    }
+
+    @Test fun asciiStill_neverRefreshes() = runBlocking<Unit> {
+        val sc = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val (c, _, _) = newController("wp_as", sc)
+        c.apply(AsciiCollection.first { it.id == "ascii_city" }, WallpaperTarget.HOME)
+        val n = c.systemWallpaperSetCount
+        c.refreshLiveSky(minute = 23 * 60)
+        assertThat(c.systemWallpaperSetCount).isEqualTo(n)
+        sc.cancel()
+    }
+
+    @Test fun lockOnly_doesNotOverwriteHome() = runBlocking<Unit> {
+        val sc = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val (c, settings, dir) = newController("wp_lo", sc)
+        c.apply(XeCollection.byId("xe_blue")!!, WallpaperTarget.HOME)
+        val home = File(dir, "current.png").readBytes()
+        c.apply(AsciiCollection.first().copy(minute = 12 * 60), WallpaperTarget.LOCK)
+        assertThat(settings.current().liveOnHome).isFalse()
+        c.refreshLiveSky(minute = 23 * 60)
+        assertThat(File(dir, "current.png").readBytes()).isEqualTo(home)
+        sc.cancel()
+    }
+
+    @Test fun liveSkyLockOnly_sameFix() = runBlocking<Unit> {
+        val sc = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val (c, _, dir) = newController("wp_slo", sc)
+        c.apply(XeCollection.byId("xe_blue")!!, WallpaperTarget.HOME)
+        val home = File(dir, "current.png").readBytes()
+        c.apply(WallpaperPreset.Sky(minute = 12 * 60), WallpaperTarget.LOCK)
+        c.refreshLiveSky(minute = 23 * 60)
+        assertThat(File(dir, "current.png").readBytes()).isEqualTo(home)
+        sc.cancel()
+    }
+
+    @Test fun reapplyAscii_usesNewColour() = runBlocking<Unit> {
+        val sc = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val settings = SettingsStore(ctx, sc, "wp_ra-${System.nanoTime()}")
+        val c = WallpaperController(ctx, settings, File(ctx.filesDir, "wp-${System.nanoTime()}"), { 360 to 780 })
+        c.apply(AsciiCollection.first { it.id == "ascii_lake" }, WallpaperTarget.HOME)
+        fun bluish() = c.current.value!!.asAndroidBitmap().let { b -> (0 until b.height step 2).sumOf { y -> (0 until b.width step 2).count { x -> val p = b.getPixel(x, y); android.graphics.Color.blue(p) > android.graphics.Color.red(p) + 30 } } }
+        val before = bluish()
+        settings.update { it.copy(asciiColor = com.xenoorigin.xelauncher.settings.AsciiColor.ACCENT, accent = 0xFF2F8BFF) }
+        c.reapplyAscii()
+        assertThat(bluish()).isGreaterThan(before + 200)
+        sc.cancel()
+    }
+
+    @Test fun mirrorDecision() {
+        assertThat(shouldMirrorHome(true, false, true)).isTrue()
+        assertThat(shouldMirrorHome(true, false, false)).isFalse()
+        assertThat(shouldMirrorHome(true, true, true)).isFalse()
+    }
 }

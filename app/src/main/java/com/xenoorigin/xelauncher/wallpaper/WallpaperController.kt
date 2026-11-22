@@ -48,27 +48,43 @@ class WallpaperController(
     private var skyShown = -1
 
     /**
-     * Keeps the phone-wallpaper copy of the live sky current: redraws it when the time of day has moved on
-     * (every 15 minutes). Inside Xe the sky is drawn live by [LiveSkyLayer].
-     * Does nothing unless the live sky is the chosen wallpaper.
+     * Keeps the phone-wallpaper copy of a time-following wallpaper (Live Sky, ASCII Live) current: redraws it
+     * when the time of day has moved on (every 15 minutes). Inside Xe they are drawn live.
+     * Does nothing unless one is chosen, and leaves Home alone when it was applied to the lock screen only.
      */
     suspend fun refreshLiveSky(minute: Int = minuteNow()) = withContext(Dispatchers.IO) {
-        if (settings.current().wallpaperId != LIVE_SKY_ID) return@withContext
+        val s = settings.current()
+        if (!isTimeWallpaper(s.wallpaperId)) return@withContext
         val bucket = skyBucket(minute)
         if (bucket == skyShown) return@withContext
-        val (w, h) = screenSize()
-        val sky = WallpaperRenderer.render(WallpaperPreset.Sky(minute = minute), w, h)
-        // The phone's live wallpaper already draws the sky: only keep Xe's own copy current.
-        if (liveWallpaperActive()) { save(sky); show(sky) } else applyBitmap(sky, WallpaperTarget.HOME)
         skyShown = bucket
+        if (!s.liveOnHome) return@withContext
+        val (w, h) = screenSize()
+        val bmp = WallpaperRenderer.render(timePreset(s, minute), w, h)
+        // The phone's live wallpaper already draws the sky: only keep Xe's own copy current.
+        if (s.wallpaperId == LIVE_SKY_ID && liveWallpaperActive()) { save(bmp); show(bmp) } else applyBitmap(bmp, WallpaperTarget.HOME)
     }
 
-    /** Writes the current sky to the phone's lock screen only (called when the screen turns on). */
+    /** Writes the current time-following wallpaper to the phone's lock screen only (called when the screen turns on). */
     suspend fun refreshLockSky(minute: Int = minuteNow()) = withContext(Dispatchers.IO) {
-        if (settings.current().wallpaperId != LIVE_SKY_ID) return@withContext
+        val s = settings.current()
+        if (!isTimeWallpaper(s.wallpaperId)) return@withContext
         val (w, h) = screenSize()
-        applyBitmap(WallpaperRenderer.render(WallpaperPreset.Sky(minute = minute), w, h), WallpaperTarget.LOCK)
+        applyBitmap(WallpaperRenderer.render(timePreset(s, minute), w, h), WallpaperTarget.LOCK)
     }
+
+    /** Redraws the ASCII wallpaper in use with the current colour settings, where it is shown. */
+    suspend fun reapplyAscii() = withContext(Dispatchers.IO) {
+        val s = settings.current()
+        val p = (allWallpapers().byId(s.wallpaperId) as? WallpaperPreset.Ascii)?.withColors(s) ?: return@withContext
+        val (w, h) = screenSize()
+        val bmp = WallpaperRenderer.render(p, w, h)
+        if (s.liveOnHome) applyBitmap(bmp, WallpaperTarget.HOME)
+        if (p.live && s.liveSkyLock) applyBitmap(bmp, WallpaperTarget.LOCK)
+    }
+
+    private fun timePreset(s: com.xenoorigin.xelauncher.settings.XeSettings, minute: Int): WallpaperPreset =
+        if (s.wallpaperId == ASCII_LIVE_ID) AsciiCollection.first().copy(minute = minute).withColors(s) else WallpaperPreset.Sky(minute = minute)
 
     private fun show(bmp: Bitmap) {
         _current.value = bmp.asImageBitmap()
@@ -106,13 +122,22 @@ class WallpaperController(
 
     suspend fun apply(preset: WallpaperPreset, target: WallpaperTarget, adjust: WallpaperAdjust = WallpaperAdjust()) = withContext(Dispatchers.IO) {
         val (w, h) = screenSize()
-        val raw = WallpaperRenderer.render(preset, w, h)
+        val drawn = if (preset is WallpaperPreset.Ascii) preset.withColors(settings.current()) else preset
+        val raw = WallpaperRenderer.render(drawn, w, h)
         val bmp = if (adjust == WallpaperAdjust()) raw else WallpaperRenderer.compose(raw, w, h, adjust)
         applyBitmap(bmp, target)
         settings.update { it.copy(wallpaperArtVersion = ART_VERSION) }
         // Remember whether the lock screen shows the live sky, so screen-on can keep it current.
-        settings.update { it.copy(wallpaperId = preset.id, liveSkyLock = if (preset is WallpaperPreset.Sky) target != WallpaperTarget.HOME else it.liveSkyLock && target == WallpaperTarget.HOME) }
-        skyShown = if (preset is WallpaperPreset.Sky) skyBucket(preset.minute ?: minuteNow()) else -1
+        val timed = isTimeWallpaper(preset.id)
+        settings.update {
+            it.copy(
+                wallpaperId = preset.id,
+                liveOnHome = target != WallpaperTarget.LOCK,
+                liveSkyLock = if (timed) target != WallpaperTarget.HOME else it.liveSkyLock && target == WallpaperTarget.HOME,
+            )
+        }
+        val fixedMinute = (preset as? WallpaperPreset.Sky)?.minute ?: (preset as? WallpaperPreset.Ascii)?.minute
+        skyShown = if (timed) skyBucket(fixedMinute ?: minuteNow()) else -1
     }
 
     /** Applies an already-rendered bitmap (used by Xe Studio and imports). */

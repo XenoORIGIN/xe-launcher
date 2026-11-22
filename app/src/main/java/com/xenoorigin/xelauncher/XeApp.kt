@@ -385,11 +385,11 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     }
     // Outside Xe, a 15-minute job keeps the phone's copy of the live sky fresh.
     LaunchedEffect(settings.wallpaperId) {
-        com.xenoorigin.xelauncher.wallpaper.LiveSkyWallpaper.schedule(ctx, settings.wallpaperId == com.xenoorigin.xelauncher.wallpaper.LIVE_SKY_ID)
+        com.xenoorigin.xelauncher.wallpaper.LiveSkyWallpaper.schedule(ctx, com.xenoorigin.xelauncher.wallpaper.isTimeWallpaper(settings.wallpaperId))
     }
     // The live sky keeps up with the time while Xe is on screen.
     LaunchedEffect(settings.wallpaperId, lifecycle) {
-        if (settings.wallpaperId != com.xenoorigin.xelauncher.wallpaper.LIVE_SKY_ID) return@LaunchedEffect
+        if (!com.xenoorigin.xelauncher.wallpaper.isTimeWallpaper(settings.wallpaperId)) return@LaunchedEffect
         lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
             while (true) { graph.wallpaper.refreshLiveSky(); delay(60_000) }
         }
@@ -465,7 +465,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
         com.xenoorigin.xelauncher.design.LocalGlassBackdrop.current?.let { it.parallaxPx = parallax; it.screen = { screenSize } }
         com.xenoorigin.xelauncher.wallpaper.WallpaperLayer(
             graph.wallpaper, parallaxPx = parallax,
-            liveSky = settings.wallpaperId == com.xenoorigin.xelauncher.wallpaper.LIVE_SKY_ID,
+            liveSky = settings.wallpaperId == com.xenoorigin.xelauncher.wallpaper.LIVE_SKY_ID && settings.liveOnHome,
             animate = speed != AnimationSpeed.OFF && !powerSave,
         )
         val lens = remember(settings.glassLens, settings.wallpaperParallax) {
