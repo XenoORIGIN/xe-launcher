@@ -86,7 +86,7 @@
     <string name="icon_style">Icon style</string>
     <string name="style_glass_dark">Dark glass</string>
     <string name="style_glass_color">Colour glass</string>
-    <string name="style_glass_clear">Clear glass</string>
+    <string name="style_glass_clear">Liquid Glass</string>
     <string name="style_original">Original</string>
     <string name="style_glass_dark_desc">The app’s symbol in black and white on dark glass</string>
     <string name="icon_shape">Icon shape</string>
@@ -184,7 +184,7 @@
     <string name="xe_studio_desc">Wallpapers, icons and widgets</string>
     <string name="style_mono_desc">The whole icon in black and white</string>
     <string name="style_glass_color_desc">Symbol on glass tinted with the app’s colour</string>
-    <string name="style_glass_clear_desc">Symbol on clear glass</string>
+    <string name="style_glass_clear_desc">Clear glass with a white symbol, like iOS</string>
     <string name="style_original_desc">The app’s own icon</string>
     <string name="bulk_icons_desc">Pick several apps and give them one style</string>
     <string name="shape_square">Square</string>

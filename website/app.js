@@ -5,7 +5,7 @@
       lead: "Clean and minimal, with dark glass icons, automatic app categories, glass widgets and smooth animation everywhere.",
       download: "Download APK", studioDl: "Get Xe Studio", inDev: "In development", studioNote: "Xe Studio is still being built. You can make icon themes now; wallpapers, widgets and the theme store are coming.", featuresTitle: "Made to look good",
       f1: "The dock, category bar, buttons and menus are blurred glass with bright rims that bend what's behind them.",
-      f2t: "Icons your way", f2: "Dark glass, black and white, colour glass, clear glass or the original, in 5 shapes. Rename apps and use your own icon pictures.",
+      f2t: "Icons your way", f2: "Dark glass, black and white, colour glass, Liquid Glass or the original, in 5 shapes. Rename apps and use your own icon pictures.",
       f3t: "Automatic categories", f3: "Swipe up to see apps by category. Reorder, hide, add or delete categories, or let Xe sort your apps again.",
       f4t: "Glass widgets", f4: "10 Xe widgets: clocks, calendar, search, photo, note, battery and more. Widgets from other apps work too.",
       f5t: "Your wallpaper", f5: "Import a picture, drag and pinch to fit, set dim and blur, then use it on the Home screen or lock screen.",
@@ -56,6 +56,8 @@
     if (io) { if (el.closest(".grid,ol")) el.style.transitionDelay = (i % 3) * 90 + "ms"; io.observe(el); } else el.classList.add("in");
   });
   const NEWS = [
+    { v: "1.0.15", d: "2026-11-22", th: ["ไอคอนแบบใหม่ Liquid Glass แทน \"กระจกใส\": กระจกใสมองทะลุเห็นวอลเปเปอร์ สัญลักษณ์สีขาวขุ่น ขอบหนาเงาวาวแบบ iOS", "Dock โฟลเดอร์ และวิดเจ็ตเป็นกระจกใสไปด้วยเมื่อใช้ Liquid Glass", "บนวอลเปเปอร์สีอ่อน กระจกจะเข้มขึ้นนิดๆ ให้ยังอ่านสัญลักษณ์ออก"],
+      en: ["New Liquid Glass icons replace \"Clear glass\": see-through glass showing your wallpaper, milky-white symbols and thick glossy edges, like iOS", "The dock, folders and widgets turn clear too with Liquid Glass", "On pale wallpapers the glass darkens a little so symbols stay readable"] },
     { v: "1.0.14", d: "2026-11-22", th: ["วอลเปเปอร์ท้องฟ้าสดตรงกับเวลาจริง (คำนวณพระอาทิตย์ขึ้น-ตก) เปลี่ยนเองแม้ไม่ได้เปิด Xe และใช้กับหน้าล็อกได้ ภาพสวยขึ้น", "วิดเจ็ตมีขนาดมากขึ้นและสวยขึ้น กดค้างเพื่อย้าย ลากมุมเพื่อปรับขนาด มีป้ายขนาดและปุ่มขนาดสำเร็จรูป", "จัดการหมวดหมู่: แก้บั๊กลากแล้วค้าง ปัดเพื่อซ่อน เลือกสีและการเรียงของแต่ละหมวด", "\"ใช้บ่อยที่สุด\" เปลี่ยนเป็น \"ใช้นานที่สุด\"", "ไอคอนกระจกหักเหแสง (แสงสะท้อน หรือ เลนส์) Dock แบบน้ำ ภาพมีมิติ เปิดแอปเป็นฟองกระจก ขอบกระจกเปลี่ยนสีตามเวลา", "วอลเปเปอร์ธีมสวยขึ้น ธีมใหม่รวม 13 แบบ และเสียงแจ้งเตือนอัปเดตแบบกระจก"],
       en: ["Live Sky now matches the real time (computed sunrise and sunset), changes even when Xe isn't open, can go on the lock screen, and looks better", "More, prettier widget sizes. Long-press to move, drag a corner to resize, with a live size label and size presets", "Category editor: fixed rows getting stuck, swipe to hide, pick each category's colour and sort", "\"Most used\" is now \"Used longest\"", "Glass icons that bend the light (Light or Lens), a liquid dock, depth parallax, a glass bubble app launch and rims that change colour with the time of day", "Prettier theme wallpapers, 13 themes in all, and a glass chime for update alerts"] },
     { v: "1.0.13", d: "2026-11-21", th: ["แอปใหม่ Xe Studio: สร้างธีมไอคอนเอง แต่งทั้งชุดด้วยทรง สี เส้นขอบ เงา แล้วแตะแก้ทีละไอคอนด้วยรูป ตัวอักษร หรือวาดเอง", "กด \"ใช้กับ Xe\" ไอคอนใน Xe เปลี่ยนทันที และยังอยู่แม้ลบ Studio", "แก้แจ้งเตือนอัปเดตที่ไม่ขึ้น ถ้าตอนนั้นการแจ้งเตือนถูกปิดอยู่"],

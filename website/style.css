@@ -124,7 +124,8 @@ footer a{text-decoration:underline;text-underline-offset:3px}
 .s-dark{--ink:#fff;background:linear-gradient(180deg,rgba(80,80,86,.78),rgba(16,16,18,.88));box-shadow:inset 0 .4cqw .3cqw rgba(255,255,255,.35),inset 0 -.3cqw .4cqw rgba(255,255,255,.08),0 1cqw 2.5cqw rgba(0,0,0,.45)}
 .s-mono{--ink:var(--mg);background:var(--m);box-shadow:inset 0 .3cqw .3cqw rgba(255,255,255,.25),0 1cqw 2.5cqw rgba(0,0,0,.35)}
 .s-color{--ink:#fff;background:radial-gradient(120% 90% at 30% 8%,color-mix(in srgb,var(--c),#fff 45%),var(--c) 55%,color-mix(in srgb,var(--c),#000 35%));box-shadow:inset 0 .4cqw .4cqw rgba(255,255,255,.55),inset 0 -.6cqw 1cqw rgba(0,0,0,.2),0 1cqw 2.5cqw rgba(0,0,0,.35)}
-.s-clear{--ink:#fff;background:color-mix(in srgb,var(--c) 24%,rgba(255,255,255,.16));-webkit-backdrop-filter:blur(6px) saturate(160%);backdrop-filter:blur(6px) saturate(160%);box-shadow:inset 0 .4cqw .4cqw rgba(255,255,255,.6),inset 0 -.3cqw .5cqw rgba(255,255,255,.2),0 1cqw 2.5cqw rgba(0,0,0,.22)}
+.s-clear{--ink:rgba(255,255,255,.88);background:linear-gradient(160deg,rgba(255,255,255,.22),rgba(255,255,255,.06) 55%,rgba(255,255,255,.14));-webkit-backdrop-filter:blur(6px) brightness(1.12);backdrop-filter:blur(6px) brightness(1.12);box-shadow:inset .5cqw .5cqw .3cqw -.2cqw rgba(255,255,255,.85),inset -.4cqw -.4cqw .3cqw -.2cqw rgba(255,255,255,.55),inset 0 0 0 .35cqw rgba(255,255,255,.28),0 1.2cqw 2.4cqw rgba(0,0,0,.25)}
+.s-clear .gl{filter:drop-shadow(0 .25cqw .2cqw rgba(0,0,0,.18))}
 .s-orig{--ink:var(--og);background:var(--c);box-shadow:0 1cqw 2.5cqw rgba(0,0,0,.3)}
 .pdots{position:absolute;bottom:31cqw;left:0;right:0;display:flex;justify-content:center;gap:1.6cqw}
 .pdots i{width:1.5cqw;height:1.5cqw;border-radius:50%;background:currentColor;opacity:.4}.pdots i.on{opacity:1}
@@ -170,7 +171,7 @@ footer a{text-decoration:underline;text-underline-offset:3px}
 .dev.mini .scr{pointer-events:none}
 .dev.mini .glass-in,.dev.mini .s-clear{-webkit-backdrop-filter:none;backdrop-filter:none}
 .dev.mini .glass-in{background:rgba(255,255,255,.16)}.dev.mini.light .glass-in{background:rgba(255,255,255,.45)}
-.dev.mini .s-clear{background:color-mix(in srgb,var(--c) 30%,rgba(255,255,255,.26))}
+.dev.mini .s-clear{background:rgba(255,255,255,.2)}
 .dev.mini .wall{transform:none}
 
 /* glass lens */

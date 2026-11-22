@@ -82,7 +82,7 @@
   const HOME = ["photos", "camera", "music", "maps", "cal", "notes", "shop", "games"];
   const DOCK = ["phone", "msg", "web", "settings"];
 
-  const STYLES = [["dark", "กระจกดำ", "Dark glass"], ["mono", "ขาวดำ", "Mono"], ["color", "กระจกสี", "Colour glass"], ["clear", "กระจกใส", "Clear glass"], ["orig", "ต้นฉบับ", "Original"]];
+  const STYLES = [["dark", "กระจกดำ", "Dark glass"], ["mono", "ขาวดำ", "Mono"], ["color", "กระจกสี", "Colour glass"], ["clear", "Liquid Glass", "Liquid Glass"], ["orig", "ต้นฉบับ", "Original"]];
   const SHAPES = [["squircle", "Squircle"], ["circle", "Circle"], ["rounded", "Rounded"], ["square", "Square"], ["tear", "Teardrop"]];
   const THEMES = [
     { id: "xe_black", name: "Xe Black", style: "dark", shape: "squircle" },
