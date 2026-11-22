@@ -7,6 +7,7 @@
 - ภาพในกระจกขยับตรงกับวอลเปเปอร์ตอนปัดหน้าหรือเอียงเครื่อง
 - บนวอลเปเปอร์สีอ่อน กระจกจะเข้มขึ้นนิดๆ ให้ยังอ่านสัญลักษณ์ออก
 - ธีม Xe Blue, Ocean, Violet Glass และ Liquid Azure ใช้ Liquid Glass แล้ว
+- แก้บั๊ก: บนจอเล็กหรือตัวหนังสือใหญ่ (เช่น Android 11 บางรุ่น) ปุ่มลบวิดเจ็ตหายไปจากแถบแก้ไข ตอนนี้ปุ่มลบและปุ่มเสร็จแสดงครบเสมอ
 
 **Update:** download `xe-launcher.apk` below and install over the old one; your settings stay. (`xe-studio.apk` is unchanged apart from its version number.)
 
@@ -15,3 +16,4 @@
 - The wallpaper inside the glass moves with the wallpaper as you swipe pages or tilt the phone
 - On pale wallpapers the glass darkens a little so symbols stay readable
 - The Xe Blue, Ocean, Violet Glass and Liquid Azure themes now use Liquid Glass
+- Fix: on small screens or with large text (seen on Android 11), the widget Delete button was squeezed out of the edit bar. Delete and Done now always show
