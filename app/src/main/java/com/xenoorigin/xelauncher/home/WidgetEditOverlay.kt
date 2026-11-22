@@ -1,5 +1,7 @@
 package com.xenoorigin.xelauncher.home
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -200,6 +202,12 @@ fun WidgetEditOverlay(
                 .padding(horizontal = 8.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically,
         ) {
+            // Delete and Done always keep their full size; the size chips share what's left and scroll
+            // sideways on small screens or with large text.
+            Row(
+                Modifier.weight(1f, fill = false).horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically,
+            ) {
             presets.forEachIndexed { i, s ->
                 val on = s.x == rect.w && s.y == rect.h
                 Box(
@@ -211,7 +219,8 @@ fun WidgetEditOverlay(
                             else haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         }
                         .padding(horizontal = 12.dp, vertical = 8.dp).testTag("preset_$i"),
-                ) { Text("${PresetNames.getOrElse(i) { "" }} ${s.x}×${s.y}", style = XeType.Label, color = if (on) Color.Black else Color.White) }
+                ) { Text("${PresetNames.getOrElse(i) { "" }} ${s.x}×${s.y}", style = XeType.Label, color = if (on) Color.Black else Color.White, maxLines = 1, softWrap = false) }
+            }
             }
             Box(Modifier.size(38.dp).clip(CircleShape).clickable(remember { MutableInteractionSource() }, null) { onRemove() }.testTag("widget_edit_remove"), contentAlignment = Alignment.Center) {
                 Icon(painterResource(R.drawable.ti_trash), stringResource(R.string.widget_remove), Modifier.size(20.dp), tint = Color(0xFFFF6B6B))
