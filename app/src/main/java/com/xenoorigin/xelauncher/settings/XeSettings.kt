@@ -20,6 +20,9 @@ import kotlinx.serialization.Serializable
 /** Glass effect on icons: none, a highlight that slides as you scroll, or a lens that bends as you scroll. */
 @Serializable enum class IconGlass { OFF, LIGHT, LENS }
 
+/** Colours of the ASCII wallpapers: grey with coloured highlights, the sky's colours, or the theme accent. */
+@Serializable enum class AsciiColor { MONO, SKY, ACCENT }
+
 /** How apps are ordered inside one category. FOLLOW uses the drawer's sort. */
 @Serializable enum class CategorySort { FOLLOW, ALPHABETICAL, TIME, NEWEST }
 
@@ -121,4 +124,6 @@ data class XeSettings(
     val bubbleBest: Int = 0,
     /** One-off upgrades for the playful features already applied (1 = double tap draws a letter). */
     val playVersion: Int = 0,
+    /** Colour mode of the ASCII wallpapers. */
+    val asciiColor: AsciiColor = AsciiColor.MONO,
 )
