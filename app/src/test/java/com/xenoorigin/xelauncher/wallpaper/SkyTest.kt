@@ -32,8 +32,8 @@ class SkyTest {
         assertThat(skyAt(12 * 60).orbY).isLessThan(skyAt(17 * 60).orbY)
     }
 
-    @Test fun skyRedrawsEveryTwentyMinutes() {
-        assertThat(skyBucket(10 * 60 + 5)).isEqualTo(skyBucket(10 * 60 + 19))
-        assertThat(skyBucket(10 * 60 + 19)).isNotEqualTo(skyBucket(10 * 60 + 21))
+    @Test fun phoneWallpaperMirrorRedrawsEveryFifteenMinutes() {
+        assertThat(skyBucket(10 * 60 + 1)).isEqualTo(skyBucket(10 * 60 + 14))
+        assertThat(skyBucket(10 * 60 + 14)).isNotEqualTo(skyBucket(10 * 60 + 16))
     }
 }

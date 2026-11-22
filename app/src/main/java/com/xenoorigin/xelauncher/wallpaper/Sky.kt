@@ -64,7 +64,7 @@ fun skyAt(minuteOfDay: Int, sun: SunTimes = SunTimes(6 * 60, 18 * 60 + 20)): Sky
     return SkyLook(mix(a.top, b.top, t), mix(a.mid, b.mid, t), mix(a.bottom, b.bottom, t), a.stars + (b.stars - a.stars) * t, sunUp, orbX, orbY, glow)
 }
 
-/** The live sky is redrawn whenever this changes (every 20 minutes). */
-fun skyBucket(minuteOfDay: Int): Int = Math.floorMod(minuteOfDay, 24 * 60) / 20
+/** The phone-wallpaper copy of the live sky is redrawn whenever this changes (every 15 minutes). */
+fun skyBucket(minuteOfDay: Int): Int = Math.floorMod(minuteOfDay, 24 * 60) / 15
 
 fun minuteNow(): Int = java.time.LocalTime.now().let { it.hour * 60 + it.minute }

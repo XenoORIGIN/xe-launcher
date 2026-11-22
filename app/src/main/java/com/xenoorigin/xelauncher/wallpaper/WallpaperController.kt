@@ -35,7 +35,8 @@ class WallpaperController(
     private var skyShown = -1
 
     /**
-     * Keeps the live sky current: redraws it when the time of day has moved on (every 20 minutes).
+     * Keeps the phone-wallpaper copy of the live sky current: redraws it when the time of day has moved on
+     * (every 15 minutes). Inside Xe the sky is drawn live by [LiveSkyLayer].
      * Does nothing unless the live sky is the chosen wallpaper.
      */
     suspend fun refreshLiveSky(minute: Int = minuteNow()) = withContext(Dispatchers.IO) {

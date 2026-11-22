@@ -141,6 +141,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     val view = LocalView.current
     val density = LocalDensity.current
     val speed = LocalAnimationSpeed.current
+    val powerSave = com.xenoorigin.xelauncher.design.rememberPowerSave()
     val scope = rememberCoroutineScope()
     val apps by graph.labeledApps.collectAsState()
     val categories by graph.categories.categories.collectAsState(initial = emptyList())
@@ -428,7 +429,11 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                 -(f - .5f) * with(density) { 24.dp.toPx() }
             }
         }
-        com.xenoorigin.xelauncher.wallpaper.WallpaperLayer(graph.wallpaper, parallaxPx = parallax)
+        com.xenoorigin.xelauncher.wallpaper.WallpaperLayer(
+            graph.wallpaper, parallaxPx = parallax,
+            liveSky = settings.wallpaperId == com.xenoorigin.xelauncher.wallpaper.LIVE_SKY_ID,
+            animate = speed != AnimationSpeed.OFF && !powerSave,
+        )
         val lens = remember(settings.glassLens, settings.wallpaperParallax) {
             if (settings.glassLens) com.xenoorigin.xelauncher.home.LensState({ graph.wallpaper.current.value }, parallax) else null
         }
