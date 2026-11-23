@@ -88,6 +88,13 @@ class AppGraph(val context: Context) {
         runner = { r -> scope.launch(Dispatchers.IO) { r() } },
         onChanged = { usageTick.value++ },
     )
+    /** Termi the pet: saved in its own file, credited from creator apps and night rest. */
+    val termi = com.xenoorigin.xelauncher.termi.TermiStore(
+        java.io.File(context.filesDir, "termi.json"),
+        usageToday = com.xenoorigin.xelauncher.termi.TermiUsage.today(context),
+        nightScreenMs = com.xenoorigin.xelauncher.termi.TermiUsage.screenOn(context),
+        defaultCreators = com.xenoorigin.xelauncher.termi.TermiUsage.installedDefaults(context),
+    )
     val categories = CategoryRepository(db, labeledApps, settings.settings, usage::usage, usageTick, ::categoryLabel)
 
     val home = HomeRepository(

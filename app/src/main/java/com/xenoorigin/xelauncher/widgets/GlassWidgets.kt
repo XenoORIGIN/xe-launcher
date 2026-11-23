@@ -85,6 +85,7 @@ enum class GlassWidgetKind(val id: String, val spanX: Int, val spanY: Int, val t
     NOTE("xe_note", 2, 2, R.string.widget_note),
     BATTERY("xe_battery", 2, 2, R.string.widget_battery),
     STORAGE("xe_storage", 2, 2, R.string.widget_storage),
+    TERMI("xe_termi", 4, 2, R.string.widget_termi),
     ;
     companion object { fun of(id: String?) = entries.firstOrNull { it.id == id } }
 }
@@ -100,6 +101,12 @@ class WidgetActions(
     val pickPhoto: (Long) -> Unit = {},
     val note: (Long) -> String = { "" },
     val editNote: (Long) -> Unit = {},
+    /** Termi the pet: its store (null outside the launcher), opening its page, and how it is drawn. */
+    val termi: com.xenoorigin.xelauncher.termi.TermiStore? = null,
+    val openTermi: () -> Unit = {},
+    val termiBody: Long = 0xFFFFFFFF,
+    val asciiColor: com.xenoorigin.xelauncher.settings.AsciiColor = com.xenoorigin.xelauncher.settings.AsciiColor.MONO,
+    val animate: Boolean = true,
 )
 
 val LocalWidgetActions = staticCompositionLocalOf { WidgetActions() }
@@ -136,6 +143,7 @@ fun GlassWidget(kind: GlassWidgetKind, itemId: Long = -1, modifier: Modifier = M
             GlassWidgetKind.BATTERY -> BatteryWidget(span)
             GlassWidgetKind.STORAGE -> StorageWidget(span)
             GlassWidgetKind.PHOTO -> Unit
+            GlassWidgetKind.TERMI -> com.xenoorigin.xelauncher.termi.TermiWidget(span, Modifier.fillMaxSize().clip(shape))
         }
     }
 }

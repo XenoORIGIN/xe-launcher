@@ -160,6 +160,11 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     val drawerState = remember { DrawerState(pageCount = { categories.size.coerceAtLeast(1) }) }
     val homePager = rememberPagerState { layout.pages.size + 1 }
     var searchOpen by remember { mutableStateOf(false) }
+    var termiOpen by remember { mutableStateOf(false) }
+    // Each time Home comes back, Termi collects creator-app minutes and the night-rest bonus.
+    androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+        graph.scope.launch(kotlinx.coroutines.Dispatchers.IO) { runCatching { graph.termi.onHomeShown() } }
+    }
     var drawPad by remember { mutableStateOf(false) }
     var launchBubble by remember { mutableStateOf<Rect?>(null) }
     var menu by remember { mutableStateOf<MenuState?>(null) }
@@ -475,7 +480,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
 
         // ---------- Home ----------
         CompositionLocalProvider(
-            com.xenoorigin.xelauncher.widgets.LocalWidgetActions provides remember(photoVersion, settings.widgetNotes, launchStats, apps, styleOf, settings.iconShape) {
+            com.xenoorigin.xelauncher.widgets.LocalWidgetActions provides remember(photoVersion, settings.widgetNotes, launchStats, apps, styleOf, settings.iconShape, settings.accent, settings.asciiColor, editMode, speed, powerSave) {
                 com.xenoorigin.xelauncher.widgets.WidgetActions(
                     openSearch = { searchOpen = true },
                     launch = { a -> launch(a, Rect.Zero) },
@@ -490,6 +495,11 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                     },
                     note = { id -> settings.widgetNotes[id.toString()].orEmpty() },
                     editNote = { id -> if (!editMode) noteFor = id },
+                    termi = graph.termi,
+                    openTermi = { if (!editMode) termiOpen = true },
+                    termiBody = settings.accent,
+                    asciiColor = settings.asciiColor,
+                    animate = speed != AnimationSpeed.OFF && !powerSave,
                 )
             },
             com.xenoorigin.xelauncher.home.LocalLens provides lens,

@@ -378,4 +378,13 @@
     <string name="ascii_accent">Accent</string>
     <string name="ascii_live_desc">Moves and follows the time of day: sun by day, moon and stars at night.</string>
     <string name="ascii_still_desc">A still scene drawn in text characters.</string>
+    <string name="widget_termi">Termi</string>
+    <string name="termi_feed">Feed</string>
+    <string name="termi_play">Play</string>
+    <string name="termi_sleep">Sleep</string>
+    <string name="termi_wake">Wake</string>
+    <string name="termi_food">Food</string>
+    <string name="termi_fun">Fun</string>
+    <string name="termi_energy">Energy</string>
+    <string name="termi_level">Level %1$d</string>
 </resources>

@@ -38,6 +38,7 @@ class TermiStore(
     private val listeners = mutableListOf<(TermiEvent) -> Unit>()
 
     fun listen(l: (TermiEvent) -> Unit) { synchronized(listeners) { listeners += l } }
+    fun unlisten(l: (TermiEvent) -> Unit) { synchronized(listeners) { listeners -= l } }
 
     private fun load(): TermiState = runCatching { json.decodeFromString(TermiState.serializer(), file.readText()) }
         .getOrNull() ?: TermiState(updatedAt = clock())

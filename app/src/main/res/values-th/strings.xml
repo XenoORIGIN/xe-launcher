@@ -377,4 +377,13 @@
     <string name="ascii_accent">ตามสีเน้น</string>
     <string name="ascii_live_desc">ขยับได้และเปลี่ยนตามเวลาจริง กลางวันมีพระอาทิตย์ กลางคืนมีพระจันทร์และดาว</string>
     <string name="ascii_still_desc">ฉากภาพนิ่งที่วาดด้วยตัวอักษร</string>
+    <string name="widget_termi">Termi</string>
+    <string name="termi_feed">ให้อาหาร</string>
+    <string name="termi_play">เล่น</string>
+    <string name="termi_sleep">นอน</string>
+    <string name="termi_wake">ปลุก</string>
+    <string name="termi_food">ความอิ่ม</string>
+    <string name="termi_fun">ความสนุก</string>
+    <string name="termi_energy">พลังงาน</string>
+    <string name="termi_level">เลเวล %1$d</string>
 </resources>
