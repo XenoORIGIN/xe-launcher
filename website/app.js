@@ -56,6 +56,8 @@
     if (io) { if (el.closest(".grid,ol")) el.style.transitionDelay = (i % 3) * 90 + "ms"; io.observe(el); } else el.classList.add("in");
   });
   const NEWS = [
+    { v: "1.0.17", d: "2026-11-24", th: ["โลโก้ Xe ใหม่ ตัว X หนาและคมแบบเรขาคณิต มีรอยตัดตรงกลาง คู่กับตัว e แบบเดิม ใช้เป็นไอคอนแอปและโลโก้บนเว็บไซต์"],
+      en: ["New Xe logo: a bold, sharp geometric X with a cut through the middle, next to the original e, used for the app icon and the website logo"] },
     { v: "1.0.16", d: "2026-11-22", th: ["วอลเปเปอร์ ASCII ใหม่ 8 แบบ วาดด้วยตัวอักษรแบบหน้าจอ Terminal", "ASCII Live ขยับได้และเปลี่ยนตามเวลาจริง กลางวันมีพระอาทิตย์ กลางคืนมีพระจันทร์และดาว", "ภาพนิ่ง 7 ฉาก: ทะเลสาบ ฝนตก รุ่งเช้า ป่าสน เมืองกลางคืน อวกาศ และประภาคาร", "เลือกสีได้ 3 แบบ: ขาวเทา ตามท้องฟ้า หรือตามสีเน้นของธีม", "แก้บั๊กตั้งวอลเปเปอร์หน้าล็อกแล้วหน้าโฮมเปลี่ยนตาม"],
       en: ["8 new ASCII wallpapers drawn in text characters, like a terminal screen", "ASCII Live moves and follows the time of day: sun by day, moon and stars at night", "7 still scenes: lake, rain, dawn, pine forest, city at night, space and a lighthouse", "3 colour choices: mono, sky colours or your theme accent", "Fixed the Home wallpaper changing when setting a lock-screen-only wallpaper"] },
     { v: "1.0.15", d: "2026-11-22", th: ["ไอคอนแบบใหม่ Liquid Glass แทน \"กระจกใส\": กระจกใสมองทะลุเห็นวอลเปเปอร์ สัญลักษณ์สีขาวขุ่น ขอบหนาเงาวาวแบบ iOS", "Dock โฟลเดอร์ และวิดเจ็ตเป็นกระจกใสไปด้วยเมื่อใช้ Liquid Glass", "บนวอลเปเปอร์สีอ่อน กระจกจะเข้มขึ้นนิดๆ ให้ยังอ่านสัญลักษณ์ออก", "แก้บั๊กปุ่มลบวิดเจ็ตหายบนจอเล็กหรือตัวหนังสือใหญ่"],
