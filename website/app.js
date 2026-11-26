@@ -56,6 +56,8 @@
     if (io) { if (el.closest(".grid,ol")) el.style.transitionDelay = (i % 3) * 90 + "ms"; io.observe(el); } else el.classList.add("in");
   });
   const NEWS = [
+    { v: "2.0.2", d: "2026-11-26", th: ["แก้กระจกแสดงภาพวอลเปเปอร์ผิดบนวอลเปเปอร์ ASCII", "แก้ไอคอนแถวล่างในลิ้นชักแอปถูกตัด และกระจกบนวิดเจ็ตอ่านง่ายขึ้น"],
+      en: ["Fixed glass showing the wrong wallpaper over ASCII wallpapers", "Fixed the drawer's last row being cut off; easier-to-read glass on widgets"] },
     { v: "2.0.1", d: "2026-11-26", th: ["Liquid Glass แบบเลนส์จริง: ภาพด้านหลังขยายและโค้งที่ขอบ มีสีรุ้ง ใช้กับ Dock วิดเจ็ต และโฟลเดอร์", "ปุ่มค้นหาหยดน้ำในลิ้นชักแอป: ยืด หลุด และหลอมกลับเข้ากับแถบหมวด"],
       en: ["Real lens Liquid Glass: magnified, bent edges with rainbow fringes on the dock, widgets and folders", "Liquid search bubble in the drawer: stretches, snaps free and melts back into the category bar"] },
     { v: "2.0.0", d: "2026-11-26", th: ["Liquid Glass แบบใหม่: กระจกใสขึ้น ขอบหักเหภาพเหมือนเลนส์ มีสีรุ้งที่ขอบ", "สไตล์ Nothing: แผงดำ-ขาว ตัวอักษรจุด จุดแดง และวิดเจ็ตนาฬิกาตัวเลขจุด", "เสียงใหม่ของ Xe ตอนแตะ เปิดปิด และเปิดแอป (เงียบในโหมดเงียบ/สั่น)", "หน้าตั้งค่าใหม่ ค้นหาการตั้งค่าได้ และค้นหาแอปด้วยตัวย่อ พิมพ์ผิด หรือผิดแป้นก็เจอ", "วอลเปเปอร์โบเก้ 3 แบบ ธีมใหม่ 4 แบบ อนิเมชันเปิดแอปใหม่ และแก้บั๊ก"],

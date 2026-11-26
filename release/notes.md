@@ -1,13 +1,13 @@
-## Xe Launcher 2.0.1
+## Xe Launcher 2.0.2
 
 **อัปเดต:** โหลด `xe-launcher.apk` ด้านล่าง ติดตั้งทับของเดิมได้ การตั้งค่ายังอยู่ครบ
 
-- **Liquid Glass แบบเลนส์จริง:** ภาพด้านหลังกระจกถูกขยายและโค้งงอที่ขอบ มีสีรุ้งแยกที่ขอบ และขอบสว่างคม เหมือนกระจกหนาๆ ใช้กับ Dock วิดเจ็ต และโฟลเดอร์ ทำงานเหมือนกันทุกเครื่อง
-- **ปุ่มค้นหาหยดน้ำ:** ในลิ้นชักแอป แถบหมวดกับปุ่มค้นหาเป็นกระจกชิ้นเดียวที่หลอมติดกัน กดปุ่มค้นหาแล้วจะยืดเป็นคอหยดน้ำ หลุดออก แล้วเด้งกลับไปรวมกับแถบ
-- กระจกเห็นภาพด้านหลังคมขึ้น เพื่อให้การหักเหชัดเจน (สวยที่สุดกับวอลเปเปอร์โบเก้)
+- **แก้กระจกแสดงภาพผิด:** บนวอลเปเปอร์ ASCII กระจกของวิดเจ็ตและ Dock เคยโชว์ภาพวอลเปเปอร์เก่าที่ถูกขยายจนเละ ตอนนี้กระจกจะมองทะลุเฉพาะเมื่อภาพตรงกับวอลเปเปอร์จริง
+- **แก้ไอคอนแถวล่างในลิ้นชักแอปถูกตัด:** แถบปุ่มค้นหาหยดน้ำไม่กินพื้นที่รายการแอปแล้ว
+- **กระจกบนวิดเจ็ตบิดน้อยลง** และเข้มขึ้นเล็กน้อย ตัวหนังสือจึงอ่านง่ายขึ้น
 
 **Update:** download `xe-launcher.apk` below and install over the old one; your settings stay.
 
-- **Real lens Liquid Glass:** what's behind is magnified and bent at the edges with split colours and a crisp bright rim, like thick glass. Used for the dock, widgets and folders, and looks the same on every phone
-- **Liquid search bubble:** in the app drawer, the category bar and the search button are one piece of glass that melts together. Press search and it stretches a neck of glass, snaps free, then drops back and merges
-- The glass shows what's behind more sharply so the bending is clear (best with the bokeh wallpapers)
+- **Fixed glass showing the wrong picture:** over ASCII wallpapers, widget and dock glass showed an old wallpaper, magnified into a mess. Glass now only looks through when the picture matches the real wallpaper
+- **Fixed the drawer's last row being cut off:** the liquid search bar no longer takes space from the app list
+- **Gentler glass on widgets**, slightly darker so text is easier to read
