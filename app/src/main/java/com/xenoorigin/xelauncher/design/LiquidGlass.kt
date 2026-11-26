@@ -104,8 +104,19 @@ fun Modifier.liquidGlass(shape: Shape, film: Float = .08f, body: Boolean = true,
             )
             val sheen = Brush.verticalGradient(0f to Color.White.copy(alpha = .22f), .45f to Color.Transparent, 1f to Color.White.copy(alpha = .06f))
             val shadowStep = 1.4.dp.toPx()
+            val fringe = .9.dp.toPx()
+            // 2.0 bevel, as in the reference clip: a dark inner line for depth, faint cyan/pink fringes where
+            // light splits at the edge, a soft bright lip along the bottom, then the bright rim.
+            val lip = Brush.verticalGradient(0f to Color.Transparent, .7f to Color.Transparent, 1f to Color.White.copy(alpha = .28f))
+            fun androidx.compose.ui.graphics.drawscope.DrawScope.bevel() {
+                drawOutline(outline, Color.Black.copy(alpha = .10f), style = Stroke(rimW * 2.2f))
+                drawOutline(outline, lip, style = Stroke(rimW * 3.2f))
+                translate(-fringe, -fringe) { drawOutline(outline, Color(0xFF7FE8FF).copy(alpha = .22f), style = Stroke(rimW * 1.4f)) }
+                translate(fringe, fringe) { drawOutline(outline, Color(0xFFFF8AD8).copy(alpha = .18f), style = Stroke(rimW * 1.4f)) }
+                drawOutline(outline, rim, style = Stroke(rimW * 2f))
+            }
             onDrawWithContent {
-                if (!body) { drawContent(); if (rimOn) clipPath(clip) { drawOutline(outline, Color.Black.copy(alpha = .10f), style = Stroke(rimW * 2.2f)); drawOutline(outline, rim, style = Stroke(rimW * 2f)) }; return@onDrawWithContent }
+                if (!body) { drawContent(); if (rimOn) clipPath(clip) { bevel() }; return@onDrawWithContent }
                 // Soft shadow under the block.
                 for (i in 1..3) translate(0f, shadowStep * i) { drawOutline(outline, Color.Black.copy(alpha = .09f - .02f * i)) }
                 val img = backdrop?.image()
@@ -131,10 +142,7 @@ fun Modifier.liquidGlass(shape: Shape, film: Float = .08f, body: Boolean = true,
                 drawContent()
                 if (!rimOn) return@onDrawWithContent
                 // Thick bevel: dark inner line for depth, then the bright rim (clipped once).
-                clipPath(clip) {
-                    drawOutline(outline, Color.Black.copy(alpha = .10f), style = Stroke(rimW * 2.2f))
-                    drawOutline(outline, rim, style = Stroke(rimW * 2f))
-                }
+                clipPath(clip) { bevel() }
             }
         }
 }

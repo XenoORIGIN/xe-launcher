@@ -151,7 +151,7 @@ fun AppDrawer(
                     }, label = "title",
                 ) { (t, n) ->
                     Column {
-                        Text(t, style = XeType.LargeTitle, color = scheme.text, maxLines = 1)
+                        com.xenoorigin.xelauncher.settings.ui.PageTitle(t)
                         Text(
                             if (n == 1) stringResource(R.string.app_count_one) else stringResource(R.string.app_count, n),
                             style = XeType.Caption, color = scheme.textSecondary, modifier = Modifier.padding(start = 2.dp).testTag("appCount"),

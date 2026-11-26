@@ -157,6 +157,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     val layout by graph.home.layout.collectAsState(initial = HomeLayout.Empty)
 
     val drawer = remember { Animatable(0f) }
+    val drawerSounded = remember { booleanArrayOf(false) }
     val drawerState = remember { DrawerState(pageCount = { categories.size.coerceAtLeast(1) }) }
     val homePager = rememberPagerState { layout.pages.size + 1 }
     var searchOpen by remember { mutableStateOf(false) }
@@ -403,7 +404,8 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     }
 
     fun settleDrawer(open: Boolean) = scope.launch {
-        if ((drawer.targetValue >= 1f) != open) com.xenoorigin.xelauncher.sound.XeSound.play(if (open) com.xenoorigin.xelauncher.sound.XeSound.Kind.OPEN else com.xenoorigin.xelauncher.sound.XeSound.Kind.CLOSE)
+        // One sound per real change: opening a closed drawer, or closing an open one (not a drag that snaps back).
+        if (open != drawerSounded[0]) { drawerSounded[0] = open; com.xenoorigin.xelauncher.sound.XeSound.play(if (open) com.xenoorigin.xelauncher.sound.XeSound.Kind.OPEN else com.xenoorigin.xelauncher.sound.XeSound.Kind.CLOSE) }
         drawer.animateTo(if (open) 1f else 0f, XeMotion.spring(speed, dampingRatio = .86f, stiffness = 380f))
     }
     fun closeAll() {
@@ -419,7 +421,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
         graph.apps.launch(app.key, android.graphics.Rect(r.left.toInt(), r.top.toInt(), r.right.toInt(), r.bottom.toInt()), opts)
         scope.launch {
             graph.categories.recordLaunch(app.key)
-            delay(350); drawer.snapTo(0f); searchOpen = false; menu = null; openFolder = null; drawPad = false
+            delay(350); drawer.snapTo(0f); drawerSounded[0] = false; searchOpen = false; menu = null; openFolder = null; drawPad = false
         }
     }
 
