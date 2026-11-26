@@ -20,6 +20,8 @@ fun tiltFromGravity(gx: Float, gy: Float, gz: Float): Offset =
 class TapCounter(private val needed: Int, private val windowMs: Long) {
     private var count = 0
     private var last = Long.MIN_VALUE / 2
+    /** Taps so far in the current run (0 after a hit). */
+    val progress: Int get() = count
     fun tap(now: Long): Boolean {
         count = if (now - last <= windowMs) count + 1 else 1
         last = now

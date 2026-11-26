@@ -503,7 +503,9 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                     openTermi = { if (!editMode) termiOpen = true },
                     termiBody = settings.accent,
                     asciiColor = settings.asciiColor,
-                    animate = speed != AnimationSpeed.OFF && !powerSave,
+                    // Not while Termi's own page covers Home: one animated Termi at a time.
+                    animate = speed != AnimationSpeed.OFF && !powerSave && !termiOpen,
+                    editing = editMode,
                 )
             },
             com.xenoorigin.xelauncher.home.LocalLens provides lens,

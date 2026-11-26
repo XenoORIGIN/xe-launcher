@@ -80,7 +80,7 @@ fun TermiWidget(span: Span, modifier: Modifier = Modifier) {
         TermiLayout.BUTTONS -> Row(modifier.fillMaxSize()) {
             view(Modifier.weight(1f).fillMaxHeight())
             Column(Modifier.width(76.dp).fillMaxHeight().padding(6.dp), verticalArrangement = Arrangement.SpaceEvenly) {
-                CareButtons(store, asleep)
+                CareButtons(store, asleep, editing = LocalWidgetActions.current.editing)
             }
         }
         TermiLayout.FULL -> Column(modifier.fillMaxSize()) {
@@ -95,7 +95,7 @@ fun TermiWidget(span: Span, modifier: Modifier = Modifier) {
                 NeedBar(stringResource(R.string.termi_energy), now.energy, Color(0xFF7FE7FF))
             }
             Row(Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp, bottom = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                CareButtons(store, asleep, Modifier.weight(1f))
+                CareButtons(store, asleep, Modifier.weight(1f), editing = LocalWidgetActions.current.editing)
             }
         }
     }
@@ -128,10 +128,10 @@ internal fun NeedBar(label: String, value: Float, color: Color) {
 }
 
 @Composable
-internal fun CareButtons(store: TermiStore, asleep: Boolean, each: Modifier = Modifier) {
-    CareButton(stringResource(R.string.termi_feed), "termi_feed", each) { store.feed() }
-    CareButton(stringResource(R.string.termi_play), "termi_play", each) { store.play() }
-    CareButton(stringResource(if (asleep) R.string.termi_wake else R.string.termi_sleep), "termi_sleep", each) { store.toggleSleep() }
+internal fun CareButtons(store: TermiStore, asleep: Boolean, each: Modifier = Modifier, editing: Boolean = false) {
+    CareButton(stringResource(R.string.termi_feed), "termi_feed", each) { if (!editing) store.feed() }
+    CareButton(stringResource(R.string.termi_play), "termi_play", each) { if (!editing) store.play() }
+    CareButton(stringResource(if (asleep) R.string.termi_wake else R.string.termi_sleep), "termi_sleep", each) { if (!editing) store.toggleSleep() }
 }
 
 @Composable

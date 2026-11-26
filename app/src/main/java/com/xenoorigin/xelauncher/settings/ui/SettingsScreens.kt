@@ -204,6 +204,22 @@ private fun StyleCard(style: com.xenoorigin.xelauncher.design.UiStyle, current: 
     }
 }
 
+/** The Xe mark at the top of About: a glass tile in Liquid Glass style, dot-matrix "XE" in Nothing style. */
+@Composable
+private fun AboutLogo() {
+    if (com.xenoorigin.xelauncher.design.LocalUiStyle.current == com.xenoorigin.xelauncher.design.UiStyle.NOTHING) {
+        Box(Modifier.padding(bottom = 14.dp)) {
+            com.xenoorigin.xelauncher.design.DotText("XE", 7.dp, LocalXeScheme.current.text, ghost = .08f)
+            Box(Modifier.align(Alignment.TopEnd).offset(x = 12.dp).size(9.dp).background(com.xenoorigin.xelauncher.design.NothingRed, CircleShape))
+        }
+        return
+    }
+    com.xenoorigin.xelauncher.design.GlassSurface(RoundedCornerShape(28.dp), Modifier.padding(bottom = 14.dp).size(104.dp)) {
+        Box(Modifier.matchParentSize().clip(RoundedCornerShape(28.dp)).background(androidx.compose.ui.graphics.Brush.radialGradient(listOf(Color(0xFF3A3A40), Color(0xFF111114), Color.Black))))
+        Icon(painterResource(R.drawable.ic_launcher_foreground), null, Modifier.matchParentSize(), tint = Color.Unspecified)
+    }
+}
+
 @Composable
 fun AppearanceScreen(s: XeSettings, update: Update, back: () -> Unit) {
     SettingsPage(stringResource(R.string.appearance), back) {
@@ -538,10 +554,12 @@ fun AboutScreen(back: () -> Unit, s: XeSettings? = null, update: Update = {}, no
     val spin = remember { androidx.compose.animation.core.Animatable(0f) }
     val found = stringResource(R.string.nova_found); val again = stringResource(R.string.nova_again)
     var game by remember { mutableStateOf(false) }
+    var taps by remember { mutableStateOf(0) }
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     Box(Modifier.fillMaxSize()) {
     SettingsPage(stringResource(R.string.about), back) {
         Column(Modifier.fillMaxWidth().padding(vertical = 18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            AboutLogo()
             Text(
                 "Xe Launcher", style = XeType.Title, color = LocalXeScheme.current.text,
                 modifier = Modifier
@@ -553,7 +571,11 @@ fun AboutScreen(back: () -> Unit, s: XeSettings? = null, update: Update = {}, no
                         onLongClick = { haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress); game = true },
                     ) {
                         val hit = counter.tap(System.currentTimeMillis())
+                        taps = counter.progress
+                        if (!hit && taps >= 3) com.xenoorigin.xelauncher.sound.XeSound.tap()
                         if (hit) {
+                            com.xenoorigin.xelauncher.sound.XeSound.play(com.xenoorigin.xelauncher.sound.XeSound.Kind.SECRET)
+                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
                             val first = s?.novaUnlocked != true
                             update { it.copy(novaUnlocked = true) }
                             burstAt = nameCenter; burst++
@@ -567,6 +589,15 @@ fun AboutScreen(back: () -> Unit, s: XeSettings? = null, update: Update = {}, no
                     },
             )
             Text(stringResource(R.string.version, BuildConfig.VERSION_NAME), style = XeType.Caption, color = LocalXeScheme.current.textSecondary)
+            // From the third quick tap, seven little dots light up: a hint that something is coming.
+            androidx.compose.animation.AnimatedVisibility(taps >= 3) {
+                Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    repeat(7) { i ->
+                        val on = i < taps
+                        Box(Modifier.size(if (on) 7.dp else 5.dp).background(if (i == 6 && on) com.xenoorigin.xelauncher.design.NothingRed else LocalXeScheme.current.text.copy(alpha = if (on) 1f else .25f), CircleShape))
+                    }
+                }
+            }
         }
         SettingsGroup {
             NavRow(stringResource(R.string.check_updates), R.drawable.ti_refresh, RowColors.Blue, subtitle = status) {

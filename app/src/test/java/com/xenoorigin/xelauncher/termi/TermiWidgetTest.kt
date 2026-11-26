@@ -32,12 +32,12 @@ class TermiWidgetTest {
     @get:Rule val tmp = TemporaryFolder()
 
     private var opened = 0
-    private fun show(span: Span, store: TermiStore = TermiStore(tmp.root.resolve("t${System.nanoTime()}.json"))): TermiStore {
+    private fun show(span: Span, store: TermiStore = TermiStore(tmp.root.resolve("t${System.nanoTime()}.json")), editing: Boolean = false): TermiStore {
         rule.setContent {
             XeTheme {
                 CompositionLocalProvider(
                     LocalWidgetSpan provides span,
-                    LocalWidgetActions provides WidgetActions(termi = store, openTermi = { opened++ }, animate = false),
+                    LocalWidgetActions provides WidgetActions(termi = store, openTermi = { opened++ }, animate = false, editing = editing),
                 ) { TermiWidget(span, Modifier.size((span.x * 80).dp, (span.y * 90).dp)) }
             }
         }
@@ -99,5 +99,13 @@ class TermiWidgetTest {
         now += 5 * 60_000L
         rule.mainClock.advanceTimeBy(61_000); rule.waitForIdle()
         rule.onNodeWithText("Wake").assertExists()
+    }
+
+    // Home edit mode: taps on the widget move it, they don't feed Termi.
+    @Test fun careButtonsDoNothingInEditMode() {
+        val store = show(Span(4, 2), editing = true)
+        rule.onNodeWithTag("termi_feed", useUnmergedTree = true).performClick()
+        rule.waitForIdle()
+        com.google.common.truth.Truth.assertThat(store.current().xp).isEqualTo(0)
     }
 }

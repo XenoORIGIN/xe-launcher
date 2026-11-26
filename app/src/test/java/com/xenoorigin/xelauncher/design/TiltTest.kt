@@ -38,4 +38,13 @@ class TiltTest {
         assertThat(c.tap(1200)).isFalse() // too slow: counts as tap 1
         assertThat(c.tap(1500)).isFalse(); assertThat(c.tap(1800)).isTrue()
     }
+
+    @Test fun tapCounterShowsProgressAndResets() {
+        val c = TapCounter(needed = 3, windowMs = 500)
+        c.tap(0); assertThat(c.progress).isEqualTo(1)
+        c.tap(100); assertThat(c.progress).isEqualTo(2)
+        assertThat(c.tap(200)).isTrue()
+        assertThat(c.progress).isEqualTo(0)
+        c.tap(2000); assertThat(c.progress).isEqualTo(1)
+    }
 }

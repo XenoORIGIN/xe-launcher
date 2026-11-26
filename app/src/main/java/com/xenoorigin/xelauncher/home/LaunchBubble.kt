@@ -30,10 +30,13 @@ import kotlin.math.hypot
 fun showBubble(glassLaunch: Boolean, speed: AnimationSpeed, icon: Rect): Boolean =
     glassLaunch && speed != AnimationSpeed.OFF && icon.width > 0f && icon.height > 0f
 
-/** System scale-up from the icon whenever we know where it is; the glass bubble is drawn on top when on. */
+/**
+ * 2.0: the app opens by revealing itself out of the icon's own frame (smoother than the old scale-up,
+ * which stretched the first frame); the glass bubble is drawn on top when on.
+ */
 fun launchOptions(view: View, icon: Rect): Bundle? =
     if (icon.width <= 0f || icon.height <= 0f) null
-    else ActivityOptions.makeScaleUpAnimation(
+    else ActivityOptions.makeClipRevealAnimation(
         view, icon.left.toInt(), icon.top.toInt(), icon.width.toInt(), icon.height.toInt(),
     ).toBundle()
 

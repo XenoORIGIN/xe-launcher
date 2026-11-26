@@ -110,6 +110,8 @@ class WidgetActions(
     val termiBody: Long = 0xFFFFFFFF,
     val asciiColor: com.xenoorigin.xelauncher.settings.AsciiColor = com.xenoorigin.xelauncher.settings.AsciiColor.MONO,
     val animate: Boolean = true,
+    /** Home is in edit mode: taps on widgets move them, they don't act. */
+    val editing: Boolean = false,
 )
 
 val LocalWidgetActions = staticCompositionLocalOf { WidgetActions() }

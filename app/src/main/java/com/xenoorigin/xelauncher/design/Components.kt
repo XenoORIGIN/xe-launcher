@@ -163,8 +163,11 @@ fun GlassSwitch(checked: Boolean, onChange: (Boolean) -> Unit, modifier: Modifie
     val speed = LocalAnimationSpeed.current
     val scheme = LocalXeScheme.current
     val x = androidx.compose.animation.core.animateDpAsState(if (checked) 22.dp else 2.dp, XeMotion.spring(speed, dampingRatio = .6f), label = "knob")
+    val nothing = LocalUiStyle.current == UiStyle.NOTHING
+    // Nothing style: a red track when on, like its switches; Liquid Glass keeps green (or the accent).
+    val onColor = when { nothing -> NothingRed; scheme.accent == XeColors.White -> Color(0xFF34C759); else -> scheme.accent }
     val track = androidx.compose.animation.animateColorAsState(
-        if (checked) (if (scheme.accent == XeColors.White) Color(0xFF34C759) else scheme.accent) else Color.White.copy(alpha = .16f), label = "track",
+        if (checked) onColor else (if (nothing) scheme.textSecondary.copy(alpha = .3f) else Color.White.copy(alpha = .16f)), label = "track",
     )
     val src = remember { MutableInteractionSource() }
     // The knob stretches like jelly while it slides, then wobbles back to round.
