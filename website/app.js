@@ -56,6 +56,8 @@
     if (io) { if (el.closest(".grid,ol")) el.style.transitionDelay = (i % 3) * 90 + "ms"; io.observe(el); } else el.classList.add("in");
   });
   const NEWS = [
+    { v: "1.0.18", d: "2026-11-26", th: ["วิดเจ็ตใหม่ Termi สัตว์เลี้ยงสายเขียนโค้ดริมทะเลสาบ ASCII มีท่าทางหลายแบบ ขนาด 2×2, 4×2, 4×4", "ให้อาหาร เล่น พาเข้านอน Termi ไม่มีวันตายและไม่เสียเลเวล", "เก็บ XP ถึงเลเวล 15 เปลี่ยนร่าง Junior › Senior › Lead ใช้แอปสายสร้างแล้วโตเร็วขึ้น", "ตู้เสื้อผ้า: หมวก แว่น และของถือ 11 ชิ้นปลดล็อกตามเลเวล", "ตั้งเวลานอนได้ ไม่ใช้มือถือช่วงนั้นได้โบนัส"],
+      en: ["New Termi widget: a coder pet by an ASCII lake with lots of moves, in 2×2, 4×2 and 4×4", "Feed, play and put it to bed. Termi never dies and never loses a level", "Earn XP up to level 15 and grow Junior › Senior › Lead, faster when you use creator apps", "Wardrobe: 11 hats, glasses and held items unlock as you level up", "Set its bedtime and get a bonus for leaving your phone alone"] },
     { v: "1.0.17", d: "2026-11-24", th: ["โลโก้ Xe ใหม่ ตัว X หนาและคมแบบเรขาคณิต มีรอยตัดตรงกลาง คู่กับตัว e แบบเดิม ใช้เป็นไอคอนแอปและโลโก้บนเว็บไซต์"],
       en: ["New Xe logo: a bold, sharp geometric X with a cut through the middle, next to the original e, used for the app icon and the website logo"] },
     { v: "1.0.16", d: "2026-11-22", th: ["วอลเปเปอร์ ASCII ใหม่ 8 แบบ วาดด้วยตัวอักษรแบบหน้าจอ Terminal", "ASCII Live ขยับได้และเปลี่ยนตามเวลาจริง กลางวันมีพระอาทิตย์ กลางคืนมีพระจันทร์และดาว", "ภาพนิ่ง 7 ฉาก: ทะเลสาบ ฝนตก รุ่งเช้า ป่าสน เมืองกลางคืน อวกาศ และประภาคาร", "เลือกสีได้ 3 แบบ: ขาวเทา ตามท้องฟ้า หรือตามสีเน้นของธีม", "แก้บั๊กตั้งวอลเปเปอร์หน้าล็อกแล้วหน้าโฮมเปลี่ยนตาม"],
