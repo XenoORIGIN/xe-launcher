@@ -35,6 +35,10 @@ data class TermiState(
     val creditedMs: Map<String, Long> = emptyMap(),
     val creatorXpToday: Int = 0,
     val lastNightDay: Long = -1,
+    /** Woken during the night window: stays awake until this time (the window's end). */
+    val awakeUntil: Long = 0,
+    /** End of the last night window whose rest bonus was checked. */
+    val lastNightEnd: Long = 0,
 )
 
 /**
@@ -61,7 +65,7 @@ object TermiRules {
         else -> minute >= start || minute < end
     }
 
-    private fun asleep(s: TermiState, at: Long, minute: Int) = at < s.napUntil || inNight(minute, s.nightStart, s.nightEnd)
+    private fun asleep(s: TermiState, at: Long, minute: Int) = at < s.napUntil || (inNight(minute, s.nightStart, s.nightEnd) && at >= s.awakeUntil)
 
     /** Needs after time has passed (in 15-minute steps, so the night window is honoured). */
     fun decay(s: TermiState, now: Long, minuteOfDay: (Long) -> Int): TermiState {
@@ -92,30 +96,31 @@ object TermiRules {
 
     private fun gain(xp: Int, add: Int) = (xp + add).coerceAtMost(LEAD_XP * 10)
 
-    fun feed(s: TermiState, now: Long, minute: Int): TermiState {
+    /** [wakeUntil]: when woken inside the night window, the window's end (0 otherwise). */
+    fun feed(s: TermiState, now: Long, minute: Int, wakeUntil: Long = 0L): TermiState {
         val night = inNight(minute, s.nightStart, s.nightEnd)
         val xp = !night && now - s.lastFeedXpAt >= XP_COOLDOWN
         return s.copy(
-            food = (s.food + 35f).coerceAtMost(100f), napUntil = 0,
+            food = (s.food + 35f).coerceAtMost(100f), napUntil = 0, awakeUntil = maxOf(s.awakeUntil, wakeUntil),
             xp = if (xp) gain(s.xp, ACTION_XP) else s.xp, lastFeedXpAt = if (xp) now else s.lastFeedXpAt,
         )
     }
 
-    fun play(s: TermiState, now: Long, minute: Int): TermiState {
+    fun play(s: TermiState, now: Long, minute: Int, wakeUntil: Long = 0L): TermiState {
         val night = inNight(minute, s.nightStart, s.nightEnd)
         val xp = !night && now - s.lastPlayXpAt >= XP_COOLDOWN
         return s.copy(
-            `fun` = (s.`fun` + 35f).coerceAtMost(100f), energy = (s.energy - 5f).coerceAtLeast(0f), napUntil = 0,
+            `fun` = (s.`fun` + 35f).coerceAtMost(100f), energy = (s.energy - 5f).coerceAtLeast(0f), napUntil = 0, awakeUntil = maxOf(s.awakeUntil, wakeUntil),
             xp = if (xp) gain(s.xp, ACTION_XP) else s.xp, lastPlayXpAt = if (xp) now else s.lastPlayXpAt,
         )
     }
 
     fun sleep(s: TermiState, now: Long, minute: Int, day: Long): TermiState {
         val xp = s.lastSleepXpDay != day && !inNight(minute, s.nightStart, s.nightEnd)
-        return s.copy(napUntil = now + NAP_MS, xp = if (xp) gain(s.xp, ACTION_XP) else s.xp, lastSleepXpDay = if (xp) day else s.lastSleepXpDay)
+        return s.copy(napUntil = now + NAP_MS, awakeUntil = 0, xp = if (xp) gain(s.xp, ACTION_XP) else s.xp, lastSleepXpDay = if (xp) day else s.lastSleepXpDay)
     }
 
-    fun wake(s: TermiState, now: Long): TermiState = s.copy(napUntil = 0)
+    fun wake(s: TermiState, now: Long, wakeUntil: Long = 0L): TermiState = s.copy(napUntil = 0, awakeUntil = maxOf(s.awakeUntil, wakeUntil))
 
     fun unlocked(xp: Int): List<Item> = Item.entries.filter { it.level <= level(xp) }.sortedBy { it.level }
 

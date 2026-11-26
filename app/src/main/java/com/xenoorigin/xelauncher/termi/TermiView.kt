@@ -12,6 +12,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -84,14 +86,16 @@ fun TermiView(
         if (w <= 0 || h <= 0 || w == Int.MAX_VALUE || h == Int.MAX_VALUE) return@BoxWithConstraints
         // Scene glyph pixels: whole pixels, about 60 glyphs across at most.
         val k = max(1, (w / 300f).roundToInt())
-        val cols = (w + 5 * k - 1) / (5 * k)
-        val rows = (h + 8 * k - 1) / (8 * k)
+        // At least 4×6 cells: AsciiField can't lay out a smaller grid (a widget mid-resize, huge fonts).
+        val cols = max(4, (w + 5 * k - 1) / (5 * k))
+        val rows = max(6, (h + 8 * k - 1) / (8 * k))
         val scene = remember(cols, rows) { SceneFrame(cols, rows) }
         val player = remember { TermiPlayer() }
+        val moodNow by rememberUpdatedState(mood)
         var frame by remember { mutableStateOf(player.frame(System.currentTimeMillis(), mood)) }
         var tick by remember { mutableIntStateOf(0) }
         remember(scene, ascii, accent) { scene.draw(0f, frame.scene, ascii, accent); TermiViewProbe.frames++; 0 }
-        LaunchedEffect(eventKey) { if (event != null) { player.onEvent(event, mood, System.currentTimeMillis()); frame = player.frame(System.currentTimeMillis(), mood); tick++ } }
+        LaunchedEffect(eventKey) { if (event != null) { player.onEvent(event, moodNow, System.currentTimeMillis()); frame = player.frame(System.currentTimeMillis(), moodNow); tick++ } }
         val life by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
         val running = skyLoopRuns(animate, life)
         LaunchedEffect(running, scene, ascii, accent) {
@@ -99,14 +103,14 @@ fun TermiView(
             var t = 0f
             while (true) {
                 delay(83); t += .083f
-                frame = player.frame(System.currentTimeMillis(), mood)
+                frame = player.frame(System.currentTimeMillis(), moodNow)
                 scene.draw(t, frame.scene, ascii, accent)
                 TermiViewProbe.frames++
                 tick++
             }
         }
         val sprite = TermiSprite.build(frame.pose, stage, equipped, body)
-        Canvas(Modifier.fillMaxSize()) {
+        Canvas(Modifier.fillMaxSize().clipToBounds()) {
             @Suppress("UNUSED_EXPRESSION") tick
             drawRect(Color(AsciiRaster.GROUND))
             val ox = ((size.width - scene.rw * k) / 2f).roundToInt()

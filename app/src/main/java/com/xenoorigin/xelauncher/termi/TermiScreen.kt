@@ -50,8 +50,9 @@ fun TermiScreen(
     val scheme = LocalXeScheme.current
     val ui = rememberTermiUi(store)
     val saved by store.state.collectAsState()
-    val s = remember(saved) { store.current() }
-    val mood = remember(saved) { store.mood() }
+    val minute = rememberMinuteTick()
+    val s = remember(saved, minute) { store.current() }
+    val mood = remember(saved, minute) { store.mood() }
     val stage = TermiRules.stage(s.xp)
     val level = TermiRules.level(s.xp)
     SettingsPage("Termi", onClose) {

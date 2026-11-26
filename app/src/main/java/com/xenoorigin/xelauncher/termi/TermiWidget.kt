@@ -31,6 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.currentStateAsState
 import com.xenoorigin.xelauncher.R
 import com.xenoorigin.xelauncher.widgets.LocalWidgetActions
 import com.xenoorigin.xelauncher.widgets.Span
@@ -64,8 +65,9 @@ fun TermiWidget(span: Span, modifier: Modifier = Modifier) {
     val store = actions.termi ?: return
     val ui = rememberTermiUi(store)
     val saved by store.state.collectAsState()
-    val now = store.current()
-    val mood = remember(saved) { store.mood() }
+    val minute = rememberMinuteTick()
+    val now = remember(saved, minute) { store.current() }
+    val mood = remember(saved, minute) { store.mood() }
     val body = TermiSprite.bodyColor(actions.termiBody)
     val layout = termiLayout(span)
     @Composable fun view(m: Modifier) = TermiView(
@@ -97,6 +99,20 @@ fun TermiWidget(span: Span, modifier: Modifier = Modifier) {
             }
         }
     }
+}
+
+/** Changes once a minute while Xe is visible, so needs and sleep follow the clock without any saved change. */
+@Composable
+internal fun rememberMinuteTick(): Int {
+    var tick by remember { mutableIntStateOf(0) }
+    val life by androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    val visible = life.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)
+    androidx.compose.runtime.LaunchedEffect(visible) {
+        if (!visible) return@LaunchedEffect
+        tick++ // catch up on return
+        while (true) { kotlinx.coroutines.delay(60_000); tick++ }
+    }
+    return tick
 }
 
 fun stageName(s: Stage) = when (s) { Stage.JUNIOR -> "Junior"; Stage.SENIOR -> "Senior"; Stage.LEAD -> "Lead" }

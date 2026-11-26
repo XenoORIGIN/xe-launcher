@@ -61,4 +61,16 @@ class TermiViewTest {
         rule.mainClock.advanceTimeBy(5_000); rule.waitForIdle()
         assertThat(TermiViewProbe.frames).isEqualTo(before)
     }
+
+    // C1: tiny sizes (a widget mid-resize, huge fonts) must not crash the ASCII grid.
+    @Test fun tinySizesDoNotCrash() {
+        rule.setContent {
+            androidx.compose.foundation.layout.Column {
+                TermiView(Stage.JUNIOR, emptyMap(), Mood.HAPPY, null, 0xFFFFFFFF.toInt(), AsciiColor.MONO, 0xFFFFFFFF, false, Modifier.size(100.dp, 6.dp))
+                TermiView(Stage.JUNIOR, emptyMap(), Mood.HAPPY, null, 0xFFFFFFFF.toInt(), AsciiColor.MONO, 0xFFFFFFFF, false, Modifier.size(3.dp, 100.dp))
+                TermiView(Stage.JUNIOR, emptyMap(), Mood.HAPPY, null, 0xFFFFFFFF.toInt(), AsciiColor.MONO, 0xFFFFFFFF, false, Modifier.size(1.dp, 1.dp))
+            }
+        }
+        rule.waitForIdle()
+    }
 }

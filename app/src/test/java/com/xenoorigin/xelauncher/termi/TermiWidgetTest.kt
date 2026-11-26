@@ -88,4 +88,16 @@ class TermiWidgetTest {
         rule.waitForIdle()
         rule.onNodeWithText("Wake").assertExists()
     }
+
+    // I2: the widget follows the clock even when nothing is saved (night starts → Termi falls asleep).
+    @Test fun followsTheClockWithoutChanges() {
+        val zone = java.time.ZoneOffset.UTC
+        var now = java.time.LocalDateTime.of(2026, 11, 23, 23, 58).toInstant(zone).toEpochMilli()
+        val store = TermiStore(tmp.root.resolve("clock.json"), clock = { now }, zone = { zone })
+        show(Span(4, 4), store)
+        rule.onNodeWithText("Sleep").assertExists()
+        now += 5 * 60_000L
+        rule.mainClock.advanceTimeBy(61_000); rule.waitForIdle()
+        rule.onNodeWithText("Wake").assertExists()
+    }
 }
