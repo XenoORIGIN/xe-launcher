@@ -11,9 +11,9 @@ import com.xenoorigin.xelauncher.wallpaper.byId
 import org.junit.Test
 
 class ThemePresetsTest {
-    @Test fun thirteenThemes_matchTheWebsite_startingWithXeBlack() {
+    @Test fun seventeenThemes_matchTheWebsite_startingWithXeBlack() {
         assertThat(XeThemes.map { it.id }).containsExactly(
-            "xe_black", "xe_blue", "aurora", "sunset", "mono_wave", "ocean", "violet_glass", "ember", "rose", "mint",
+            "xe_black", "nothing", "garden_glass", "blossom_glass", "city_night", "xe_blue", "aurora", "sunset", "mono_wave", "ocean", "violet_glass", "ember", "rose", "mint",
             "liquid_azure", "frost_aurora", "chrome_night",
         ).inOrder()
         // The website lists the same themes, in the same order.

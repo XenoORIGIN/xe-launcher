@@ -13,10 +13,16 @@ data class ThemePreset(
     val shape: IconShape,
     val light: Boolean = false,
     val secret: Boolean = false,
+    /** The launcher's look that comes with the theme (2.0). */
+    val ui: com.xenoorigin.xelauncher.design.UiStyle = com.xenoorigin.xelauncher.design.UiStyle.GLASS,
 )
 
 val XeThemes: List<ThemePreset> = listOf(
     ThemePreset("xe_black", "Xe Black", "xe_black", IconStyle.GLASS_DARK, IconShape.SQUIRCLE),
+    ThemePreset("nothing", "Nothing", "xe_black", IconStyle.MONO, IconShape.CIRCLE, ui = com.xenoorigin.xelauncher.design.UiStyle.NOTHING),
+    ThemePreset("garden_glass", "Garden Glass", "bokeh_garden", IconStyle.GLASS_CLEAR, IconShape.SQUIRCLE),
+    ThemePreset("blossom_glass", "Blossom Glass", "bokeh_blossom", IconStyle.GLASS_CLEAR, IconShape.CIRCLE),
+    ThemePreset("city_night", "City Night", "bokeh_night", IconStyle.GLASS_CLEAR, IconShape.ROUNDED),
     ThemePreset("xe_blue", "Xe Blue", "xe_blue", IconStyle.GLASS_CLEAR, IconShape.SQUIRCLE),
     ThemePreset("aurora", "Aurora", "aurora", IconStyle.GLASS_COLOR, IconShape.CIRCLE),
     ThemePreset("sunset", "Sunset", "sunset", IconStyle.GLASS_COLOR, IconShape.ROUNDED),
@@ -36,8 +42,8 @@ val Supernova = ThemePreset("nova", "Supernova", "supernova", IconStyle.GLASS_CO
 /** Themes to list: the secret one only after the easter egg was found. */
 fun themesFor(s: XeSettings): List<ThemePreset> = if (s.novaUnlocked) XeThemes + Supernova else XeThemes
 
-fun ThemePreset.applyTo(s: XeSettings): XeSettings = s.copy(iconStyle = style, iconShape = shape, wallpaperId = wallpaperId)
+fun ThemePreset.applyTo(s: XeSettings): XeSettings = s.copy(iconStyle = style, iconShape = shape, wallpaperId = wallpaperId, uiStyle = ui)
 
 /** The theme the settings currently match exactly, or null when the look was customised. */
 fun currentTheme(s: XeSettings, themes: List<ThemePreset>): ThemePreset? =
-    themes.firstOrNull { it.wallpaperId == s.wallpaperId && it.style == s.iconStyle && it.shape == s.iconShape }
+    themes.firstOrNull { it.wallpaperId == s.wallpaperId && it.style == s.iconStyle && it.shape == s.iconShape && it.ui == s.uiStyle }

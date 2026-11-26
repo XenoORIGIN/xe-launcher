@@ -86,6 +86,10 @@
   const SHAPES = [["squircle", "Squircle"], ["circle", "Circle"], ["rounded", "Rounded"], ["square", "Square"], ["tear", "Teardrop"]];
   const THEMES = [
     { id: "xe_black", name: "Xe Black", style: "dark", shape: "squircle" },
+    { id: "nothing", name: "Nothing", style: "mono", shape: "circle" },
+    { id: "garden_glass", name: "Garden Glass", style: "clear", shape: "squircle" },
+    { id: "blossom_glass", name: "Blossom Glass", style: "clear", shape: "circle" },
+    { id: "city_night", name: "City Night", style: "clear", shape: "rounded" },
     { id: "xe_blue", name: "Xe Blue", style: "clear", shape: "squircle" },
     { id: "aurora", name: "Aurora", style: "color", shape: "circle" },
     { id: "sunset", name: "Sunset", style: "color", shape: "rounded" },

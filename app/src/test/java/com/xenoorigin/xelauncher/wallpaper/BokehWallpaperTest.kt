@@ -45,5 +45,7 @@ class BokehWallpaperTest {
         val c = android.graphics.Canvas(sheet)
         bokeh.forEachIndexed { i, p -> c.drawBitmap(WallpaperRenderer.render(p, w, h), (i * w).toFloat(), 0f, null) }
         java.io.File("build/bokeh_wallpapers.png").outputStream().use { sheet.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+        // Full-size copies for the website's theme previews (390 × 845).
+        bokeh.forEach { p -> java.io.File("build/wall_${p.id}.png").outputStream().use { WallpaperRenderer.render(p, 390, 845).compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) } }
     }
 }
