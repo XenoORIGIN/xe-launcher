@@ -69,18 +69,21 @@ object TermiRules {
 
     /** Needs after time has passed (in 15-minute steps, so the night window is honoured). */
     fun decay(s: TermiState, now: Long, minuteOfDay: (Long) -> Int): TermiState {
-        if (now <= s.updatedAt) return s
+        // Clock set back (after being set ahead): start counting from now, and let Feed/Play earn XP again.
+        if (now < s.updatedAt) return s.copy(updatedAt = now, lastFeedXpAt = if (s.lastFeedXpAt > now) now - XP_COOLDOWN else s.lastFeedXpAt)
+        if (now == s.updatedAt) return s
         if (s.updatedAt <= 0L) return s.copy(updatedAt = now)
         var food = s.food; var fn = s.`fun`; var en = s.energy
-        var at = s.updatedAt
+        // A week away empties every need anyway; never walk more steps than that (a clock set years ahead).
+        var at = maxOf(s.updatedAt, now - 7L * 24 * 3_600_000L)
         val step = 15 * 60_000L
         while (at < now) {
             val dt = minOf(step, now - at)
             val h = dt / H
-            food -= 6f * h
-            if (asleep(s, at, minuteOfDay(at))) en += 20f * h else { fn -= 8f * h; en -= 5f * h }
+            food = (food - 6f * h).coerceIn(0f, 100f)
+            if (asleep(s, at, minuteOfDay(at))) en = (en + 20f * h).coerceIn(0f, 100f)
+            else { fn = (fn - 8f * h).coerceIn(0f, 100f); en = (en - 5f * h).coerceIn(0f, 100f) }
             at += dt
-            if (food <= 0f && fn <= 0f && en <= 0f) break
         }
         return s.copy(food = food.coerceIn(0f, 100f), `fun` = fn.coerceIn(0f, 100f), energy = en.coerceIn(0f, 100f), updatedAt = now)
     }

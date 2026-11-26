@@ -39,9 +39,11 @@ class TermiRulesTest {
         assertThat(TermiRules.decay(st, t0 + 2 * H, minuteAt).energy).isWithin(.01f).of(60f)
     }
 
-    @Test fun clockGoingBackwardsChangesNothing() {
+    @Test fun clockGoingBackwardsKeepsNeeds() {
         val st = s("food" to 50f)
-        assertThat(TermiRules.decay(st, t0 - 5 * H, minuteAt)).isEqualTo(st)
+        val back = TermiRules.decay(st, t0 - 5 * H, minuteAt)
+        assertThat(back.food).isEqualTo(50f)
+        assertThat(back.updatedAt).isEqualTo(t0 - 5 * H) // counts on from the new time instead of freezing
     }
 
     @Test fun longAbsenceClampsToZero() {
@@ -110,5 +112,29 @@ class TermiRulesTest {
         assertThat(TermiRules.equip(st, Item.CAP, Slot.HEAD).equipped).containsExactly(Slot.HEAD, Item.CAP)
         assertThat(TermiRules.equip(st, Item.CAP, Slot.EYES)).isEqualTo(st)
         assertThat(TermiRules.equip(TermiRules.equip(st, Item.CAP, Slot.HEAD), null, Slot.HEAD).equipped).isEmpty()
+    }
+
+    // 2.0 bug hunt: away from 12:00 till 05:00 the night refills energy to full, not to a value dragged
+    // below zero by the evening first.
+    @Test fun decayClampsEachStep() {
+        val after = TermiRules.decay(s("energy" to 50f), t0 + 17 * H, minuteAt) // 12:00 → 05:00 next day
+        assertThat(after.energy).isEqualTo(100f)
+    }
+
+    // A clock set years ahead must not loop for millions of steps.
+    @Test fun farFutureClockIsQuick() {
+        val start = System.nanoTime()
+        TermiRules.decay(s(), t0 + 50L * 365 * 24 * H, minuteAt)
+        assertThat((System.nanoTime() - start) / 1_000_000).isLessThan(200L)
+    }
+
+    // Clock set forward then back: time starts again from now instead of freezing needs and XP.
+    @Test fun clockGoingBackRebases() {
+        val st = TermiState(updatedAt = t0 + 48 * H, lastFeedXpAt = t0 + 48 * H, food = 80f)
+        val back = TermiRules.decay(st, t0, minuteAt)
+        assertThat(back.updatedAt).isEqualTo(t0)
+        assertThat(back.lastFeedXpAt).isAtMost(t0)
+        val fed = TermiRules.feed(back, t0 + 1, minuteAt(t0))
+        assertThat(fed.xp).isGreaterThan(back.xp)
     }
 }
