@@ -49,13 +49,25 @@ fun termiLayout(span: Span): TermiLayout = when {
 internal class TermiUi(val store: TermiStore) {
     var event by mutableStateOf<TermiEvent?>(null)
     var eventKey by mutableIntStateOf(0)
-    val listener: (TermiEvent) -> Unit = { event = it; eventKey++ }
+    // Events that arrive together (fed, then a level up) play one after the other instead of only the last.
+    private val queue = ArrayDeque<TermiEvent>()
+    private var busy = false
+    val listener: (TermiEvent) -> Unit = { e -> synchronized(queue) { queue.addLast(e) }; if (!busy) next() }
+
+    /** The current event has had its moment: play the next waiting one, if any. */
+    fun done() { busy = false; next() }
+
+    private fun next() {
+        val e = synchronized(queue) { queue.removeFirstOrNull() } ?: return
+        busy = true; event = e; eventKey++
+    }
 }
 
 @Composable
 internal fun rememberTermiUi(store: TermiStore): TermiUi {
     val ui = remember(store) { TermiUi(store) }
     DisposableEffect(store) { store.listen(ui.listener); onDispose { store.unlisten(ui.listener) } }
+    androidx.compose.runtime.LaunchedEffect(ui.eventKey) { if (ui.eventKey > 0) { kotlinx.coroutines.delay(1600); ui.done() } }
     return ui
 }
 

@@ -179,6 +179,12 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     val homePager = rememberPagerState { layout.pages.size + 1 }
     var searchOpen by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { com.xenoorigin.xelauncher.sound.XeSound.init(ctx) }
+    // ASCII in the accent colour follows accent changes on the phone's wallpaper too.
+    val lastSettings = remember { arrayOf(settings) }
+    LaunchedEffect(settings.accent) {
+        val old = lastSettings[0]; lastSettings[0] = settings
+        if (com.xenoorigin.xelauncher.wallpaper.asciiNeedsRedraw(old, settings)) runCatching { graph.wallpaper.reapplyAscii() }
+    }
     androidx.compose.runtime.SideEffect { com.xenoorigin.xelauncher.sound.XeSound.enabled = settings.clickSounds }
     var termiOpen by remember { mutableStateOf(false) }
     // Each time Home comes back, Termi collects creator-app minutes and the night-rest bonus.

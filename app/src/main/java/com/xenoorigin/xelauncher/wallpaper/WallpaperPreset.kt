@@ -60,6 +60,11 @@ fun glassCopyFor(s: com.xenoorigin.xelauncher.settings.XeSettings): GlassCopy = 
     else -> GlassCopy.WALLPAPER
 }
 
+/** The ASCII wallpaper in use takes its colour from the accent, and the accent changed: redraw the phone's copy. */
+fun asciiNeedsRedraw(old: com.xenoorigin.xelauncher.settings.XeSettings, new: com.xenoorigin.xelauncher.settings.XeSettings): Boolean =
+    old.accent != new.accent && new.asciiColor == com.xenoorigin.xelauncher.settings.AsciiColor.ACCENT &&
+        allWallpapers().byId(new.wallpaperId) is WallpaperPreset.Ascii
+
 /** The ASCII wallpaper shown on Home right now, with the chosen colours (null if Home shows something else). */
 fun homeAscii(s: com.xenoorigin.xelauncher.settings.XeSettings): WallpaperPreset.Ascii? =
     (allWallpapers().byId(s.wallpaperId) as? WallpaperPreset.Ascii)?.takeIf { s.liveOnHome }?.withColors(s)

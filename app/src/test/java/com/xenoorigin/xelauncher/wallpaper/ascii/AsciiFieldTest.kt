@@ -110,4 +110,12 @@ class AsciiFieldTest {
         repeat(10) { f.fill(AsciiScene.LAKE, it.toFloat(), midnight); AsciiRaster.rasterize(f.cells, px) }
         assertThat((System.nanoTime() - t0) / 10 / 1e6).isLessThan(15.0)
     }
+
+    // 2.1 bug hunt: grids smaller than a scene needs (4 rows, 3 cols) used to throw; they now draw what fits.
+    @Test fun tinyGridsDoNotCrash() {
+        for ((c, r) in listOf(1 to 1, 2 to 2, 3 to 3, 40 to 2, 2 to 40)) {
+            val f = AsciiField(c, r)
+            AsciiScene.entries.forEach { f.fill(it, 0f) }
+        }
+    }
 }

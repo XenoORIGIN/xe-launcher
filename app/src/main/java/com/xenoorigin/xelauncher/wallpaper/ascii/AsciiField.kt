@@ -22,9 +22,11 @@ enum class AsciiScene { LAKE, RAIN, DAWN, PINES, CITY, SPACE, LIGHTHOUSE }
 class AsciiField(val cols: Int, val rows: Int, seed: Int = 11) {
     val cells = CellBuffer(cols, rows, seed)
     val size = cols * rows
-    val horizonRow = (rows * .58f).roundToInt().coerceIn(2, rows - 2)
+    /** Too small for a scene (under 6 rows or 4 columns): [fill] leaves it dark instead of failing. */
+    val tooSmall = rows < MIN_ROWS || cols < MIN_COLS
+    val horizonRow = if (tooSmall) (rows / 2).coerceAtLeast(0) else (rows * .58f).roundToInt().coerceIn(2, rows - 2)
     /** The row a character can stand on (top of the shore). */
-    val groundRow = (rows * .86f).roundToInt().coerceIn(horizonRow + 1, rows - 1)
+    val groundRow = if (tooSmall) (rows - 1).coerceAtLeast(0) else (rows * .86f).roundToInt().coerceIn(horizonRow + 1, rows - 1)
 
     /** Highlight colour per cell (0 = none) and how strongly it colours the glyph. */
     internal val highlight = IntArray(size)
@@ -75,6 +77,7 @@ class AsciiField(val cols: Int, val rows: Int, seed: Int = 11) {
      * null = the scene's own fixed time. [color] picks the colour mode; [accent] is used by ACCENT.
      */
     fun fill(scene: AsciiScene, t: Float, look: SkyLook? = null, color: AsciiColor = AsciiColor.MONO, accent: Long = 0xFFFFFFFF) {
+        if (tooSmall) { cells.l.fill(0f); highlight.fill(0); amount.fill(0f); return }
         cells.clear(); highlight.fill(0); amount.fill(0f); lastStars = 0; trees = 0; buildings = 0; meteorCells = 0
         live = look != null
         this.look = look ?: defaultLook(scene)
@@ -251,6 +254,8 @@ class AsciiField(val cols: Int, val rows: Int, seed: Int = 11) {
     }
 
     companion object {
+        const val MIN_ROWS = 6
+        const val MIN_COLS = 4
         const val SUN_TINT = 0xFFFFE0A0.toInt()
         const val MOON_TINT = 0xFFD6E2FF.toInt()
 
