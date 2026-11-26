@@ -94,7 +94,7 @@ val LocalHazeState = staticCompositionLocalOf<HazeState?> { null }
  * Blur + tint + specular rim + inner glow, clipped to [shape].
  * Refraction needs an isolated layer, so use [GlassSurface] when it should apply.
  */
-fun Modifier.liquidGlass(shape: Shape, style: GlassStyle, haze: HazeState?): Modifier {
+fun Modifier.liquidGlass(shape: Shape, style: GlassStyle, haze: HazeState?, rimOn: Boolean = true): Modifier {
     var m = this.clip(shape)
     if (haze != null && style.blurRadius > 0.dp && !style.flat) {
         m = m.hazeEffect(
@@ -107,7 +107,7 @@ fun Modifier.liquidGlass(shape: Shape, style: GlassStyle, haze: HazeState?): Mod
             ),
         )
     }
-    return m.glassFilmAndRim(shape, style, drawFilm = haze == null || style.blurRadius == 0.dp)
+    return m.glassFilmAndRim(shape, style, drawFilm = haze == null || style.blurRadius == 0.dp, rimOn = rimOn)
 }
 
 private val RimStops = floatArrayOf(0f, .12f, .30f, .50f, .62f, .70f, .78f, 1f)
@@ -133,8 +133,8 @@ private class RimBrush(private val rimAlpha: Float, private val degrees: Float, 
 internal fun rimDegrees(tilt: Offset): Int = ((tilt.x * 70f + tilt.y * 20f) / 3f).roundToInt() * 3
 
 /** Draws the film (when not blurred), inner glows and the bright rim. Light on the rim follows [GlassTilt]. */
-fun Modifier.glassFilmAndRim(shape: Shape, style: GlassStyle, drawFilm: Boolean = false): Modifier =
-    if (style.flat) flatPanel(shape, style) else drawWithCache {
+fun Modifier.glassFilmAndRim(shape: Shape, style: GlassStyle, drawFilm: Boolean = false, body: Boolean = true, rimOn: Boolean = true): Modifier =
+    if (style.flat) (if (body) flatPanel(shape, style) else this) else drawWithCache {
         val outline: Outline = shape.createOutline(size, layoutDirection, this)
         val stroke = 1.2.dp.toPx()
         val rims = HashMap<Int, Brush>()
@@ -158,10 +158,10 @@ fun Modifier.glassFilmAndRim(shape: Shape, style: GlassStyle, drawFilm: Boolean 
             val tilt = GlassTilt.value.value
             val deg = rimDegrees(tilt)
             val rim = rims.getOrPut(deg) { RimBrush(style.rimAlpha, deg.toFloat(), style.rimTint) }
-            if (drawFilm) drawOutline(outline, style.tint)
-            drawOutline(outline, sheen)
-            drawOutline(outline, topGlow)
-            if (tilt != Offset.Zero) {
+            if (body && drawFilm) drawOutline(outline, style.tint)
+            if (body) drawOutline(outline, sheen)
+            if (body) drawOutline(outline, topGlow)
+            if (body && tilt != Offset.Zero) {
                 // A soft highlight that slides across the glass as the phone tilts.
                 drawOutline(
                     outline,
@@ -173,6 +173,7 @@ fun Modifier.glassFilmAndRim(shape: Shape, style: GlassStyle, drawFilm: Boolean 
                 )
             }
             drawContent()
+            if (!rimOn) return@onDrawWithContent
             // Thickness: a soft inner band just inside the rim, brighter at the top edge, like the lip of real glass.
             drawOutline(outline, lip, style = Stroke(width = stroke * 4.5f), alpha = style.rimAlpha)
             // Faint coloured fringes either side of the rim (light splitting at the edge).
@@ -213,13 +214,16 @@ fun GlassSurface(
     content: @Composable BoxScope.() -> Unit = {},
 ) {
     val haze = LocalHazeState.current
+    val bends = !style.flat && style.refraction > 0f
     Box(modifier) {
+        // The glass body is bent by the lens; the rim is drawn on top, unbent, so it stays crisp at the edge.
         Box(
             Modifier
                 .matchParentSize()
                 .refraction(shape, if (style.flat) 0f else style.refraction, style.chroma, style.magnify)
-                .liquidGlass(shape, style, haze),
+                .liquidGlass(shape, style, haze, rimOn = !bends),
         )
+        if (bends) Box(Modifier.matchParentSize().glassFilmAndRim(shape, style, body = false))
         content()
     }
 }

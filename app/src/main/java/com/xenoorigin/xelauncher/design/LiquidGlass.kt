@@ -81,7 +81,7 @@ private fun lumGrid(img: ImageBitmap): LumGrid = synchronized(lumGrids) {
  * the content, then a thick bright rim catching light top-left and bottom-right.
  * Without a backdrop (nothing drawn yet) it falls back to a denser frosted film.
  */
-fun Modifier.liquidGlass(shape: Shape, film: Float = .08f): Modifier = composed {
+fun Modifier.liquidGlass(shape: Shape, film: Float = .08f, body: Boolean = true, rimOn: Boolean = true): Modifier = composed {
     val backdrop = LocalGlassBackdrop.current
     val style = LocalGlassStyle.current
     // Where the tile really is on screen, including layer moves and scales (drawer sliding up,
@@ -105,6 +105,7 @@ fun Modifier.liquidGlass(shape: Shape, film: Float = .08f): Modifier = composed 
             val sheen = Brush.verticalGradient(0f to Color.White.copy(alpha = .22f), .45f to Color.Transparent, 1f to Color.White.copy(alpha = .06f))
             val shadowStep = 1.4.dp.toPx()
             onDrawWithContent {
+                if (!body) { drawContent(); if (rimOn) clipPath(clip) { drawOutline(outline, Color.Black.copy(alpha = .10f), style = Stroke(rimW * 2.2f)); drawOutline(outline, rim, style = Stroke(rimW * 2f)) }; return@onDrawWithContent }
                 // Soft shadow under the block.
                 for (i in 1..3) translate(0f, shadowStep * i) { drawOutline(outline, Color.Black.copy(alpha = .09f - .02f * i)) }
                 val img = backdrop?.image()
@@ -128,6 +129,7 @@ fun Modifier.liquidGlass(shape: Shape, film: Float = .08f): Modifier = composed 
                     drawRect(sheen)
                 }
                 drawContent()
+                if (!rimOn) return@onDrawWithContent
                 // Thick bevel: dark inner line for depth, then the bright rim (clipped once).
                 clipPath(clip) {
                     drawOutline(outline, Color.Black.copy(alpha = .10f), style = Stroke(rimW * 2.2f))
@@ -140,6 +142,13 @@ fun Modifier.liquidGlass(shape: Shape, film: Float = .08f): Modifier = composed 
 /** A panel (dock, folder, widget) that turns clear when Liquid Glass is on, and is the usual glass otherwise. */
 @Composable
 fun LiquidSurface(shape: Shape, modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit) {
-    if (LocalLiquidGlass.current) Box(modifier.liquidGlass(shape, film = .10f), content = content)
-    else GlassSurface(shape, modifier, content = content)
+    if (!LocalLiquidGlass.current) return GlassSurface(shape, modifier, content = content)
+    val style = LocalGlassStyle.current
+    if (style.refraction <= 0f || style.flat) return Box(modifier.liquidGlass(shape, film = .10f), content = content)
+    // Clear glass that bends what's behind it at the edges, with the rim drawn unbent on top.
+    Box(modifier) {
+        Box(Modifier.matchParentSize().refraction(shape, style.refraction, style.chroma, style.magnify).liquidGlass(shape, film = .10f, rimOn = false))
+        content()
+        Box(Modifier.matchParentSize().liquidGlass(shape, body = false))
+    }
 }
