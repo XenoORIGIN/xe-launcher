@@ -81,6 +81,8 @@ private val MinSlot = 50.dp
 fun CategoryBar(
     categories: List<CategoryWithApps>, state: DrawerState, onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier, onLongPress: () -> Unit = {}, magnify: Boolean = false,
+    /** False when the bar sits inside [GooeyBar], which draws the glass for both. */
+    glass: Boolean = true,
 ) {
     val scheme = LocalXeScheme.current
     val speed = LocalAnimationSpeed.current
@@ -92,7 +94,9 @@ fun CategoryBar(
     var scrubbing by remember { mutableStateOf(false) }
     val finger = remember { mutableFloatStateOf(0f) } // content x of the finger while scrubbing
     val swell = remember { Animatable(0f) }
-    GlassSurface(shape, modifier.fillMaxWidth().height(BarHeight).testTag("categoryBar")) {
+    val surface: @Composable (Modifier, @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit) -> Unit =
+        if (glass) { m, c -> GlassSurface(shape, m, content = c) } else { m, c -> androidx.compose.foundation.layout.Box(m, content = c) }
+    surface(if (glass) modifier.fillMaxWidth().height(BarHeight).testTag("categoryBar") else modifier.testTag("categoryBar")) {
         BoxWithConstraints(Modifier.fillMaxWidth().fillMaxHeight().padding(horizontal = BarPadding).clip(shape)) {
             val n = categories.size.coerceAtLeast(1)
             val slot = maxOf(maxWidth / n, MinSlot)

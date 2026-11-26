@@ -172,8 +172,13 @@ fun AppDrawer(
                 }
             }
             if (look.categoryBar && pages.size > 1) {
-                CategoryBar(pages, state, onSelect = { scope.launch { state.animateTo(it, speed) } },
-                    Modifier.padding(horizontal = 16.dp).navigationBarsPadding().padding(bottom = 14.dp), onLongPress = onEditCategories, magnify = play.magnify)
+                val barModifier = Modifier.padding(horizontal = 16.dp).navigationBarsPadding().padding(bottom = 14.dp)
+                if (com.xenoorigin.xelauncher.design.LocalUiStyle.current == com.xenoorigin.xelauncher.design.UiStyle.GLASS) {
+                    // 2.0: the bar and a search bubble are one piece of liquid glass that melts and stretches.
+                    GooeyBar(onSearch, barModifier) { m ->
+                        CategoryBar(pages, state, onSelect = { scope.launch { state.animateTo(it, speed) } }, m, onLongPress = onEditCategories, magnify = play.magnify, glass = false)
+                    }
+                } else CategoryBar(pages, state, onSelect = { scope.launch { state.animateTo(it, speed) } }, barModifier, onLongPress = onEditCategories, magnify = play.magnify)
             } else Spacer(Modifier.navigationBarsPadding().height(14.dp))
         }
     }

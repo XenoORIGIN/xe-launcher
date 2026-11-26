@@ -150,8 +150,11 @@ fun Modifier.liquidGlass(shape: Shape, film: Float = .08f, body: Boolean = true,
 /** A panel (dock, folder, widget) that turns clear when Liquid Glass is on, and is the usual glass otherwise. */
 @Composable
 fun LiquidSurface(shape: Shape, modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit) {
-    if (!LocalLiquidGlass.current) return GlassSurface(shape, modifier, content = content)
     val style = LocalGlassStyle.current
+    // 2.0: in Liquid Glass style, panels over the wallpaper are a real lens whenever a wallpaper copy is ready.
+    val corner = (shape as? androidx.compose.foundation.shape.RoundedCornerShape)?.let { r -> lensCorner(r) }
+    if (!style.flat && corner != null && LocalGlassBackdrop.current?.image() != null) return LensPanel(corner, modifier, content)
+    if (!LocalLiquidGlass.current) return GlassSurface(shape, modifier, content = content)
     if (style.refraction <= 0f || style.flat) return Box(modifier.liquidGlass(shape, film = .10f), content = content)
     // Clear glass that bends what's behind it at the edges, with the rim drawn unbent on top.
     Box(modifier) {
@@ -159,4 +162,13 @@ fun LiquidSurface(shape: Shape, modifier: Modifier = Modifier, content: @Composa
         content()
         Box(Modifier.matchParentSize().liquidGlass(shape, body = false))
     }
+}
+
+/** The corner radius of a rounded shape, read from a 100 dp square (shapes in Xe use fixed dp corners). */
+@Composable
+private fun lensCorner(shape: androidx.compose.foundation.shape.RoundedCornerShape): androidx.compose.ui.unit.Dp {
+    val d = androidx.compose.ui.platform.LocalDensity.current
+    val o = shape.createOutline(Size(1000f, 1000f), androidx.compose.ui.unit.LayoutDirection.Ltr, d)
+    val px = (o as? Outline.Rounded)?.roundRect?.topLeftCornerRadius?.x ?: 0f
+    return with(d) { px.toDp() }
 }

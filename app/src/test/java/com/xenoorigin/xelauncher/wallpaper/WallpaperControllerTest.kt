@@ -109,7 +109,7 @@ class WallpaperControllerTest {
         android.graphics.Canvas(src).let { cv -> for (x in 0 until 90) cv.drawRect((x * 10).toFloat(), 0f, (x * 10 + 10).toFloat(), 1950f, android.graphics.Paint().apply { color = if (x % 2 == 0) android.graphics.Color.BLACK else android.graphics.Color.WHITE }) }
         fun lum(b: android.graphics.Bitmap): Double { var t = 0.0; var n = 0; for (y in 0 until b.height step 7) for (x in 0 until b.width step 3) { t += android.graphics.Color.red(b.getPixel(x, y)); n++ }; return t / n }
         val g = WallpaperRenderer.glassBackdrop(src)
-        assertThat(g.width).isEqualTo(360)
+        assertThat(g.width).isEqualTo(540) // 2.0: sharper copy so the lens edge visibly bends it
         assertThat(lum(g)).isGreaterThan(lum(src))
         var maxStep = 0
         val y = g.height / 2
