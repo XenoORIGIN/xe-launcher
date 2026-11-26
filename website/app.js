@@ -56,6 +56,8 @@
     if (io) { if (el.closest(".grid,ol")) el.style.transitionDelay = (i % 3) * 90 + "ms"; io.observe(el); } else el.classList.add("in");
   });
   const NEWS = [
+    { v: "2.1.0", d: "2026-11-26", th: ["กระจกบิดบนวอลเปเปอร์ ASCII ได้แล้ว และลิ้นชักแอปใช้กระจกเลนส์ทั้งหมด", "ตัวอักษรจุดภาษาไทยในสไตล์ Nothing", "แก้บั๊ก Termi และวอลเปเปอร์ ASCII"],
+      en: ["Glass bends ASCII wallpapers too, and lens glass across the app drawer", "Thai dot-matrix type in Nothing style", "Termi and ASCII wallpaper fixes"] },
     { v: "2.0.2", d: "2026-11-26", th: ["แก้กระจกแสดงภาพวอลเปเปอร์ผิดบนวอลเปเปอร์ ASCII", "แก้ไอคอนแถวล่างในลิ้นชักแอปถูกตัด และกระจกบนวิดเจ็ตอ่านง่ายขึ้น"],
       en: ["Fixed glass showing the wrong wallpaper over ASCII wallpapers", "Fixed the drawer's last row being cut off; easier-to-read glass on widgets"] },
     { v: "2.0.1", d: "2026-11-26", th: ["Liquid Glass แบบเลนส์จริง: ภาพด้านหลังขยายและโค้งที่ขอบ มีสีรุ้ง ใช้กับ Dock วิดเจ็ต และโฟลเดอร์", "ปุ่มค้นหาหยดน้ำในลิ้นชักแอป: ยืด หลุด และหลอมกลับเข้ากับแถบหมวด"],
