@@ -18,7 +18,7 @@ android {
         minSdk = 29
         targetSdk = 36
         versionCode = runNumber
-        versionName = "1.0.$runNumber"
+        versionName = System.getenv("XE_VERSION") ?: "1.0.$runNumber"
     }
 
     signingConfigs {

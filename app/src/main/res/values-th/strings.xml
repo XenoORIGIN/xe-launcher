@@ -415,4 +415,14 @@
     <string name="item_VR">แว่น VR</string>
     <string name="item_PHONE">มือถือ</string>
     <string name="item_WIZARD">หมวกพ่อมด</string>
+    <string name="ui_style">สไตล์</string>
+    <string name="ui_style_glass">Liquid Glass</string>
+    <string name="ui_style_glass_desc">กระจกใส สว่าง หักเหวอลเปเปอร์</string>
+    <string name="ui_style_nothing">Nothing</string>
+    <string name="ui_style_nothing_desc">ขาวดำเรียบ ตัวอักษรแบบจุด</string>
+    <string name="click_sounds">เสียง</string>
+    <string name="click_sounds_desc">เสียงสั้นๆ ตอนแตะและเปิดปิด จะเงียบเองเมื่อมือถืออยู่ในโหมดเงียบหรือสั่น</string>
+    <string name="settings_search">ค้นหาการตั้งค่า</string>
+    <string name="settings_no_match">ไม่พบการตั้งค่าที่ตรงกัน</string>
+    <string name="quick_settings">ด่วน</string>
 </resources>

@@ -54,11 +54,29 @@ fun SettingsPage(title: String, onBack: (() -> Unit)?, content: @Composable Colu
     Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(horizontal = 18.dp)) {
         Row(Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 18.dp).then(Modifier.appear(0, distance = 30f)), verticalAlignment = Alignment.CenterVertically) {
             if (onBack != null) GlassIconButton(R.drawable.ti_arrow_left, stringResource(R.string.cancel), onBack, Modifier.padding(end = 14.dp))
-            Text(title, style = XeType.LargeTitle, color = scheme.text)
+            PageTitle(title)
         }
         content()
         Spacer(Modifier.height(40.dp))
     }
+    }
+}
+
+/**
+ * A page's big title. Nothing style draws Latin titles in dot-matrix type and ends Thai ones with the red dot.
+ */
+@Composable
+fun PageTitle(title: String) {
+    val scheme = LocalXeScheme.current
+    val nothing = com.xenoorigin.xelauncher.design.LocalUiStyle.current == com.xenoorigin.xelauncher.design.UiStyle.NOTHING
+    when {
+        nothing && com.xenoorigin.xelauncher.design.DotFont.canDraw(title) && title.length <= 12 ->
+            com.xenoorigin.xelauncher.design.DotText(title.uppercase(), 4.dp, scheme.text)
+        nothing -> Row(verticalAlignment = Alignment.Bottom) {
+            Text(title, style = XeType.LargeTitle, color = scheme.text)
+            Box(Modifier.padding(start = 6.dp, bottom = 10.dp).size(8.dp).background(com.xenoorigin.xelauncher.design.NothingRed, CircleShape))
+        }
+        else -> Text(title, style = XeType.LargeTitle, color = scheme.text)
     }
 }
 

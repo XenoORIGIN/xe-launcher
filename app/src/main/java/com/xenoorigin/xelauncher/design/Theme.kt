@@ -22,10 +22,11 @@ fun XeTheme(
     pressSquish: Boolean = true,
     fontScale: Float = 1f,
     rimTint: Color = Color.Transparent,
+    uiStyle: UiStyle = UiStyle.GLASS,
     content: @Composable () -> Unit,
 ) {
     val scheme = remember(dark, accent) { xeScheme(dark, accent) }
-    val glass = remember(glassQuality, dark, rimTint) { glassStyleFor(glassQuality, dark).copy(rimTint = rimTint) }
+    val glass = remember(glassQuality, dark, rimTint, uiStyle) { glassStyleFor(glassQuality, dark, ui = uiStyle).copy(rimTint = rimTint) }
     val d = LocalDensity.current
     val m3 = if (dark) darkColorScheme(primary = scheme.accent, background = Color.Black, surface = Color(0xFF111114))
     else lightColorScheme(primary = scheme.accent)
@@ -33,6 +34,7 @@ fun XeTheme(
         CompositionLocalProvider(
             LocalXeScheme provides scheme,
             LocalGlassStyle provides glass,
+            LocalUiStyle provides uiStyle,
             LocalAnimationSpeed provides animationSpeed,
             LocalPressSquish provides pressSquish,
             LocalDensity provides Density(d.density, d.fontScale * fontScale),

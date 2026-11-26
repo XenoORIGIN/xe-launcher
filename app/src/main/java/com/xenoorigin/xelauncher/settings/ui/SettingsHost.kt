@@ -61,7 +61,7 @@ fun SettingsHost(graph: AppGraph, start: String, onClose: () -> Unit) {
         ) { (route, _) ->
             val back: () -> Unit = ::pop
             when (route) {
-                "root" -> SettingsRoot(settings, ::push, onClose, newVersion?.tag)
+                "root" -> SettingsRoot(settings, ::push, onClose, newVersion?.tag, update)
                 "wallpaper" -> WallpaperScreen(graph, back)
                 "appearance" -> AppearanceScreen(settings, update, back)
                 "icons" -> IconsScreen(settings, update, back, allApps.firstOrNull { it.key.packageName.contains("camera") } ?: allApps.firstOrNull()) { push("bulk") }
@@ -85,7 +85,7 @@ fun SettingsHost(graph: AppGraph, start: String, onClose: () -> Unit) {
                 "about" -> AboutScreen(back, settings, update, graph.updates)
                 "themes" -> ThemesScreen(graph, settings, back)
                 "bugs" -> BugReportScreen(graph, settings, back)
-                else -> SettingsRoot(settings, ::push, onClose)
+                else -> SettingsRoot(settings, ::push, onClose, update = update)
             }
         }
     }

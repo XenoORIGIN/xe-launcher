@@ -21,6 +21,7 @@ import androidx.compose.ui.geometry.Size
 import kotlin.math.roundToInt
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeState
@@ -29,6 +30,15 @@ import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
 
 @kotlinx.serialization.Serializable enum class GlassQuality { HIGH, NORMAL, SAVER }
+
+/** The look of Xe's panels: clear Liquid Glass, or flat black-and-white Nothing style with dot-matrix type. */
+@kotlinx.serialization.Serializable enum class UiStyle { GLASS, NOTHING }
+
+/** Which look is on; Nothing style swaps big Latin titles and the clock for dot-matrix type. */
+val LocalUiStyle = androidx.compose.runtime.compositionLocalOf { UiStyle.GLASS }
+
+/** The Nothing-style red, used sparingly: one dot or one active mark per screen. */
+val NothingRed = Color(0xFFD71921)
 
 /** Everything that defines how a Liquid Glass panel is rendered. */
 data class GlassStyle(
@@ -40,9 +50,15 @@ data class GlassStyle(
     val dark: Boolean,
     /** Time-of-day colour the rims lean toward; transparent leaves them white. */
     val rimTint: Color = Color.Transparent,
+    /** Nothing style: an opaque flat panel with a hairline edge instead of glass. */
+    val flat: Boolean = false,
 )
 
-fun glassStyleFor(q: GlassQuality, dark: Boolean, sdk: Int = Build.VERSION.SDK_INT): GlassStyle {
+fun glassStyleFor(q: GlassQuality, dark: Boolean, sdk: Int = Build.VERSION.SDK_INT, ui: UiStyle = UiStyle.GLASS): GlassStyle {
+    if (ui == UiStyle.NOTHING) return GlassStyle(
+        blurRadius = 0.dp, tint = if (dark) Color(0xF2111111) else Color(0xF5F4F4F4), rimAlpha = 0f,
+        refraction = 0f, noiseAlpha = 0f, dark = dark, flat = true,
+    )
     val canBlur = sdk >= 31
     val canRefract = sdk >= 33
     val blur = when {
@@ -73,7 +89,7 @@ val LocalHazeState = staticCompositionLocalOf<HazeState?> { null }
  */
 fun Modifier.liquidGlass(shape: Shape, style: GlassStyle, haze: HazeState?): Modifier {
     var m = this.clip(shape)
-    if (haze != null && style.blurRadius > 0.dp) {
+    if (haze != null && style.blurRadius > 0.dp && !style.flat) {
         m = m.hazeEffect(
             state = haze,
             style = HazeStyle(
@@ -111,7 +127,7 @@ internal fun rimDegrees(tilt: Offset): Int = ((tilt.x * 70f + tilt.y * 20f) / 3f
 
 /** Draws the film (when not blurred), inner glows and the bright rim. Light on the rim follows [GlassTilt]. */
 fun Modifier.glassFilmAndRim(shape: Shape, style: GlassStyle, drawFilm: Boolean = false): Modifier =
-    drawWithCache {
+    if (style.flat) flatPanel(shape, style) else drawWithCache {
         val outline: Outline = shape.createOutline(size, layoutDirection, this)
         val stroke = 1.2.dp.toPx()
         val rims = HashMap<Int, Brush>()
@@ -126,6 +142,11 @@ fun Modifier.glassFilmAndRim(shape: Shape, style: GlassStyle, drawFilm: Boolean 
             0f to Color.White.copy(alpha = .22f), .35f to Color.Transparent,
             .78f to Color.Transparent, 1f to Color.White.copy(alpha = .12f),
         )
+        val lip = Brush.verticalGradient(
+            0f to Color.White.copy(alpha = if (style.dark) .20f else .30f), .18f to Color.White.copy(alpha = .04f),
+            .82f to Color.Transparent, 1f to Color.White.copy(alpha = if (style.dark) .10f else .16f),
+        )
+        val fringe = .7.dp.toPx()
         onDrawWithContent {
             val tilt = GlassTilt.value.value
             val deg = rimDegrees(tilt)
@@ -145,9 +166,26 @@ fun Modifier.glassFilmAndRim(shape: Shape, style: GlassStyle, drawFilm: Boolean 
                 )
             }
             drawContent()
+            // Thickness: a soft inner band just inside the rim, brighter at the top edge, like the lip of real glass.
+            drawOutline(outline, lip, style = Stroke(width = stroke * 4.5f), alpha = style.rimAlpha)
+            // Faint coloured fringes either side of the rim (light splitting at the edge).
+            translate(-fringe, -fringe) { drawOutline(outline, Color(0xFF7FE8FF).copy(alpha = .16f * style.rimAlpha), style = Stroke(width = stroke)) }
+            translate(fringe, fringe) { drawOutline(outline, Color(0xFFFF8AD8).copy(alpha = .14f * style.rimAlpha), style = Stroke(width = stroke)) }
             drawOutline(outline, rim, style = Stroke(width = stroke))
         }
     }
+
+/** Nothing-style panel: opaque, flat, a hairline edge and nothing else. */
+private fun Modifier.flatPanel(shape: Shape, style: GlassStyle): Modifier = drawWithCache {
+    val outline: Outline = shape.createOutline(size, layoutDirection, this)
+    val edge = (if (style.dark) Color.White.copy(alpha = .13f) else Color.Black.copy(alpha = .10f))
+    val hair = 1.dp.toPx()
+    onDrawWithContent {
+        drawOutline(outline, style.tint)
+        drawContent()
+        drawOutline(outline, edge, style = Stroke(width = hair))
+    }
+}
 
 /**
  * Cheap glass for things drawn many times at once (icon tiles, list rows): a tinted film, sheen and rim,
@@ -172,7 +210,7 @@ fun GlassSurface(
         Box(
             Modifier
                 .matchParentSize()
-                .refraction(shape, style.refraction)
+                .refraction(shape, if (style.flat) 0f else style.refraction)
                 .liquidGlass(shape, style, haze),
         )
         content()

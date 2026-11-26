@@ -128,4 +128,8 @@ data class XeSettings(
     val asciiColor: AsciiColor = AsciiColor.MONO,
     /** The chosen wallpaper is on the Home screen (false = it was applied to the lock screen only). */
     val liveOnHome: Boolean = true,
+    /** Look of the whole launcher: Liquid Glass or Nothing style. */
+    val uiStyle: com.xenoorigin.xelauncher.design.UiStyle = com.xenoorigin.xelauncher.design.UiStyle.GLASS,
+    /** Short Xe sounds on taps, toggles, opening and closing (silent when the phone is on silent or vibrate). */
+    val clickSounds: Boolean = true,
 )

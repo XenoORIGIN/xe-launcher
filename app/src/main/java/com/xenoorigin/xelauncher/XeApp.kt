@@ -117,7 +117,7 @@ fun XeApp(graph: AppGraph) {
         dark = dark, accent = Color(settings.accent.toInt()), glassQuality = settings.glassQuality,
         animationSpeed = if (systemOff) AnimationSpeed.OFF else settings.animationSpeed,
         pressSquish = settings.pressSquish, fontScale = settings.fontScale,
-        rimTint = rememberRimTint(settings.timeTint),
+        rimTint = rememberRimTint(settings.timeTint), uiStyle = settings.uiStyle,
     ) {
         val haze = remember { HazeState() }
         // Liquid Glass looks through a frosted copy of the wallpaper, lined up with where the wallpaper sits now.
@@ -160,6 +160,8 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     val drawerState = remember { DrawerState(pageCount = { categories.size.coerceAtLeast(1) }) }
     val homePager = rememberPagerState { layout.pages.size + 1 }
     var searchOpen by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { com.xenoorigin.xelauncher.sound.XeSound.init(ctx) }
+    androidx.compose.runtime.SideEffect { com.xenoorigin.xelauncher.sound.XeSound.enabled = settings.clickSounds }
     var termiOpen by remember { mutableStateOf(false) }
     // Each time Home comes back, Termi collects creator-app minutes and the night-rest bonus.
     androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
@@ -401,6 +403,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     }
 
     fun settleDrawer(open: Boolean) = scope.launch {
+        if ((drawer.targetValue >= 1f) != open) com.xenoorigin.xelauncher.sound.XeSound.play(if (open) com.xenoorigin.xelauncher.sound.XeSound.Kind.OPEN else com.xenoorigin.xelauncher.sound.XeSound.Kind.CLOSE)
         drawer.animateTo(if (open) 1f else 0f, XeMotion.spring(speed, dampingRatio = .86f, stiffness = 380f))
     }
     fun closeAll() {
@@ -411,6 +414,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
 
     fun launch(app: AppEntry, r: Rect) {
         val opts = com.xenoorigin.xelauncher.home.launchOptions(view, r)
+        com.xenoorigin.xelauncher.sound.XeSound.play(com.xenoorigin.xelauncher.sound.XeSound.Kind.LAUNCH)
         if (com.xenoorigin.xelauncher.home.showBubble(settings.glassLaunch, speed, r)) launchBubble = r
         graph.apps.launch(app.key, android.graphics.Rect(r.left.toInt(), r.top.toInt(), r.right.toInt(), r.bottom.toInt()), opts)
         scope.launch {

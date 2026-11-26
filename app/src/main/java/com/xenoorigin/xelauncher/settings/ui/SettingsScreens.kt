@@ -1,6 +1,9 @@
 package com.xenoorigin.xelauncher.settings.ui
 
 import androidx.compose.ui.platform.testTag
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.draw.clip
 import com.xenoorigin.xelauncher.design.glassTile
 import com.xenoorigin.xelauncher.design.LocalGlassStyle
 import androidx.compose.material3.Icon
@@ -70,36 +73,134 @@ import kotlin.math.roundToInt
 
 private typealias Update = ((XeSettings) -> XeSettings) -> Unit
 
+/** True when every word of [query] is found in [title] or [keywords] (any case, Thai or English). */
+fun settingsMatches(title: String, keywords: String, query: String): Boolean {
+    val words = query.trim().lowercase().split(Regex("\\s+")).filter { it.isNotEmpty() }
+    if (words.isEmpty()) return false
+    val hay = (title + " " + keywords).lowercase()
+    return words.all { it in hay }
+}
+
+/** One place in settings: what it's called, words people may search for, its icon and where it goes. */
+private class SettingsEntry(val title: Int, val icon: Int, val tint: Color, val route: String, val keywords: String, val subtitle: Int? = null)
+
+private val MainEntries = listOf(
+    SettingsEntry(R.string.themes, R.drawable.ti_sparkles, RowColors.Pink, "themes", "theme pack preset ธีม ชุด", R.string.themes_row_desc),
+    SettingsEntry(R.string.wallpaper, R.drawable.ti_photo, RowColors.Green, "wallpaper", "wallpaper background ascii live sky lock วอลเปเปอร์ พื้นหลัง ล็อก"),
+    SettingsEntry(R.string.appearance, R.drawable.ti_palette, RowColors.Orange, "appearance", "theme dark light accent colour color glass quality font size ธีม มืด สว่าง สี กระจก ตัวอักษร"),
+    SettingsEntry(R.string.icons, R.drawable.ti_apps, RowColors.Blue, "icons", "icon shape size label glass clear ไอคอน รูปทรง ขนาด ชื่อ"),
+    SettingsEntry(R.string.animation, R.drawable.ti_sparkles, RowColors.Purple, "animation", "animation speed motion dock parallax tilt lens launch อนิเมชัน ความเร็ว เอียง เลนส์"),
+    SettingsEntry(R.string.play_title, R.drawable.ti_device_gamepad_2, RowColors.Orange, "play", "play toy dust pond bubble game draw ของเล่น ฝุ่น เกม วาด", R.string.play_row_desc),
+    SettingsEntry(R.string.badges_title, R.drawable.ti_bell, RowColors.Red, "badges", "badge notification count dot แจ้งเตือน ตัวเลข"),
+    SettingsEntry(R.string.gestures, R.drawable.ti_hand_finger, RowColors.Red, "gestures", "gesture swipe double tap ท่าทาง ปัด แตะสองครั้ง"),
+    SettingsEntry(R.string.xe_studio, R.drawable.ti_brush, RowColors.Pink, "studio", "studio icon theme widget สตูดิโอ", R.string.xe_studio_desc),
+    SettingsEntry(R.string.backup, R.drawable.ti_device_floppy, RowColors.Cyan, "backup", "backup restore export import สำรอง กู้คืน"),
+)
+private val PageEntries = listOf(
+    SettingsEntry(R.string.home_screen, R.drawable.ti_home, RowColors.Blue, "pages/home", "home grid columns rows dock lock หน้าโฮม คอลัมน์ แถว ล็อก", R.string.home_settings_desc),
+    SettingsEntry(R.string.app_page, R.drawable.ti_layout_grid, RowColors.Indigo, "pages/apps", "drawer apps sort category hidden bento ลิ้นชัก เรียง หมวด ซ่อน", R.string.app_page_desc),
+    SettingsEntry(R.string.search_page, R.drawable.ti_search, RowColors.Cyan, "pages/search", "search calculator web keyboard ค้นหา เครื่องคิดเลข เว็บ คีย์บอร์ด", R.string.search_page_desc),
+)
+private val HelpEntries = listOf(
+    SettingsEntry(R.string.bug_report, R.drawable.ti_bug, RowColors.Red, "bugs", "bug report problem crash บั๊ก แจ้งปัญหา", R.string.bug_report_row_desc),
+    SettingsEntry(R.string.about, R.drawable.ti_info_circle, RowColors.Grey, "about", "about version update เกี่ยวกับ เวอร์ชัน อัปเดต"),
+)
+
 @Composable
-fun SettingsRoot(s: XeSettings, push: (String) -> Unit, onClose: () -> Unit, newVersion: String? = null) {
+private fun EntryRow(e: SettingsEntry, push: (String) -> Unit) =
+    NavRow(stringResource(e.title), e.icon, e.tint, subtitle = e.subtitle?.let { stringResource(it) }) { push(e.route) }
+
+@Composable
+fun SettingsRoot(s: XeSettings, push: (String) -> Unit, onClose: () -> Unit, newVersion: String? = null, update: Update = {}) {
+    var query by remember { mutableStateOf("") }
     SettingsPage(stringResource(R.string.settings), onBack = onClose) {
+        SettingsSearchField(query) { query = it }
+        if (query.isNotBlank()) {
+            val ctx = androidx.compose.ui.platform.LocalContext.current
+            val hits = (MainEntries + PageEntries + HelpEntries).filter { settingsMatches(ctx.getString(it.title), it.keywords, query) }
+            SettingsGroup {
+                if (hits.isEmpty()) Text(stringResource(R.string.settings_no_match), Modifier.padding(vertical = 18.dp), style = XeType.Body, color = LocalXeScheme.current.textSecondary)
+                hits.forEach { EntryRow(it, push) }
+            }
+            return@SettingsPage
+        }
         if (newVersion != null) SettingsGroup {
             NavRow(stringResource(R.string.update_banner, newVersion.removePrefix("v")), R.drawable.ti_download, RowColors.Green) { push("about") }
         }
+        StylePicker(s.uiStyle) { v -> update { it.copy(uiStyle = v) } }
         SettingsGroup {
-            NavRow(stringResource(R.string.themes), R.drawable.ti_sparkles, RowColors.Pink, subtitle = stringResource(R.string.themes_row_desc)) { push("themes") }
-            NavRow(stringResource(R.string.wallpaper), R.drawable.ti_photo, RowColors.Green) { push("wallpaper") }
-            NavRow(stringResource(R.string.appearance), R.drawable.ti_palette, RowColors.Orange) { push("appearance") }
-            NavRow(stringResource(R.string.icons), R.drawable.ti_apps, RowColors.Blue) { push("icons") }
-            NavRow(stringResource(R.string.animation), R.drawable.ti_sparkles, RowColors.Purple) { push("animation") }
-            NavRow(stringResource(R.string.play_title), R.drawable.ti_device_gamepad_2, RowColors.Orange, subtitle = stringResource(R.string.play_row_desc)) { push("play") }
-            NavRow(
-                stringResource(R.string.badges_title), R.drawable.ti_bell, RowColors.Red,
-                subtitle = stringResource(if (com.xenoorigin.xelauncher.badges.rememberBadgeAccess()) R.string.badges_row_on else R.string.badges_row_needs_access),
-            ) { push("badges") }
-            NavRow(stringResource(R.string.gestures), R.drawable.ti_hand_finger, RowColors.Red) { push("gestures") }
-            NavRow(stringResource(R.string.xe_studio), R.drawable.ti_brush, RowColors.Pink, subtitle = stringResource(R.string.xe_studio_desc)) { push("studio") }
-            NavRow(stringResource(R.string.backup), R.drawable.ti_device_floppy, RowColors.Cyan) { push("backup") }
-        }
-        SettingsGroup(stringResource(R.string.pages)) {
-            NavRow(stringResource(R.string.home_screen), R.drawable.ti_home, RowColors.Blue, subtitle = stringResource(R.string.home_settings_desc)) { push("pages/home") }
-            NavRow(stringResource(R.string.app_page), R.drawable.ti_layout_grid, RowColors.Indigo, subtitle = stringResource(R.string.app_page_desc)) { push("pages/apps") }
-            NavRow(stringResource(R.string.search_page), R.drawable.ti_search, RowColors.Cyan, subtitle = stringResource(R.string.search_page_desc)) { push("pages/search") }
+            XeRow(stringResource(R.string.click_sounds), icon = R.drawable.ti_bell, iconTint = RowColors.Indigo, subtitle = stringResource(R.string.click_sounds_desc)) {
+                GlassSwitch(s.clickSounds, { v -> update { it.copy(clickSounds = v) } })
+            }
         }
         SettingsGroup {
-            NavRow(stringResource(R.string.bug_report), R.drawable.ti_bug, RowColors.Red, subtitle = stringResource(R.string.bug_report_row_desc)) { push("bugs") }
-            NavRow(stringResource(R.string.about), R.drawable.ti_info_circle, RowColors.Grey) { push("about") }
+            MainEntries.forEach { e ->
+                if (e.route == "badges") NavRow(
+                    stringResource(e.title), e.icon, e.tint,
+                    subtitle = stringResource(if (com.xenoorigin.xelauncher.badges.rememberBadgeAccess()) R.string.badges_row_on else R.string.badges_row_needs_access),
+                ) { push(e.route) } else EntryRow(e, push)
+            }
         }
+        SettingsGroup(stringResource(R.string.pages)) { PageEntries.forEach { EntryRow(it, push) } }
+        SettingsGroup { HelpEntries.forEach { EntryRow(it, push) } }
+    }
+}
+
+@Composable
+private fun SettingsSearchField(query: String, onChange: (String) -> Unit) {
+    val scheme = LocalXeScheme.current
+    com.xenoorigin.xelauncher.design.GlassSurface(RoundedCornerShape(22.dp), Modifier.fillMaxWidth().height(46.dp).padding(bottom = 0.dp)) {
+        Row(Modifier.fillMaxSize().padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(painterResource(R.drawable.ti_search), null, Modifier.size(18.dp), tint = scheme.textSecondary)
+            Box(Modifier.weight(1f).padding(start = 10.dp)) {
+                if (query.isEmpty()) Text(stringResource(R.string.settings_search), style = XeType.Body, color = scheme.textSecondary)
+                androidx.compose.foundation.text.BasicTextField(
+                    query, onChange, Modifier.fillMaxWidth().testTag("settings_search"),
+                    textStyle = XeType.Body.copy(color = scheme.text), singleLine = true, cursorBrush = androidx.compose.ui.graphics.SolidColor(scheme.text),
+                )
+            }
+            if (query.isNotEmpty()) Icon(painterResource(R.drawable.ti_x), stringResource(R.string.cancel), Modifier.size(18.dp).clickable { onChange("") }, tint = scheme.textSecondary)
+        }
+    }
+    Spacer(Modifier.height(6.dp))
+}
+
+/** Two big cards to switch the whole launcher between Liquid Glass and Nothing style, each a small preview of itself. */
+@Composable
+private fun StylePicker(current: com.xenoorigin.xelauncher.design.UiStyle, onPick: (com.xenoorigin.xelauncher.design.UiStyle) -> Unit) {
+    com.xenoorigin.xelauncher.design.SectionTitle(stringResource(R.string.ui_style), Modifier.padding(start = 6.dp))
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        StyleCard(com.xenoorigin.xelauncher.design.UiStyle.GLASS, current, R.string.ui_style_glass, R.string.ui_style_glass_desc, Modifier.weight(1f), onPick)
+        StyleCard(com.xenoorigin.xelauncher.design.UiStyle.NOTHING, current, R.string.ui_style_nothing, R.string.ui_style_nothing_desc, Modifier.weight(1f), onPick)
+    }
+}
+
+@Composable
+private fun StyleCard(style: com.xenoorigin.xelauncher.design.UiStyle, current: com.xenoorigin.xelauncher.design.UiStyle, title: Int, desc: Int, modifier: Modifier, onPick: (com.xenoorigin.xelauncher.design.UiStyle) -> Unit) {
+    val scheme = LocalXeScheme.current
+    val sel = style == current
+    val shape = RoundedCornerShape(24.dp)
+    Column(
+        modifier.clip(shape).border(if (sel) 2.dp else 1.dp, if (sel) scheme.text else scheme.textSecondary.copy(alpha = .25f), shape)
+            .clickable { com.xenoorigin.xelauncher.sound.XeSound.tap(); onPick(style) }.testTag("style_${style.name}").padding(10.dp),
+    ) {
+        Box(Modifier.fillMaxWidth().height(86.dp).clip(RoundedCornerShape(16.dp))) {
+            if (style == com.xenoorigin.xelauncher.design.UiStyle.GLASS) {
+                Box(Modifier.matchParentSize().background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(Color(0xFF2B5876), Color(0xFF4E4376), Color(0xFFDA6E9C)))))
+                Box(Modifier.align(Alignment.Center).size(86.dp, 34.dp).clip(RoundedCornerShape(17.dp))
+                    .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.White.copy(alpha = .42f), Color.White.copy(alpha = .12f))))
+                    .border(1.dp, androidx.compose.ui.graphics.Brush.linearGradient(listOf(Color.White, Color(0xFF9FF0FF), Color.White.copy(alpha = .3f), Color(0xFFFFB0E8))), RoundedCornerShape(17.dp)))
+            } else {
+                Box(Modifier.matchParentSize().background(Color.Black))
+                com.xenoorigin.xelauncher.design.DotText("12:45", 3.dp, Color.White, Modifier.align(Alignment.Center), ghost = .12f)
+                Box(Modifier.align(Alignment.TopEnd).padding(10.dp).size(7.dp).background(com.xenoorigin.xelauncher.design.NothingRed, CircleShape))
+            }
+            if (sel) Box(Modifier.align(Alignment.BottomEnd).padding(6.dp).size(22.dp).background(Color.White, CircleShape), contentAlignment = Alignment.Center) {
+                Icon(painterResource(R.drawable.ti_check), null, Modifier.size(14.dp), tint = Color.Black)
+            }
+        }
+        Text(stringResource(title), Modifier.padding(top = 8.dp, start = 2.dp), style = XeType.Headline, color = scheme.text)
+        Text(stringResource(desc), Modifier.padding(start = 2.dp), style = XeType.Caption, color = scheme.textSecondary, maxLines = 2)
     }
 }
 
