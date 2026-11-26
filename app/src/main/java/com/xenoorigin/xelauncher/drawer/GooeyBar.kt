@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onLayoutRectChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -72,7 +73,13 @@ fun GooeyBar(onSearch: () -> Unit, modifier: Modifier = Modifier, lift: Float? =
     var at by remember { mutableStateOf(Rect.Zero) }
     val scheme = LocalXeScheme.current
     BoxWithConstraints(
-        modifier.fillMaxWidth().height(BarH + LiftRoom)
+        modifier.fillMaxWidth().testTag("gooeyBar")
+            // Lay out as tall as the bar only; the room above for the lifting bubble hangs over the content.
+            .layout { m, c ->
+                val extra = LiftRoom.roundToPx()
+                val p = m.measure(c.copy(minHeight = BarH.roundToPx() + extra, maxHeight = BarH.roundToPx() + extra))
+                layout(p.width, BarH.roundToPx()) { p.place(0, -extra) }
+            }
             .onLayoutRectChanged(throttleMillis = 0, debounceMillis = 0) { b -> val r = b.boundsInRoot; at = Rect(r.left.toFloat(), r.top.toFloat(), r.right.toFloat(), r.bottom.toFloat()) },
     ) {
         val wPx = with(d) { maxWidth.toPx() }; val hPx = with(d) { (BarH + LiftRoom).toPx() }

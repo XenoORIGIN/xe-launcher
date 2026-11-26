@@ -161,7 +161,11 @@ fun LensPanel(corner: androidx.compose.ui.unit.Dp, modifier: androidx.compose.ui
     val sdf = { x: Float, y: Float -> LensGlass.roundRect(x, y, w / 2f, h / 2f, w / 2f, h / 2f, rPx) }
     val center = { _: Float, _: Float -> w / 2f to h / 2f }
     val looks = androidx.compose.runtime.remember(w, h, rPx) { if (w > 2 && h > 2) LensGlass.buildOverlay(w, h, dp / 2f, dp, sdf, .05f) else null }
-    val lens = androidx.compose.runtime.remember(dp) { LensGlass.Lens(strength = 22f * dp, edge = 22f * dp, magnify = .14f, chroma = .75f) }
+    // Big panels (widgets) bend gently: the zoom never shifts the picture more than ~6 dp, the edge band stays thin.
+    val lens = androidx.compose.runtime.remember(dp, w, h) {
+        val half = (minOf(w, h) / 2f).coerceAtLeast(1f)
+        LensGlass.Lens(strength = minOf(16f * dp, half * .35f), edge = minOf(18f * dp, half * .45f), magnify = minOf(.12f, 6f * dp / half), chroma = .6f)
+    }
     val pixels = androidx.compose.runtime.remember(img) { img?.asAndroidBitmap()?.let { b -> IntArray(b.width * b.height).also { b.getPixels(it, 0, b.width, 0, 0, b.width, b.height) } } }
     var picture by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Bitmap?>(null) }
     val key = Triple((at.left / 6).toInt(), (at.top / 6).toInt(), w * 31 + h)
@@ -176,6 +180,7 @@ fun LensPanel(corner: androidx.compose.ui.unit.Dp, modifier: androidx.compose.ui
         }
     }
     val paint = androidx.compose.runtime.remember { android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG) }
+    val smoke = androidx.compose.runtime.remember { android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG).apply { colorFilter = android.graphics.PorterDuffColorFilter(0x2E000000, android.graphics.PorterDuff.Mode.SRC_IN) } }
     androidx.compose.foundation.layout.Box(
         modifier
             .androidx_onRect { at = it }
@@ -183,7 +188,11 @@ fun LensPanel(corner: androidx.compose.ui.unit.Dp, modifier: androidx.compose.ui
                 val dst = RectF(0f, 0f, size.width, size.height)
                 drawIntoCanvasCompat { nc ->
                     val p = picture
-                    if (p != null) nc.drawBitmap(p, null, dst, paint)
+                    if (p != null) {
+                        nc.drawBitmap(p, null, dst, paint)
+                        // A light smoke over the bent picture so white text and icons on the glass stay readable.
+                        looks?.first?.let { m -> nc.drawBitmap(m, null, dst, smoke) }
+                    }
                     else looks?.first?.let { m -> nc.drawBitmap(m, null, dst, android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG).apply { colorFilter = android.graphics.PorterDuffColorFilter(0x2EFFFFFF, android.graphics.PorterDuff.Mode.SRC_IN) }) }
                 }
                 drawContent()

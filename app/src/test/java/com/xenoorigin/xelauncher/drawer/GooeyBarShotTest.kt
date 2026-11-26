@@ -15,6 +15,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -67,5 +68,11 @@ class GooeyBarShotTest {
         rule.setContent { XeTheme { GooeyBar({ opened++ }) { m -> Box(m) } } }
         rule.onNodeWithTag("gooeySearch").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
         com.google.common.truth.Truth.assertThat(opened).isEqualTo(1)
+    }
+
+    // The room the bubble lifts into overlaps the app grid instead of pushing it up and cutting off the last row.
+    @Test fun takesOnlyTheBarsHeight() {
+        rule.setContent { XeTheme { GooeyBar({}) { m -> Box(m) } } }
+        rule.onNodeWithTag("gooeyBar").assertHeightIsEqualTo(66.dp)
     }
 }

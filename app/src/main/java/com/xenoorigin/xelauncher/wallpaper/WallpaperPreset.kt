@@ -47,6 +47,14 @@ const val ASCII_LIVE_ID = "ascii_live"
 /** Wallpapers that follow the time of day: Xe keeps the phone's copy of them current. */
 fun isTimeWallpaper(id: String): Boolean = id == LIVE_SKY_ID || id == ASCII_LIVE_ID
 
+/**
+ * True when Xe's still copy of the wallpaper really is what Home shows, so glass may bend it. ASCII scenes are
+ * drawn live by Xe (moving, pixel-exact) and a lock-screen-only wallpaper isn't on Home: there the glass must not
+ * show the copy, or it shows a different picture (owner's report, 2.0.1).
+ */
+fun glassSeesWallpaper(s: com.xenoorigin.xelauncher.settings.XeSettings): Boolean =
+    s.liveOnHome && allWallpapers().byId(s.wallpaperId) !is WallpaperPreset.Ascii
+
 /** The ASCII wallpaper shown on Home right now, with the chosen colours (null if Home shows something else). */
 fun homeAscii(s: com.xenoorigin.xelauncher.settings.XeSettings): WallpaperPreset.Ascii? =
     (allWallpapers().byId(s.wallpaperId) as? WallpaperPreset.Ascii)?.takeIf { s.liveOnHome }?.withColors(s)

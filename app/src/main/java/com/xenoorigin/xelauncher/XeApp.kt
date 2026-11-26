@@ -122,7 +122,9 @@ fun XeApp(graph: AppGraph) {
         val haze = remember { HazeState() }
         // Liquid Glass looks through a frosted copy of the wallpaper, lined up with where the wallpaper sits now.
         val glassBg by graph.wallpaper.glassBackdrop.collectAsState()
-        val glassBackdrop = remember { com.xenoorigin.xelauncher.design.GlassBackdrop({ glassBg }, { androidx.compose.ui.geometry.Offset.Zero }, { androidx.compose.ui.geometry.Size(1f, 1f) }) }
+        // Glass only looks through the copy when it matches what's on Home (not over live ASCII scenes).
+        val sees by androidx.compose.runtime.rememberUpdatedState(com.xenoorigin.xelauncher.wallpaper.glassSeesWallpaper(settings))
+        val glassBackdrop = remember { com.xenoorigin.xelauncher.design.GlassBackdrop({ if (sees) glassBg else null }, { androidx.compose.ui.geometry.Offset.Zero }, { androidx.compose.ui.geometry.Size(1f, 1f) }) }
         CompositionLocalProvider(
             LocalHazeState provides haze, LocalIconRepository provides graph.icons, LocalGrayscaleContrast provides settings.grayscaleContrast,
             com.xenoorigin.xelauncher.icons.LocalGlyphScale provides settings.glyphScale,
