@@ -1,19 +1,29 @@
-## Xe Launcher 1.0.18
+## Xe Launcher 2.0
 
 **อัปเดต:** โหลด `xe-launcher.apk` ด้านล่าง ติดตั้งทับของเดิมได้ การตั้งค่ายังอยู่ครบ (`xe-studio.apk` เป็นตัวเดิมพร้อมเลขเวอร์ชันใหม่)
 
-- **วิดเจ็ตใหม่ Termi:** สัตว์เลี้ยงตัวจิ๋วสายเขียนโค้ด ยืนอยู่ริมทะเลสาบ ASCII มีท่าทางหลายแบบ เช่น พิมพ์โค้ด คิด จิบกาแฟ แก้บั๊ก ฉลองตอนบิลด์ผ่าน เพิ่มได้ที่ กดค้างหน้าโฮม › วิดเจ็ต › Termi (ขนาด 2×2, 4×2, 4×4)
-- **ดูแล Termi:** ให้อาหาร เล่น และพาเข้านอน มีหลอดความอิ่ม ความสนุก และพลังงาน Termi ไม่มีวันตายและไม่เสียเลเวล
-- **โตขึ้นได้:** เก็บ XP ไปถึงเลเวล 15 เปลี่ยนร่างจาก Junior เป็น Senior และ Lead ใช้แอปสายสร้าง เช่น Claude, Termux, GitHub แล้วจะโตเร็วขึ้น (ต้องเปิดสิทธิ์ดูการใช้งาน)
-- **ตู้เสื้อผ้า:** ปลดล็อกหมวก แว่น และของถือ 11 ชิ้นตามเลเวล
-- **เวลานอน:** Termi นอนตามเวลาที่ตั้ง ถ้าไม่ได้ใช้มือถือช่วงนั้นจะได้โบนัส แตะวิดเจ็ตเพื่อเปิดหน้า Termi เต็มจอ
-- รวมโลโก้ Xe ใหม่จาก 1.0.17
+- **Liquid Glass แบบใหม่:** กระจกใสขึ้น ขอบโค้งหักเหภาพด้านหลังเหมือนเลนส์หนาๆ มีสีรุ้งจางๆ ที่ขอบ และขอบสว่างคมขึ้น ใช้กับแผง เมนู Dock วิดเจ็ต และไอคอนกระจกใส (เห็นชัดสุดบน Android 13 ขึ้นไป ที่คุณภาพกระจก ปกติ หรือ สูง)
+- **สไตล์ Nothing:** สลับทั้งแอปได้ในหน้าตั้งค่า เป็นแผงดำ-ขาวเรียบ หัวข้อภาษาอังกฤษเป็นตัวอักษรจุด มีจุดแดง และสวิตช์สีแดง
+- **วิดเจ็ตสไตล์ Nothing:** นาฬิกาตัวเลขจุด แบตเตอรี่และพื้นที่เป็นวงแหวนจุด
+- **เสียงใหม่ของ Xe:** เสียงสั้นๆ ตอนแตะ เปิดปิดสวิตช์ เปิดลิ้นชักและเมนู และเปิดแอป จะเงียบเองเมื่อมือถืออยู่ในโหมดเงียบหรือสั่น ปิดได้ใน ตั้งค่า › เสียง
+- **หน้าตั้งค่าใหม่:** มีช่องค้นหาการตั้งค่า (ไทย/อังกฤษ) การ์ดเลือกสไตล์ และไอคอนสีในแต่ละแถว
+- **ค้นหาแอปง่ายขึ้น:** พิมพ์ตัวย่อได้ (ytm › YouTube Music) พิมพ์ผิดหนึ่งตัวก็เจอ และลืมเปลี่ยนแป้นพิมพ์ไทย/อังกฤษก็ยังเจอ
+- **วอลเปเปอร์ใหม่ 3 แบบ:** Garden Light, Blossom, City Night เป็นแสงโบเก้ที่ทำให้กระจกหักเหสวยที่สุด
+- **ธีมใหม่ 4 แบบ:** Nothing, Garden Glass, Blossom Glass, City Night
+- **อนิเมชันเปิดแอปใหม่:** แอปค่อยๆ เผยออกมาจากกรอบไอคอน
+- **Easter egg:** แตะชื่อ Xe Launcher ในหน้าเกี่ยวกับรัวๆ จะมีจุดไฟค่อยๆ ติด พร้อมเสียงลับตอนค้นพบ และหน้าเกี่ยวกับมีโลโก้ Xe ใหม่
+- **แก้บั๊ก:** ขอบกระจกหายเมื่อเปิดการหักเห, ปุ่มดูแล Termi ยังกดได้ตอนแก้ไขหน้าโฮม, Termi ขยับซ้อนกันตอนเปิดหน้า Termi, ค่าของ Termi ค้างหรือผิดเมื่อปรับนาฬิกาเครื่องไปมา, หน้า Termi ถามรายชื่อแอปซ้ำทุกเฟรม, ป้ายปุ่มภาษาไทยถูกตัดกลางตัวอักษร
 
 **Update:** download `xe-launcher.apk` below and install over the old one; your settings stay. (`xe-studio.apk` is unchanged apart from its version number.)
 
-- **New Termi widget:** a tiny coder pet standing by an ASCII lake, with lots of moves: typing code, thinking, sipping coffee, squashing bugs, celebrating a passing build. Add it from long-press Home › Widgets › Termi (2×2, 4×2, 4×4)
-- **Look after Termi:** feed, play and put it to bed, with food, fun and energy bars. Termi never dies and never loses a level
-- **Grow:** earn XP up to level 15 and grow from Junior to Senior and Lead. Using creator apps like Claude, Termux or GitHub makes it grow faster (needs usage access)
-- **Wardrobe:** unlock 11 hats, glasses and held items as you level up
-- **Night rest:** Termi sleeps at the times you set, with a bonus if you leave your phone alone. Tap the widget to open Termi's full page
-- Includes the new Xe logo from 1.0.17
+- **New Liquid Glass:** clearer glass whose edges bend what's behind like a thick lens, with faint rainbow fringes and a crisper rim. Used for panels, menus, the dock, widgets and clear glass icons (strongest on Android 13+ with glass quality Normal or High)
+- **Nothing style:** switch the whole launcher in Settings to flat black-and-white panels, dot-matrix English titles, a red dot and red switches
+- **Nothing-style widgets:** a dot-matrix clock, and dot rings for battery and storage
+- **Xe sounds:** short sounds for taps, toggles, opening the drawer and menus, and launching apps. Silent when your phone is on silent or vibrate; turn off in Settings › Sounds
+- **New settings page:** search settings (Thai or English), style cards and colour icon tiles
+- **Easier app search:** initials (ytm › YouTube Music), one typo, and the wrong Thai/English keyboard layout still find the app
+- **3 new wallpapers:** Garden Light, Blossom and City Night, bokeh light that shows off the glass
+- **4 new themes:** Nothing, Garden Glass, Blossom Glass, City Night
+- **New app-open animation:** apps reveal out of their icon's frame
+- **Easter egg:** tapping Xe Launcher on About lights up dots as you go, with a secret sound when you find it, and About shows the new Xe logo
+- **Fixes:** glass rims vanishing where refraction was on, Termi care buttons working in Home edit mode, two Termi animations at once with its page open, Termi needs and XP freezing when the phone clock was changed, the Termi page asking for app names every frame, Thai button labels cut mid-letter
