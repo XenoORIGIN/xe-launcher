@@ -14,9 +14,9 @@ import org.robolectric.annotation.GraphicsMode
 class WallpaperPresetTest {
     private fun pixels(b: Bitmap) = IntArray(b.width * b.height).also { b.getPixels(it, 0, b.width, 0, 0, b.width, b.height) }
 
-    @Test fun collection_hasNineteenUniquePresets_includingTheLiveSky() {
-        assertThat(XeCollection).hasSize(19)
-        assertThat(XeCollection.map { it.id }.toSet()).hasSize(19)
+    @Test fun collection_hasTwentyTwoUniquePresets_includingTheLiveSkyAndBokeh() {
+        assertThat(XeCollection).hasSize(22)
+        assertThat(XeCollection.map { it.id }.toSet()).hasSize(22)
         assertThat(XeCollection.first().id).isEqualTo("xe_black")
         assertThat(XeCollection.map { it.id }).containsAtLeast("xe_blue", LIVE_SKY_ID)
     }

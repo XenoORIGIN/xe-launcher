@@ -29,13 +29,16 @@ object UpdateChecker {
     private fun parts(v: String): List<Int>? =
         Regex("\\d+(\\.\\d+)*").find(v)?.value?.split('.')?.map { it.toInt() }
 
+    private fun isPre(v: String) = v.contains('-')
+
     fun isNewer(remote: String, local: String): Boolean {
         val r = parts(remote) ?: return false; val l = parts(local) ?: return false
         for (i in 0 until maxOf(r.size, l.size)) {
             val a = r.getOrElse(i) { 0 }; val b = l.getOrElse(i) { 0 }
             if (a != b) return a > b
         }
-        return false
+        // Same numbers: a full release is newer than a pre-release of it (2.0.0 > 2.0.0-beta1).
+        return !isPre(remote) && isPre(local)
     }
 
     /** Compares the newest GitHub release with [current]. A repository with no release yet counts as up to date. */

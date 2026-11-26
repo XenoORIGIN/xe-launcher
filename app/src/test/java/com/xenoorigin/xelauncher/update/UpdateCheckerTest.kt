@@ -34,4 +34,11 @@ class UpdateCheckerTest {
     @Test fun rateLimited_isFailed() = runBlocking<Unit> {
         assertThat(UpdateChecker.check("1.0.3") { HttpResult(403, "{}") }).isEqualTo(UpdateResult.Failed)
     }
+
+    // A beta of a version is older than the version itself.
+    @Test fun releaseIsNewerThanItsBeta() {
+        assertThat(UpdateChecker.isNewer("v2.0.0", "2.0.0-beta1")).isTrue()
+        assertThat(UpdateChecker.isNewer("v2.0.0", "2.0.0")).isFalse()
+        assertThat(UpdateChecker.isNewer("v1.0.18", "2.0.0-beta1")).isFalse()
+    }
 }
