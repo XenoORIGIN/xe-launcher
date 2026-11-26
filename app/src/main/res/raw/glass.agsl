@@ -3,6 +3,11 @@ uniform float2 size;
 uniform float radius;
 uniform float strength;
 uniform float edge;
+uniform float chroma;
+uniform float mag;
+
+// Xe 2.0 Liquid Glass: a thick convex lens. Deep inside it magnifies a little; toward the rim it bends
+// what's behind inward along the edge and splits the colours, so the rim shows rainbow streaks.
 
 float sdRoundRect(float2 p, float2 b, float r) {
     float2 q = abs(p) - b + r;
@@ -15,16 +20,20 @@ half4 main(float2 coord) {
     float r = min(radius, min(c.x, c.y));
     float d = -sdRoundRect(p, c, r);
     if (d <= 0.0) return content.eval(coord);
-    float t = 1.0 - clamp(d / edge, 0.0, 1.0);
-    t = t * t;
+    float band = min(edge, min(c.x, c.y));
+    float t = clamp(d / band, 0.0, 1.0);
+    float prof = (1.0 - t) * (1.0 - t);
     float2 e = float2(1.0, 0.0);
     float2 n = float2(
         sdRoundRect(p + e.xy, c, r) - sdRoundRect(p - e.xy, c, r),
         sdRoundRect(p + e.yx, c, r) - sdRoundRect(p - e.yx, c, r));
     n = n / max(length(n), 0.0001);
-    float2 off = -n * strength * t;
-    half4 rr = content.eval(coord + off * 1.10);
+    // Magnify toward the centre, scaled by the short side so long panels don't over-zoom their ends.
+    float2 lens = -p * mag * (min(c.x, c.y) / max(c.x, c.y));
+    float2 off = -n * strength * prof + lens;
+    float ch = chroma * prof;
+    half4 rr = content.eval(coord + off * (1.0 + ch));
     half4 gg = content.eval(coord + off);
-    half4 bb = content.eval(coord + off * 0.90);
+    half4 bb = content.eval(coord + off * (1.0 - ch));
     return half4(rr.r, gg.g, bb.b, gg.a);
 }

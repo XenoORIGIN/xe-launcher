@@ -52,6 +52,10 @@ data class GlassStyle(
     val rimTint: Color = Color.Transparent,
     /** Nothing style: an opaque flat panel with a hairline edge instead of glass. */
     val flat: Boolean = false,
+    /** How far the colours split at the bending edge (0 = none). */
+    val chroma: Float = 0f,
+    /** How much the glass magnifies what's behind it, like a thick convex lens (0..~0.3). */
+    val magnify: Float = 0f,
 )
 
 fun glassStyleFor(q: GlassQuality, dark: Boolean, sdk: Int = Build.VERSION.SDK_INT, ui: UiStyle = UiStyle.GLASS): GlassStyle {
@@ -61,20 +65,23 @@ fun glassStyleFor(q: GlassQuality, dark: Boolean, sdk: Int = Build.VERSION.SDK_I
     )
     val canBlur = sdk >= 31
     val canRefract = sdk >= 33
+    // 2.0: clear glass, as in the owner's reference — a light frost so the bending edge shows what's behind.
     val blur = when {
         !canBlur -> 0.dp
-        q == GlassQuality.HIGH -> 24.dp
-        q == GlassQuality.NORMAL -> 20.dp
+        q == GlassQuality.HIGH -> 6.dp
+        q == GlassQuality.NORMAL -> 10.dp
         else -> 0.dp
     }
-    val baseTint = if (dark) Color.Black.copy(alpha = .28f) else Color.White.copy(alpha = .18f)
+    val baseTint = if (dark) Color.Black.copy(alpha = .16f) else Color.White.copy(alpha = .16f)
     // Without blur the panel needs a denser film to stay legible.
     val tint = if (blur == 0.dp) baseTint.copy(alpha = if (dark) .62f else .55f) else baseTint
     return GlassStyle(
         blurRadius = blur,
         tint = tint,
         rimAlpha = if (q == GlassQuality.SAVER) .45f else .8f,
-        refraction = if (q == GlassQuality.HIGH && canRefract) 14f else 0f,
+        refraction = when { !canRefract || q == GlassQuality.SAVER -> 0f; q == GlassQuality.HIGH -> 24f; else -> 20f },
+        chroma = if (canRefract && q != GlassQuality.SAVER) .7f else 0f,
+        magnify = if (canRefract && q != GlassQuality.SAVER) .2f else 0f,
         noiseAlpha = if (blur > 0.dp) .06f else 0f,
         dark = dark,
     )
@@ -210,7 +217,7 @@ fun GlassSurface(
         Box(
             Modifier
                 .matchParentSize()
-                .refraction(shape, if (style.flat) 0f else style.refraction)
+                .refraction(shape, if (style.flat) 0f else style.refraction, style.chroma, style.magnify)
                 .liquidGlass(shape, style, haze),
         )
         content()

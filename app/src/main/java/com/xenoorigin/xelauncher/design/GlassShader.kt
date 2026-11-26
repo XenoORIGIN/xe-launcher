@@ -19,7 +19,7 @@ import com.xenoorigin.xelauncher.R
 private var cachedSource: String? = null
 
 /** Lens-like edge refraction (API 33+). No-op when [strength] is 0 or unsupported. */
-fun Modifier.refraction(shape: Shape, strength: Float): Modifier =
+fun Modifier.refraction(shape: Shape, strength: Float, chroma: Float = .7f, magnify: Float = .2f): Modifier =
     if (strength <= 0f || Build.VERSION.SDK_INT < 33) this else composed {
         val ctx = LocalContext.current
         val density = LocalDensity.current
@@ -33,7 +33,9 @@ fun Modifier.refraction(shape: Shape, strength: Float): Modifier =
             shader.setFloatUniform("size", size.width, size.height)
             shader.setFloatUniform("radius", corner)
             shader.setFloatUniform("strength", strength * density.density)
-            shader.setFloatUniform("edge", 18f * density.density)
+            shader.setFloatUniform("edge", 32f * density.density)
+            shader.setFloatUniform("chroma", chroma)
+            shader.setFloatUniform("mag", magnify)
             renderEffect = RenderEffect.createRuntimeShaderEffect(shader, "content").asComposeRenderEffect()
             clip = false
         }

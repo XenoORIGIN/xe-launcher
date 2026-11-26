@@ -30,6 +30,7 @@ fun asciiPixelScale(drawnWidth: Float): Int = maxOf(1, kotlin.math.round(drawnWi
 object WallpaperRenderer {
     fun render(p: WallpaperPreset, w: Int, h: Int): Bitmap = when (p) {
         is WallpaperPreset.Mesh -> mesh(p, w, h)
+        is WallpaperPreset.Bokeh -> bokeh(p, w, h)
         is WallpaperPreset.Abstract -> abstract(p, w, h)
         is WallpaperPreset.Image -> image(p, w, h)
         is WallpaperPreset.Liquid -> liquid(p, w, h)
@@ -120,6 +121,58 @@ object WallpaperRenderer {
     }
 
     private fun Long.argb() = toInt()
+
+    /**
+     * Light through leaves: a dark-to-light base, soft foliage, then three layers of bokeh discs from very
+     * soft and big to small and crisp. Soft layers are drawn small, blurred and scaled up, so it stays quick.
+     * colors = [top, bottom, glow, then the light colours].
+     */
+    private fun bokeh(p: WallpaperPreset.Bokeh, w: Int, h: Int): Bitmap {
+        val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val c = Canvas(out)
+        val rnd = Random(p.seed.toLong())
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
+        val top = p.colors[0].argb(); val bottom = p.colors[1].argb(); val glow = p.colors[2].argb()
+        val lights = p.colors.drop(3).map { it.argb() }
+        paint.shader = android.graphics.LinearGradient(0f, 0f, 0f, h.toFloat(), top, bottom, Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, w.toFloat(), h.toFloat(), paint)
+        paint.shader = RadialGradient(w * .7f, h * .3f, max(w, h) * .55f, intArrayOf(alpha(glow, .55f), alpha(glow, 0f)), null, Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, w.toFloat(), h.toFloat(), paint)
+        paint.shader = null
+        val unit = w / 1080f
+        fun layer(scale: Int, blur: Int, count: Int, rMin: Float, rMax: Float, a0: Float, a1: Float, ring: Boolean, ovals: Boolean, shade: Int = 0, shadeT: Float = 0f) {
+            val lw = max(1, w / scale); val lh = max(1, h / scale)
+            val lb = Bitmap.createBitmap(lw, lh, Bitmap.Config.ARGB_8888)
+            val lc = Canvas(lb)
+            val pp = Paint(Paint.ANTI_ALIAS_FLAG)
+            val k = unit / scale
+            repeat(count) {
+                val x = rnd.nextFloat() * lw; val y = rnd.nextFloat() * lh * (if (ovals) 1f else .88f)
+                val r = (rMin + rnd.nextFloat() * (rMax - rMin)) * k
+                val col = lights[rnd.nextInt(lights.size)]
+                val a = a0 + rnd.nextFloat() * (a1 - a0)
+                pp.style = Paint.Style.FILL
+                pp.color = if (ovals) alpha(blend(col, shade, shadeT), a) else alpha(blend(col, 0xFFFFFFFF.toInt(), .45f), a)
+                if (ovals) lc.drawOval(x - r, y - r * .65f, x + r, y + r * .65f, pp) else lc.drawCircle(x, y, r, pp)
+                if (ring && r > 2f) {
+                    pp.style = Paint.Style.STROKE; pp.strokeWidth = max(1f, r * .1f); pp.color = alpha(0xFFFFFFFF.toInt(), a * .6f)
+                    lc.drawCircle(x, y, r, pp)
+                }
+            }
+            if (blur > 0) boxBlur(lb, blur)
+            c.drawBitmap(lb, null, android.graphics.Rect(0, 0, w, h), Paint(Paint.FILTER_BITMAP_FLAG or Paint.DITHER_FLAG))
+            lb.recycle()
+        }
+        layer(6, 2, 200, 50f, 170f, .35f, .75f, ring = false, ovals = true, shade = top, shadeT = .62f) // dark foliage
+        layer(6, 3, 30, 80f, 170f, .14f, .3f, ring = false, ovals = false)   // big soft bokeh
+        layer(2, 1, 55, 22f, 70f, .4f, .78f, ring = true, ovals = false)      // medium bokeh with bright rims
+        layer(1, 0, 110, 3f, 12f, .5f, .95f, ring = false, ovals = false)     // crisp sparkles
+        paint.shader = RadialGradient(w / 2f, h * .45f, max(w, h) * .75f, intArrayOf(0, alpha(top, .55f)), floatArrayOf(.55f, 1f), Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, w.toFloat(), h.toFloat(), paint)
+        paint.shader = null
+        grain(out, .025f, p.seed)
+        return out
+    }
 
     private fun mesh(p: WallpaperPreset.Mesh, w: Int, h: Int): Bitmap {
         val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)

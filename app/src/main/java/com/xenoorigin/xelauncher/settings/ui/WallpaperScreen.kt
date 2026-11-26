@@ -252,6 +252,9 @@ internal fun WallpaperEditor(
                     is WallpaperPreset.Liquid -> {
                         GlassPillButton(stringResource(R.string.shuffle), { preset = p.copy(seed = p.seed + 101) }, Modifier.fillMaxWidth().padding(top = 8.dp), icon = R.drawable.ti_refresh)
                     }
+                    is WallpaperPreset.Bokeh -> {
+                        GlassPillButton(stringResource(R.string.shuffle), { preset = p.copy(seed = p.seed + 101) }, Modifier.fillMaxWidth().padding(top = 8.dp), icon = R.drawable.ti_refresh)
+                    }
                     is WallpaperPreset.Abstract -> {
                         GlassPillButton(stringResource(R.string.shuffle), { preset = p.copy(seed = p.seed + 101) }, Modifier.fillMaxWidth().padding(top = 8.dp), icon = R.drawable.ti_refresh)
                         SliderRow(stringResource(R.string.glass_lenses), p.lenses.toFloat(), 0f..5f, steps = 4, display = { it.toInt().toString() }) { preset = p.copy(lenses = it.toInt()) }

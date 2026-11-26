@@ -15,6 +15,9 @@ sealed interface WallpaperPreset {
     /** Liquid glass art: flowing ribbons, a frosted aurora or chrome waves. */
     data class Liquid(override val id: String, override val name: String, val colors: List<Long>, val seed: Int, val style: LiquidStyle) : WallpaperPreset
 
+    /** Out-of-focus light through leaves or blossoms: lots of soft discs and sparkles for Liquid Glass to bend. */
+    data class Bokeh(override val id: String, override val name: String, val colors: List<Long>, val seed: Int) : WallpaperPreset
+
     /** The sky right now: colours, sun or moon and stars follow the time of day ([minute] fixes a time, for previews). */
     data class Sky(override val id: String = LIVE_SKY_ID, override val name: String = "Live Sky", val minute: Int? = null) : WallpaperPreset
 
@@ -69,6 +72,9 @@ enum class LiquidStyle { RIBBONS, AURORA, CHROME }
 val XeCollection: List<WallpaperPreset> = listOf(
     WallpaperPreset.Mesh("xe_black", "Xe Black", listOf(0xFF000000, 0xFF8A8A8A, 0xFF4A4A4A, 0xFF2A2A2A), seed = 11, grain = .03f, glow = .5f),
     WallpaperPreset.Sky(),
+    WallpaperPreset.Bokeh("bokeh_garden", "Garden Light", listOf(0xFF12341C, 0xFF2E6A2C, 0xFFB4C85A, 0xFF78B446, 0xFFC8DC78, 0xFFFAF0AA), seed = 201),
+    WallpaperPreset.Bokeh("bokeh_blossom", "Blossom", listOf(0xFF1E1222, 0xFF5A2350, 0xFFDC78AA, 0xFFF096C8, 0xFFFFC8E6, 0xFFFFF0FA), seed = 202),
+    WallpaperPreset.Bokeh("bokeh_night", "City Night", listOf(0xFF060814, 0xFF10163A, 0xFF3C50B4, 0xFF5A8CFF, 0xFFFFC878, 0xFF78E6FF), seed = 203),
     WallpaperPreset.Abstract("xe_blue", "Xe Blue", listOf(0xFF05082A, 0xFF2F4BFF, 0xFF7A5CFF, 0xFF1E8BFF, 0xFFC27BFF), seed = 7),
     WallpaperPreset.Mesh("graphite", "Graphite", listOf(0xFF111114, 0xFF5E5E66, 0xFF2C2C30, 0xFF9A9AA2), seed = 23, glow = .7f),
     WallpaperPreset.Mesh("midnight", "Midnight", listOf(0xFF03041A, 0xFF1B2A8C, 0xFF3A1E7A, 0xFF0B4C8C), seed = 31),
