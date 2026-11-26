@@ -137,7 +137,11 @@ internal fun CareButtons(store: TermiStore, asleep: Boolean, each: Modifier = Mo
 @Composable
 private fun CareButton(label: String, tag: String, modifier: Modifier, onClick: () -> Unit) {
     Box(
-        modifier.testTag(tag).clip(RoundedCornerShape(14.dp)).background(Color.White.copy(alpha = .16f)).clickable(onClick = onClick).padding(vertical = 8.dp, horizontal = 6.dp),
+        modifier.testTag(tag).clip(RoundedCornerShape(14.dp)).background(Color.White.copy(alpha = .16f))
+            .clickable { com.xenoorigin.xelauncher.sound.XeSound.tap(); onClick() }.padding(vertical = 8.dp, horizontal = 6.dp),
         contentAlignment = Alignment.Center,
-    ) { Text(label, color = Color.White, fontSize = 13.sp, textAlign = TextAlign.Center, maxLines = 1) }
+    ) {
+        // Long Thai labels at large font sizes end in "…" instead of being cut mid-letter.
+        Text(label, color = Color.White, fontSize = 13.sp, textAlign = TextAlign.Center, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+    }
 }

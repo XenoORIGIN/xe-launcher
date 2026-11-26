@@ -94,7 +94,8 @@ fun TermiScreen(
         SettingsGroup(stringResource(R.string.termi_creators)) {
             Text(stringResource(R.string.termi_creators_desc), style = XeType.Caption, color = scheme.textSecondary, modifier = Modifier.padding(14.dp))
             if (!usageAccess) Box(Modifier.testTag("termi_usage")) { ChoiceRow(stringResource(R.string.termi_usage_needed), false, onClick = onGrantUsage) }
-            val chosen = store.creatorApps().let { c -> remember(saved) { c } }
+            // Looked up once per change (it asks the package manager), not on every recomposition.
+            val chosen = remember(saved) { store.creatorApps() }
             val sorted = apps.sortedWith(compareBy({ it.first !in chosen }, { it.second.lowercase() }))
             for ((pkg, label) in sorted) {
                 Box(Modifier.testTag("creator_$pkg")) { ChoiceRow(label, pkg in chosen) { store.setCreator(pkg, pkg !in chosen) } }
