@@ -54,6 +54,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.sp
 import com.xenoorigin.xelauncher.R
 import com.xenoorigin.xelauncher.apps.AppEntry
@@ -129,9 +132,14 @@ fun GlassWidget(kind: GlassWidgetKind, itemId: Long = -1, modifier: Modifier = M
     val span = LocalWidgetSpan.current ?: Span(kind.spanX, kind.spanY)
     val shape = RoundedCornerShape(if (span.y == 1) 32.dp else 28.dp)
     if (kind == GlassWidgetKind.PHOTO) { PhotoWidget(itemId, shape, modifier); return }
+    val nothing = com.xenoorigin.xelauncher.design.LocalUiStyle.current == com.xenoorigin.xelauncher.design.UiStyle.NOTHING
+    // Nothing style: widgets are black panels with white dots in both themes, like a Nothing phone's.
+    val panelStyle = if (nothing) com.xenoorigin.xelauncher.design.glassStyleFor(com.xenoorigin.xelauncher.design.GlassQuality.NORMAL, dark = true, ui = com.xenoorigin.xelauncher.design.UiStyle.NOTHING)
+        else com.xenoorigin.xelauncher.design.LocalGlassStyle.current
+    androidx.compose.runtime.CompositionLocalProvider(com.xenoorigin.xelauncher.design.LocalGlassStyle provides panelStyle, com.xenoorigin.xelauncher.design.LocalLiquidGlass provides (!nothing && com.xenoorigin.xelauncher.design.LocalLiquidGlass.current)) {
     com.xenoorigin.xelauncher.design.LiquidSurface(shape, modifier.fillMaxSize()) {
         // A soft light from the top-left gives every widget the same depth.
-        Box(Modifier.fillMaxSize().clip(shape).background(Brush.radialGradient(listOf(Color.White.copy(alpha = .10f), Color.Transparent), Offset.Zero, 700f)))
+        if (!nothing) Box(Modifier.fillMaxSize().clip(shape).background(Brush.radialGradient(listOf(Color.White.copy(alpha = .10f), Color.Transparent), Offset.Zero, 700f)))
         when (kind) {
             GlassWidgetKind.CLOCK -> ClockWidget(span)
             GlassWidgetKind.ANALOG -> AnalogWidget(span)
@@ -146,16 +154,37 @@ fun GlassWidget(kind: GlassWidgetKind, itemId: Long = -1, modifier: Modifier = M
             GlassWidgetKind.TERMI -> com.xenoorigin.xelauncher.termi.TermiWidget(span, Modifier.fillMaxSize().clip(shape))
         }
     }
+    }
 }
 
 private fun Modifier.background(b: Brush) = this.then(Modifier.drawBehindBrush(b))
 private fun Modifier.drawBehindBrush(b: Brush) = this.drawBehind { drawRect(b) }
+
+/** Nothing-style clock: the time in big dot-matrix type with a red dot, the date small underneath. */
+@Composable
+private fun NothingClock(span: Span, time: String, now: Long, locale: Locale) {
+    BoxWithConstraints(Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp), contentAlignment = Alignment.Center) {
+        val cols = time.length * 6 - 1
+        val dot = minOf(maxWidth / cols, maxHeight * (if (span.isRow || span.isSmall) .9f else .62f) / 7)
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box {
+                com.xenoorigin.xelauncher.design.DotText(time, dot, Color.White, ghost = .09f)
+                Box(Modifier.align(Alignment.TopEnd).offset(x = dot * 1.4f).size(dot * .9f).clip(CircleShape).drawBehindBrush(Brush.linearGradient(listOf(com.xenoorigin.xelauncher.design.NothingRed, com.xenoorigin.xelauncher.design.NothingRed))))
+            }
+            if (!span.isRow && !span.isSmall) Text(
+                SimpleDateFormat(if (span.x >= 3) "EEEE d MMMM" else "EEE d MMM", locale).format(Date(now)).uppercase(locale),
+                color = Color.White.copy(alpha = .7f), style = XeType.Label.copy(letterSpacing = 2.sp), maxLines = 1, modifier = Modifier.padding(top = dot * 1.6f),
+            )
+        }
+    }
+}
 
 @Composable
 private fun ClockWidget(span: Span) {
     val now = rememberNow()
     val locale = Locale.getDefault()
     val time = SimpleDateFormat("HH:mm", locale).format(Date(now))
+    if (com.xenoorigin.xelauncher.design.LocalUiStyle.current == com.xenoorigin.xelauncher.design.UiStyle.NOTHING) { NothingClock(span, time, now, locale); return }
     BoxWithConstraints(Modifier.fillMaxSize().padding(horizontal = if (span.isSmall) 8.dp else 22.dp, vertical = if (span.isSmall) 8.dp else 16.dp), contentAlignment = if (span.x == 1) Alignment.Center else Alignment.CenterStart) {
         // Size the time to the space: the whole width on small widgets, half the height on big ones.
         val big = minOf(maxHeight.value * (if (span.isRow) .62f else .5f), maxWidth.value / (if (span.isRow && span.x >= 3) 4.6f else 2.9f)).coerceIn(22f, 120f)
@@ -422,12 +451,36 @@ private fun StorageWidget(span: Span) {
 
 
 /** A ring with its value: just the ring on 1×1, ring beside the label on wide sizes, stacked otherwise. */
+/** A ring of dots, lit up to [fraction] clockwise from the top; unlit dots stay faint. */
+@Composable
+private fun DotRing(fraction: Float, color: Color, modifier: Modifier) {
+    androidx.compose.foundation.Canvas(modifier.semantics { contentDescription = "dot_ring" }) {
+        val n = 36
+        val r = size.minDimension / 2f * .86f
+        val dotR = size.minDimension * .028f
+        val lit = (fraction.coerceIn(0f, 1f) * n).toInt()
+        for (i in 0 until n) {
+            val a = Math.toRadians(-90.0 + i * 360.0 / n)
+            val c = Offset(center.x + r * kotlin.math.cos(a).toFloat(), center.y + r * kotlin.math.sin(a).toFloat())
+            drawCircle(if (i < lit) color else Color.White.copy(alpha = .14f), if (i < lit) dotR * 1.15f else dotR, c)
+        }
+    }
+}
+
 @Composable
 private fun RingLayout(span: Span, fraction: Float, color: Color, value: String, label: String) {
+    val nothing = com.xenoorigin.xelauncher.design.LocalUiStyle.current == com.xenoorigin.xelauncher.design.UiStyle.NOTHING
     val ring = @Composable { size: androidx.compose.ui.unit.Dp ->
         Box(Modifier.size(size), contentAlignment = Alignment.Center) {
-            Ring(fraction, color, Modifier.fillMaxSize())
-            Text(value, color = Color.White, style = if (size < 70.dp) XeType.Label else XeType.Headline)
+            if (nothing) {
+                DotRing(fraction, if (color == Color.White) Color.White else color, Modifier.fillMaxSize())
+                val digits = value.removeSuffix("%")
+                if (com.xenoorigin.xelauncher.design.DotFont.canDraw(digits)) com.xenoorigin.xelauncher.design.DotText(digits, size / 26, Color.White, ghost = 0f)
+                else Text(value, color = Color.White, style = XeType.Label)
+            } else {
+                Ring(fraction, color, Modifier.fillMaxSize())
+                Text(value, color = Color.White, style = if (size < 70.dp) XeType.Label else XeType.Headline)
+            }
         }
     }
     when {
