@@ -406,7 +406,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     fun closeAll() {
         menu = null; openFolder = null; drawerMenu = false; editor = null; moveFor = null; editFor = null; arrange = null; bulkIcons = false
         widgetPicker = false; widgetEditId = null; manageCategory = null; noteFor = null
-        searchOpen = false; settingsRoute = null; editMode = false; drawPad = false
+        searchOpen = false; termiOpen = false; settingsRoute = null; editMode = false; drawPad = false
     }
 
     fun launch(app: AppEntry, r: Rect) {
@@ -434,7 +434,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
     LaunchedEffect(Unit) {
         graph.homePressed.collect {
             val anyOverlay = menu != null || openFolder != null || drawerMenu || editor != null || moveFor != null ||
-                editFor != null || arrange != null || manageCategory != null || noteFor != null || bulkIcons || widgetPicker || widgetEditId != null || searchOpen || settingsRoute != null || editMode || drawPad
+                editFor != null || arrange != null || manageCategory != null || noteFor != null || bulkIcons || widgetPicker || widgetEditId != null || searchOpen || termiOpen || settingsRoute != null || editMode || drawPad
             if (anyOverlay) closeAll()
             else if (drawerShown) settleDrawer(false)
             else homePager.animateScrollToPage(0)
@@ -660,6 +660,19 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                         }
                     },
                     onClose = { searchOpen = false },
+                )
+            }
+        }
+
+        AnimatedVisibility(termiOpen, enter = fadeIn() + scaleIn(initialScale = .96f), exit = fadeOut() + scaleOut(targetScale = .96f)) {
+            Box(Modifier.fillMaxSize()) {
+                com.xenoorigin.xelauncher.wallpaper.BlurredBackdrop(graph.wallpaper, Color.Black.copy(alpha = .55f))
+                val usageOk = remember(termiOpen) { com.xenoorigin.xelauncher.apps.UsageTime.hasAccess(ctx) }
+                com.xenoorigin.xelauncher.termi.TermiScreen(
+                    graph.termi, remember(apps) { apps.map { it.key.packageName to it.label }.distinctBy { it.first } }, usageOk,
+                    onGrantUsage = { com.xenoorigin.xelauncher.apps.UsageTime.requestAccess(ctx) },
+                    onClose = { termiOpen = false },
+                    accent = settings.accent, ascii = settings.asciiColor, animate = speed != AnimationSpeed.OFF && !powerSave,
                 )
             }
         }
