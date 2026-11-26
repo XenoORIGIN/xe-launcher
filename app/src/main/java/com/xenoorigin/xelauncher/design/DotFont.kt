@@ -52,6 +52,46 @@ object DotFont {
     fun glyph(c: Char): BooleanArray? = glyphs[c.uppercaseChar()]
 
     fun canDraw(text: String): Boolean = text.isNotEmpty() && text.all { glyph(it) != null }
+
+    /** A grid of lit dots, [cols] × [rows], row-major. */
+    class Grid(val cols: Int, val rows: Int, val on: BooleanArray)
+
+    /**
+     * Any text (Thai with its vowels and tone marks included) as a dot grid [rows] high: the text is drawn with
+     * the system font into a tiny bitmap that tall, and every pixel that is mostly ink becomes a lit dot.
+     */
+    fun rasterize(text: String, rows: Int, bold: Boolean = true): Grid {
+        if (text.isEmpty() || rows <= 0) return Grid(0, rows, BooleanArray(0))
+        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, if (bold) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+            color = android.graphics.Color.WHITE
+        }
+        // Size the font so its full height (marks above and below included) fills the rows.
+        paint.textSize = 100f
+        val fm = paint.fontMetrics
+        paint.textSize = 100f * rows / (fm.descent - fm.ascent)
+        val m = paint.fontMetrics
+        val cols = kotlin.math.ceil(paint.measureText(text)).toInt().coerceAtLeast(1)
+        val bmp = android.graphics.Bitmap.createBitmap(cols, rows, android.graphics.Bitmap.Config.ARGB_8888)
+        android.graphics.Canvas(bmp).drawText(text, 0f, -m.ascent, paint)
+        val px = IntArray(cols * rows).also { bmp.getPixels(it, 0, cols, 0, 0, cols, rows) }
+        bmp.recycle()
+        return Grid(cols, rows, BooleanArray(px.size) { (px[it] ushr 24) > 96 })
+    }
+}
+
+/** [text] as dots from [DotFont.rasterize] (for text the 5 × 7 font can't draw, such as Thai). */
+@Composable
+fun DotRasterText(text: String, rows: Int, dot: Dp, color: Color, modifier: Modifier = Modifier, ghost: Float = .08f) {
+    val g = remember(text, rows) { DotFont.rasterize(text, rows) }
+    Canvas(modifier.size(dot * g.cols, dot * g.rows).semantics { contentDescription = text }) {
+        val step = dot.toPx(); val r = step * .38f
+        for (y in 0 until g.rows) for (x in 0 until g.cols) {
+            val on = g.on[y * g.cols + x]
+            if (!on && ghost <= 0f) continue
+            drawCircle(if (on) color else color.copy(alpha = color.alpha * ghost), r, Offset((x + .5f) * step, (y + .5f) * step))
+        }
+    }
 }
 
 /**

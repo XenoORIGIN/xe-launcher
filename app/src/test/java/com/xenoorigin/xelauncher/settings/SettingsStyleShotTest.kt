@@ -10,6 +10,8 @@ import com.xenoorigin.xelauncher.settings.ui.SettingsRoot
 import com.xenoorigin.xelauncher.testutil.SHOT_DIR
 import com.xenoorigin.xelauncher.testutil.TestBackdrop
 import org.junit.Rule
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -30,4 +32,20 @@ class SettingsStyleShotTest {
 
     @Test fun glass() = shot(UiStyle.GLASS, "settings_glass.png")
     @Test fun nothing() = shot(UiStyle.NOTHING, "settings_nothing.png")
+
+    @Test fun nothingThaiTitles() {
+        rule.setContent {
+            XeTheme(uiStyle = UiStyle.NOTHING) {
+                TestBackdrop(black = true) {
+                    androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp)) {
+                        com.xenoorigin.xelauncher.settings.ui.PageTitle("การตั้งค่า")
+                        com.xenoorigin.xelauncher.settings.ui.PageTitle("งานและการเรียน")
+                        com.xenoorigin.xelauncher.settings.ui.PageTitle("สื่อสาร")
+                    }
+                }
+            }
+        }
+        rule.waitForIdle()
+        rule.onRoot().captureRoboImage("$SHOT_DIR/nothing_thai_titles.png")
+    }
 }

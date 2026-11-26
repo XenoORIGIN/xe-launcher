@@ -72,9 +72,15 @@ fun PageTitle(title: String) {
     when {
         nothing && com.xenoorigin.xelauncher.design.DotFont.canDraw(title) && title.length <= 12 ->
             com.xenoorigin.xelauncher.design.DotText(title.uppercase(), 4.dp, scheme.text)
-        nothing -> Row(verticalAlignment = Alignment.Bottom) {
-            Text(title, style = XeType.LargeTitle, color = scheme.text)
-            Box(Modifier.padding(start = 6.dp, bottom = 10.dp).size(8.dp).background(com.xenoorigin.xelauncher.design.NothingRed, CircleShape))
+        // Thai (and anything else) in dots too, sized so the whole title fits the width; a red dot ends it.
+        nothing -> androidx.compose.foundation.layout.BoxWithConstraints {
+            val rows = 18
+            val cols = remember(title) { com.xenoorigin.xelauncher.design.DotFont.rasterize(title, rows).cols }.coerceAtLeast(1)
+            val dot = minOf(2.6.dp, (maxWidth - 24.dp) / cols)
+            Row(verticalAlignment = Alignment.Bottom) {
+                com.xenoorigin.xelauncher.design.DotRasterText(title, rows, dot, scheme.text)
+                Box(Modifier.padding(start = 6.dp, bottom = dot * 3).size(8.dp).background(com.xenoorigin.xelauncher.design.NothingRed, CircleShape))
+            }
         }
         else -> Text(title, style = XeType.LargeTitle, color = scheme.text)
     }
