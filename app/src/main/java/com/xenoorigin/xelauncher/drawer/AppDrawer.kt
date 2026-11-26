@@ -58,6 +58,8 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -159,9 +161,9 @@ fun AppDrawer(
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    GlassIconButton(R.drawable.ti_search, stringResource(R.string.search), onSearch)
-                    GlassIconButton(R.drawable.ti_shopping_bag, stringResource(R.string.store), onStore)
-                    GlassIconButton(R.drawable.ti_dots, stringResource(R.string.menu), onMenu)
+                    LensIconButton(R.drawable.ti_search, stringResource(R.string.search), onSearch)
+                    LensIconButton(R.drawable.ti_shopping_bag, stringResource(R.string.store), onStore)
+                    LensIconButton(R.drawable.ti_dots, stringResource(R.string.menu), onMenu)
                 }
             }
             HorizontalPager(state.pager, Modifier.weight(1f).fillMaxWidth(), beyondViewportPageCount = 1, key = { pages.getOrNull(it)?.id ?: it }) { page ->
@@ -288,14 +290,16 @@ private fun BentoPage(
                                     AppIcon(app, icon, look.iconStyle(app), look.iconShape, look.labels, m, tileModifier = tile)
                                 }
                                 BentoSize.HERO -> DrawerTile(page, cell.app, cell.row, app, icon * 1.45f, play, speed, onLaunch, onLongPress) { m, tile ->
+                                    // 2.1: the big tile is lens glass too, like the dock and widgets.
+                                    com.xenoorigin.xelauncher.design.LiquidSurface(RoundedCornerShape(30.dp), m.fillMaxSize()) {
                                     Column(
-                                        m.fillMaxSize().glassTile(RoundedCornerShape(30.dp), glass, Color.White.copy(alpha = if (glass.dark) .07f else .3f))
-                                            .padding(16.dp).testTag("bentoHero").semantics(mergeDescendants = true) {},
+                                        Modifier.fillMaxSize().testTag("bentoHero").semantics(mergeDescendants = true) {}.padding(16.dp),
                                     ) {
                                         AppIcon(app, icon * 1.45f, look.iconStyle(app), look.iconShape, false, tileModifier = tile)
                                         Spacer(Modifier.weight(1f))
                                         Text(app.label, style = XeType.Headline, color = scheme.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                         if (look.uses(app) > 0) Text(stringResource(R.string.bento_most_used), style = XeType.Label, color = scheme.textSecondary, maxLines = 1)
+                                    }
                                     }
                                 }
                                 BentoSize.WIDE -> DrawerTile(page, cell.app, cell.row, app, icon * .8f, play, speed, onLaunch, onLongPress) { m, tile ->
@@ -380,3 +384,14 @@ private fun DrawerTile(
 
 /** The icon tile shape, so dust and sheen are clipped to it. */
 private val LocalIconShapeForTiles = androidx.compose.runtime.staticCompositionLocalOf<androidx.compose.ui.graphics.Shape> { RoundedCornerShape(22) }
+
+/** A round drawer button: lens glass in Liquid Glass style (falls back to the usual glass button). */
+@androidx.compose.runtime.Composable
+private fun LensIconButton(icon: Int, label: String, onClick: () -> Unit) {
+    val src = androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    com.xenoorigin.xelauncher.design.LiquidSurface(
+        RoundedCornerShape(50),
+        Modifier.size(42.dp).pressSquish(src)
+            .clickable(src, indication = null, role = androidx.compose.ui.semantics.Role.Button, onClickLabel = label) { com.xenoorigin.xelauncher.sound.XeSound.tap(); onClick() },
+    ) { androidx.compose.material3.Icon(painterResource(icon), label, Modifier.size(20.dp).align(Alignment.Center), tint = LocalXeScheme.current.text) }
+}

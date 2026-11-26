@@ -86,6 +86,11 @@ class WallpaperController(
     private fun timePreset(s: com.xenoorigin.xelauncher.settings.XeSettings, minute: Int): WallpaperPreset =
         if (s.wallpaperId == ASCII_LIVE_ID) AsciiCollection.first().copy(minute = minute).withColors(s) else WallpaperPreset.Sky(minute = minute)
 
+    /** Liquid Glass copy of an ASCII scene as Xe draws it on Home right now (the live one follows the time). */
+    suspend fun asciiGlass(p: WallpaperPreset.Ascii): ImageBitmap? = withContext(Dispatchers.Default) {
+        runCatching { val (w, h) = screenSize(); WallpaperRenderer.glassBackdrop(WallpaperRenderer.render(p, w, h)).asImageBitmap() }.getOrNull()
+    }
+
     private fun show(bmp: Bitmap) {
         _current.value = bmp.asImageBitmap()
         _backdrop.value = runCatching { WallpaperRenderer.backdrop(bmp).asImageBitmap() }.getOrNull()

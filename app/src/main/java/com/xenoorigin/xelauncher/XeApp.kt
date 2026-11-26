@@ -123,8 +123,23 @@ fun XeApp(graph: AppGraph) {
         // Liquid Glass looks through a frosted copy of the wallpaper, lined up with where the wallpaper sits now.
         val glassBg by graph.wallpaper.glassBackdrop.collectAsState()
         // Glass only looks through the copy when it matches what's on Home (not over live ASCII scenes).
-        val sees by androidx.compose.runtime.rememberUpdatedState(com.xenoorigin.xelauncher.wallpaper.glassSeesWallpaper(settings))
-        val glassBackdrop = remember { com.xenoorigin.xelauncher.design.GlassBackdrop({ if (sees) glassBg else null }, { androidx.compose.ui.geometry.Offset.Zero }, { androidx.compose.ui.geometry.Size(1f, 1f) }) }
+        // Over an ASCII scene the glass bends a still of the same scene, renewed each minute (the live one moves).
+        val asciiScene = com.xenoorigin.xelauncher.wallpaper.homeAscii(settings)
+        var asciiGlass by remember { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
+        LaunchedEffect(asciiScene) {
+            if (asciiScene == null) { asciiGlass = null; return@LaunchedEffect }
+            while (true) { asciiGlass = graph.wallpaper.asciiGlass(asciiScene) ?: asciiGlass; kotlinx.coroutines.delay(60_000) }
+        }
+        val copy by androidx.compose.runtime.rememberUpdatedState(com.xenoorigin.xelauncher.wallpaper.glassCopyFor(settings))
+        val glassBackdrop = remember {
+            com.xenoorigin.xelauncher.design.GlassBackdrop({
+                when (copy) {
+                    com.xenoorigin.xelauncher.wallpaper.GlassCopy.WALLPAPER -> glassBg
+                    com.xenoorigin.xelauncher.wallpaper.GlassCopy.ASCII_SCENE -> asciiGlass
+                    com.xenoorigin.xelauncher.wallpaper.GlassCopy.NONE -> null
+                }
+            }, { androidx.compose.ui.geometry.Offset.Zero }, { androidx.compose.ui.geometry.Size(1f, 1f) })
+        }
         CompositionLocalProvider(
             LocalHazeState provides haze, LocalIconRepository provides graph.icons, LocalGrayscaleContrast provides settings.grayscaleContrast,
             com.xenoorigin.xelauncher.icons.LocalGlyphScale provides settings.glyphScale,
