@@ -528,8 +528,8 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                     openTermi = { if (!editMode) termiOpen = true },
                     termiBody = settings.accent,
                     asciiColor = settings.asciiColor,
-                    // Not while Termi's own page covers Home: one animated Termi at a time.
-                    animate = speed != AnimationSpeed.OFF && !powerSave && !termiOpen,
+                    // Termi keeps moving even in battery saver (owner, 27 Nov); not while its own page covers Home.
+                    animate = speed != AnimationSpeed.OFF && !termiOpen,
                     editing = editMode,
                 )
             },
@@ -703,7 +703,7 @@ private fun LauncherRoot(graph: AppGraph, settings: XeSettings) {
                     graph.termi, remember(apps) { apps.map { it.key.packageName to it.label }.distinctBy { it.first } }, usageOk,
                     onGrantUsage = { com.xenoorigin.xelauncher.apps.UsageTime.requestAccess(ctx) },
                     onClose = { termiOpen = false },
-                    accent = settings.accent, ascii = settings.asciiColor, animate = speed != AnimationSpeed.OFF && !powerSave,
+                    accent = settings.accent, ascii = settings.asciiColor, animate = speed != AnimationSpeed.OFF,
                 )
             }
         }

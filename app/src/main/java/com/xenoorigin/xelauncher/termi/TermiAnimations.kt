@@ -9,7 +9,7 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 
 enum class TermiAnim(val seconds: Float) {
-    IDLE(3f), HELLO(4.2f), CODING(5f), PROMPT_AI(5f), THINK(4.6f), COFFEE(5f), MUSIC(4.6f), BUILD_FAIL(6f),
+    IDLE(8f), HELLO(4.2f), CODING(5f), PROMPT_AI(5f), THINK(4.6f), COFFEE(5f), MUSIC(4.6f), BUILD_FAIL(6f),
     BUG_SQUASH(5.4f), BUILD_PASS(5f), LOVE(4.6f), HUNGRY(5.6f), HUNGRY_WAIT(3f), SLEEP(6f), NAP(4f),
 }
 
@@ -117,11 +117,44 @@ object TermiAnimations {
         }
     }.build()
 
+    /**
+     * The 8-second idle loop, never still (owner, 27 Nov): a stroll to the right with bouncing steps and swinging
+     * arms, a look around with hands on hips, a stroll left, a happy hop, then back to the middle, swaying and
+     * blinking all the while.
+     */
     private fun B.idle(t: Float, i: Int) {
-        val br = sinf(t * TAU * 2)
-        val blink = t in .45f..0.5f || t in .9f..0.95f
-        termi(face = if (blink) "blink" else "neutral", mouth = if ((i / 5) % 2 == 0) null else "none",
-            squash = if (br > .75f) 1 else 0, armDy = -br * 2 to -br * 2)
+        val sway = sinf(t * TAU * 4) * 2
+        val blink = (i % 37) in 0..1
+        // Walking between two x positions (concept px) during [a, b]: bounce per step, legs and arms alternate.
+        fun walk(a: Float, b: Float, from: Float, to: Float, face: String) {
+            val k = seg(t, a, b)
+            val x = from + (to - from) * (k * k * (3 - 2 * k))
+            val steps = 4f
+            val ph = k * steps
+            val step = ph.toInt() % 2
+            val bob = -kotlin.math.abs(sinf(ph * PI.toFloat())) * 6
+            termi(
+                dx = x, dy = bob, face = if (blink) "blink" else face, lean = if (to > from) 3f else -3f,
+                legs = if (step == 0) "lift" to "stand" else "stand" to "lift",
+                armDy = (if (step == 0) -4f else 2f) to (if (step == 0) 2f else -4f),
+            )
+        }
+        when {
+            t < .10f -> termi(face = if (blink) "blink" else "neutral", lean = sway, squash = if (sinf(t * TAU * 6) > .7f) 1 else 0, armDy = -sway to sway)
+            t < .30f -> walk(.10f, .30f, 0f, 24f, "right")
+            t < .42f -> {
+                val k = seg(t, .30f, .42f)
+                termi(dx = 24f, face = if (blink) "blink" else if (k < .5f) "left" else "up", arms = "hip" to "hip", lean = sway)
+            }
+            t < .64f -> walk(.42f, .64f, 24f, -22f, "left")
+            t < .76f -> {
+                val k = seg(t, .64f, .76f)
+                termi(dx = -22f, dy = -sinf(k * PI.toFloat()) * 16, face = "happy", squash = if (k < .15f || k > .9f) 1 else if (k < .5f) -1 else 0,
+                    arms = "up" to "up", legs = if (k in .15f..0.85f) "tuck" to "tuck" else "stand" to "stand")
+            }
+            t < .92f -> walk(.76f, .92f, -22f, 0f, "content")
+            else -> termi(face = if (blink) "blink" else "content", lean = sway, armDy = sway to -sway, squash = if (sinf(t * TAU * 8) > .8f) 1 else 0)
+        }
     }
 
     private fun B.hello(t: Float, i: Int) {
@@ -466,7 +499,7 @@ object TermiAnimations {
 class AnimDirector(private val random: java.util.Random = java.util.Random()) {
     private val queue = ArrayDeque<TermiAnim>()
     private var lastVibe = 0L
-    private var gap = 20_000L + random.nextInt(20_000)
+    private var gap = 6_000L + random.nextInt(8_000)
 
     fun next(mood: Mood, event: TermiEvent?, nowMs: Long): TermiAnim {
         when (event) {
@@ -484,7 +517,7 @@ class AnimDirector(private val random: java.util.Random = java.util.Random()) {
             Mood.ASLEEP -> TermiAnim.NAP
             Mood.HUNGRY -> TermiAnim.HUNGRY_WAIT
             else -> if (nowMs - lastVibe >= gap) {
-                lastVibe = nowMs; gap = 20_000L + random.nextInt(20_000)
+                lastVibe = nowMs; gap = 6_000L + random.nextInt(8_000)
                 if (random.nextInt(10) == 0) TermiAnim.BUILD_FAIL else VIBES.filter { it != TermiAnim.BUILD_FAIL }[random.nextInt(VIBES.size - 1)]
             } else TermiAnim.IDLE
         }

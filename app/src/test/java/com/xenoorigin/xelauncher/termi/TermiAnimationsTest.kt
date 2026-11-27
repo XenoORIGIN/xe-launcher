@@ -50,9 +50,10 @@ class TermiAnimationsTest {
 
     @Test fun idlePicksAVibeAnimationOnlyAfterAWhile() {
         val d = AnimDirector(java.util.Random(2))
+        // 2.1.2: a routine every 6–14 s (owner wants Termi always on the move).
         assertThat(d.next(Mood.HAPPY, null, 1_000)).isEqualTo(TermiAnim.IDLE)
-        assertThat(d.next(Mood.HAPPY, null, 15_000)).isEqualTo(TermiAnim.IDLE)
-        assertThat(d.next(Mood.HAPPY, null, 41_000)).isIn(AnimDirector.VIBES)
-        assertThat(d.next(Mood.HAPPY, null, 42_000)).isEqualTo(TermiAnim.IDLE)
+        assertThat(d.next(Mood.HAPPY, null, 5_000)).isEqualTo(TermiAnim.IDLE)
+        assertThat(d.next(Mood.HAPPY, null, 15_000)).isIn(AnimDirector.VIBES)
+        assertThat(d.next(Mood.HAPPY, null, 16_000)).isEqualTo(TermiAnim.IDLE)
     }
 }
