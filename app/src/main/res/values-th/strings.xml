@@ -425,4 +425,17 @@
     <string name="settings_search">ค้นหาการตั้งค่า</string>
     <string name="settings_no_match">ไม่พบการตั้งค่าที่ตรงกัน</string>
     <string name="quick_settings">ด่วน</string>
+    <string name="developer">นักพัฒนา</string>
+    <string name="dev_on">เปิดโหมดนักพัฒนาแล้ว</string>
+    <string name="dev_already">โหมดนักพัฒนาเปิดอยู่แล้ว</string>
+    <string name="dev_taps_left">แตะอีก %1$d ครั้งเพื่อเปิดโหมดนักพัฒนา</string>
+    <string name="dev_termi_level">เลเวล Termi</string>
+    <string name="dev_unlock_all">ปลดล็อกของทั้งหมด</string>
+    <string name="dev_unlock_all_desc">ใส่ได้ทุกชิ้นไม่ว่าเลเวลไหน</string>
+    <string name="dev_reset">รีเซ็ต Termi</string>
+    <string name="dev_reset_desc">เริ่ม Termi ใหม่ที่เลเวล 1 แอปสายสร้างและเวลานอนยังอยู่</string>
+    <string name="dev_reset_confirm">แตะอีกครั้งเพื่อรีเซ็ต</string>
+    <string name="dev_reset_done">เริ่ม Termi ใหม่แล้ว</string>
+    <string name="dev_mode">โหมดนักพัฒนา</string>
+    <string name="dev_mode_desc">ปิดเพื่อซ่อนหน้านี้</string>
 </resources>

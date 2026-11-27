@@ -142,7 +142,50 @@ fun SettingsRoot(s: XeSettings, push: (String) -> Unit, onClose: () -> Unit, new
             }
         }
         SettingsGroup(stringResource(R.string.pages)) { PageEntries.forEach { EntryRow(it, push) } }
-        SettingsGroup { HelpEntries.forEach { EntryRow(it, push) } }
+        SettingsGroup {
+            HelpEntries.forEach { EntryRow(it, push) }
+            if (s.devMode) NavRow(stringResource(R.string.developer), R.drawable.ti_bug, RowColors.Grey) { push("developer") }
+        }
+    }
+}
+
+/**
+ * Developer mode (opened by tapping the version on About 7 times): set Termi's level, unlock every item,
+ * start Termi over, or turn developer mode off again.
+ */
+@Composable
+fun DeveloperScreen(back: () -> Unit, s: XeSettings, update: Update, termi: com.xenoorigin.xelauncher.termi.TermiStore) {
+    val saved by termi.state.collectAsState()
+    val level = com.xenoorigin.xelauncher.termi.TermiRules.level(saved.xp)
+    var confirm by remember { mutableStateOf(false) }
+    var done by remember { mutableStateOf(false) }
+    val scheme = LocalXeScheme.current
+    SettingsPage(stringResource(R.string.developer), onBack = back) {
+        SettingsGroup(stringResource(R.string.widget_termi)) {
+            XeRow(stringResource(R.string.dev_termi_level), icon = R.drawable.ti_sparkles, iconTint = RowColors.Purple) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    com.xenoorigin.xelauncher.design.GlassIconButton(R.drawable.ti_minus, "-", { termi.setLevel(level - 1) }, Modifier.testTag("dev_level_minus"))
+                    Text("$level", Modifier.padding(horizontal = 12.dp).testTag("dev_level"), style = XeType.Headline, color = scheme.text)
+                    com.xenoorigin.xelauncher.design.GlassIconButton(R.drawable.ti_plus, "+", { termi.setLevel(level + 1) }, Modifier.testTag("dev_level_plus"))
+                }
+            }
+            XeRow(stringResource(R.string.dev_unlock_all), icon = R.drawable.ti_lock_open, iconTint = RowColors.Orange, subtitle = stringResource(R.string.dev_unlock_all_desc)) {
+                GlassSwitch(saved.unlockAll, { termi.setUnlockAll(it) }, Modifier.testTag("dev_unlock_all"))
+            }
+            XeRow(
+                stringResource(if (done) R.string.dev_reset_done else if (confirm) R.string.dev_reset_confirm else R.string.dev_reset),
+                icon = R.drawable.ti_refresh, iconTint = RowColors.Red, subtitle = stringResource(R.string.dev_reset_desc),
+                modifier = Modifier.testTag("dev_reset"),
+                onClick = {
+                    if (confirm) { termi.reset(); confirm = false; done = true } else { confirm = true; done = false }
+                },
+            )
+        }
+        SettingsGroup {
+            XeRow(stringResource(R.string.dev_mode), icon = R.drawable.ti_bug, iconTint = RowColors.Grey, subtitle = stringResource(R.string.dev_mode_desc)) {
+                GlassSwitch(s.devMode, { v -> update { it.copy(devMode = v) }; if (!v) back() }, Modifier.testTag("dev_mode_switch"))
+            }
+        }
     }
 }
 
@@ -588,7 +631,24 @@ fun AboutScreen(back: () -> Unit, s: XeSettings? = null, update: Update = {}, no
                         }
                     },
             )
-            Text(stringResource(R.string.version, BuildConfig.VERSION_NAME), style = XeType.Caption, color = LocalXeScheme.current.textSecondary)
+            // Tap the version 7 times for developer mode, like Android's build number.
+            val devCounter = remember { com.xenoorigin.xelauncher.design.TapCounter(needed = 7, windowMs = 3000) }
+            var devMsg by remember { mutableStateOf<String?>(null) }
+            val ctx = androidx.compose.ui.platform.LocalContext.current
+            Text(
+                stringResource(R.string.version, BuildConfig.VERSION_NAME), style = XeType.Caption, color = LocalXeScheme.current.textSecondary,
+                modifier = Modifier.testTag("about_version").clickable(interactionSource = null, indication = null) {
+                    if (s == null) return@clickable
+                    val hit = devCounter.tap(System.currentTimeMillis())
+                    devMsg = when {
+                        s.devMode && devCounter.progress >= 2 -> ctx.getString(R.string.dev_already)
+                        hit -> { update { it.copy(devMode = true) }; com.xenoorigin.xelauncher.sound.XeSound.play(com.xenoorigin.xelauncher.sound.XeSound.Kind.SECRET); ctx.getString(R.string.dev_on) }
+                        !s.devMode && devCounter.progress >= 3 -> ctx.getString(R.string.dev_taps_left, 7 - devCounter.progress)
+                        else -> devMsg
+                    }
+                },
+            )
+            devMsg?.let { Text(it, Modifier.padding(top = 6.dp), style = XeType.Caption, color = LocalXeScheme.current.text) }
             // From the third quick tap, seven little dots light up: a hint that something is coming.
             androidx.compose.animation.AnimatedVisibility(taps >= 3) {
                 Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {

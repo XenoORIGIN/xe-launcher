@@ -426,4 +426,17 @@
     <string name="settings_search">Search settings</string>
     <string name="settings_no_match">No settings match</string>
     <string name="quick_settings">Quick</string>
+    <string name="developer">Developer</string>
+    <string name="dev_on">You\'re a developer now</string>
+    <string name="dev_already">Developer mode is already on</string>
+    <string name="dev_taps_left">%1$d more taps to developer mode</string>
+    <string name="dev_termi_level">Termi level</string>
+    <string name="dev_unlock_all">Unlock every item</string>
+    <string name="dev_unlock_all_desc">Wear anything whatever the level</string>
+    <string name="dev_reset">Reset Termi</string>
+    <string name="dev_reset_desc">A brand-new Termi at level 1. Your creator apps and bedtime stay</string>
+    <string name="dev_reset_confirm">Tap again to reset</string>
+    <string name="dev_reset_done">Termi starts over</string>
+    <string name="dev_mode">Developer mode</string>
+    <string name="dev_mode_desc">Turn off to hide this page</string>
 </resources>

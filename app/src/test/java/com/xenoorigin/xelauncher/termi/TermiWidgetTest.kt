@@ -83,7 +83,10 @@ class TermiWidgetTest {
     }
 
     @Test fun sleepButtonBecomesWake() {
-        show(Span(4, 2))
+        // Noon, so Termi starts awake whatever the machine's clock says (the default bedtime is 00:00–06:00).
+        val zone = java.time.ZoneOffset.UTC
+        val noon = java.time.LocalDateTime.of(2026, 11, 27, 12, 0).toInstant(zone).toEpochMilli()
+        show(Span(4, 2), TermiStore(tmp.root.resolve("noon.json"), clock = { noon }, zone = { zone }))
         rule.onNodeWithTag("termi_sleep").performClick()
         rule.waitForIdle()
         rule.onNodeWithText("Wake").assertExists()

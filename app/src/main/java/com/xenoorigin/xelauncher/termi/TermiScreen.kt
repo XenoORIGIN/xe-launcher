@@ -83,7 +83,7 @@ fun TermiScreen(
                 Row(Modifier.horizontalScroll(rememberScrollState()).padding(10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     WearChip(stringResource(R.string.termi_none), s.equipped[slot] == null, true, "wear_none_$slot") { store.equip(null, slot) }
                     for (item in Item.entries.filter { it.slot == slot }) {
-                        val open = item.level <= level
+                        val open = TermiRules.isUnlocked(s, item)
                         WearChip(if (open) itemName(item) else stringResource(R.string.termi_locked, item.level), s.equipped[slot] == item, open, "wear_${item.name}") {
                             if (open) store.equip(item, slot)
                         }

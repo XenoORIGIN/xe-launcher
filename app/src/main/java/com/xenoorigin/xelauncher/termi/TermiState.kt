@@ -39,6 +39,8 @@ data class TermiState(
     val awakeUntil: Long = 0,
     /** End of the last night window whose rest bonus was checked. */
     val lastNightEnd: Long = 0,
+    /** Developer mode: every item can be worn whatever the level. */
+    val unlockAll: Boolean = false,
 )
 
 /**
@@ -127,9 +129,12 @@ object TermiRules {
 
     fun unlocked(xp: Int): List<Item> = Item.entries.filter { it.level <= level(xp) }.sortedBy { it.level }
 
+    /** Whether [item] can be worn now: its level is reached, or developer mode unlocked everything. */
+    fun isUnlocked(s: TermiState, item: Item): Boolean = s.unlockAll || item.level <= level(s.xp)
+
     fun equip(s: TermiState, item: Item?, slot: Slot): TermiState = when {
         item == null -> s.copy(equipped = s.equipped - slot)
-        item.slot != slot || item.level > level(s.xp) -> s
+        item.slot != slot || !isUnlocked(s, item) -> s
         else -> s.copy(equipped = s.equipped + (slot to item))
     }
 }

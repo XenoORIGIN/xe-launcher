@@ -127,6 +127,19 @@ class TermiStore(
 
     internal fun addXpForTest(xp: Int) = change { it.copy(xp = it.xp + xp) }
 
+    /** Developer mode: jump straight to [level] (1–15); the stage follows. */
+    fun setLevel(level: Int) = change { it.copy(xp = (level.coerceIn(1, TermiRules.MAX_LEVEL) - 1) * TermiRules.XP_PER_LEVEL) }
+
+    /** Developer mode: let every item be worn whatever the level. */
+    fun setUnlockAll(on: Boolean) = change { s ->
+        // Turning it off takes off what the level doesn't allow yet.
+        val kept = if (on) s.equipped else s.equipped.filterValues { it.level <= TermiRules.level(s.xp) }
+        s.copy(unlockAll = on, equipped = kept)
+    }
+
+    /** Developer mode: a brand-new Termi, keeping the owner's choices (creator apps, bedtime). */
+    fun reset() = clock().let { now -> change { s -> TermiState(updatedAt = now, creatorApps = s.creatorApps, nightStart = s.nightStart, nightEnd = s.nightEnd) } }
+
     /**
      * Called when Home is shown: credits new minutes in creator apps (1 XP per 2 minutes, at most 60 a day)
      * and, once per night window after it ends, the night-rest bonus. The slow usage queries run first;

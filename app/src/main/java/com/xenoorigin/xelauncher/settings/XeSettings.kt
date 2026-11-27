@@ -132,4 +132,6 @@ data class XeSettings(
     val uiStyle: com.xenoorigin.xelauncher.design.UiStyle = com.xenoorigin.xelauncher.design.UiStyle.GLASS,
     /** Short Xe sounds on taps, toggles, opening and closing (silent when the phone is on silent or vibrate). */
     val clickSounds: Boolean = true,
+    /** Developer mode (tap the version on About 7 times): shows the Developer page in settings. */
+    val devMode: Boolean = false,
 )
