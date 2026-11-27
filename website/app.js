@@ -56,6 +56,8 @@
     if (io) { if (el.closest(".grid,ol")) el.style.transitionDelay = (i % 3) * 90 + "ms"; io.observe(el); } else el.classList.add("in");
   });
   const NEWS = [
+    { v: "2.1.2", d: "2026-11-27", th: ["Termi ขยับตลอดเวลา: เดินไปมา กระโดด โยกตัว และทำท่าสายโค้ดบ่อยขึ้น ทั้งในวิดเจ็ตและหน้า Termi"],
+      en: ["Termi is always on the move: strolls, hops, sways and does coder routines more often, in the widget and on its page"] },
     { v: "2.1.1", d: "2026-11-27", th: ["โหมดนักพัฒนา: แตะเลขเวอร์ชันในหน้าเกี่ยวกับ 7 ครั้ง แล้วตั้งเลเวล Termi ปลดล็อกของทั้งหมด หรือรีเซ็ต Termi ได้"],
       en: ["Developer mode: tap the version on About 7 times to set Termi's level, unlock every item or reset Termi"] },
     { v: "2.1.0", d: "2026-11-26", th: ["กระจกบิดบนวอลเปเปอร์ ASCII ได้แล้ว และลิ้นชักแอปใช้กระจกเลนส์ทั้งหมด", "ตัวอักษรจุดภาษาไทยในสไตล์ Nothing", "แก้บั๊ก Termi และวอลเปเปอร์ ASCII"],
