@@ -56,6 +56,8 @@
     if (io) { if (el.closest(".grid,ol")) el.style.transitionDelay = (i % 3) * 90 + "ms"; io.observe(el); } else el.classList.add("in");
   });
   const NEWS = [
+    { v: "2.1.1", d: "2026-11-27", th: ["โหมดนักพัฒนา: แตะเลขเวอร์ชันในหน้าเกี่ยวกับ 7 ครั้ง แล้วตั้งเลเวล Termi ปลดล็อกของทั้งหมด หรือรีเซ็ต Termi ได้"],
+      en: ["Developer mode: tap the version on About 7 times to set Termi's level, unlock every item or reset Termi"] },
     { v: "2.1.0", d: "2026-11-26", th: ["กระจกบิดบนวอลเปเปอร์ ASCII ได้แล้ว และลิ้นชักแอปใช้กระจกเลนส์ทั้งหมด", "ตัวอักษรจุดภาษาไทยในสไตล์ Nothing", "แก้บั๊ก Termi และวอลเปเปอร์ ASCII"],
       en: ["Glass bends ASCII wallpapers too, and lens glass across the app drawer", "Thai dot-matrix type in Nothing style", "Termi and ASCII wallpaper fixes"] },
     { v: "2.0.2", d: "2026-11-26", th: ["แก้กระจกแสดงภาพวอลเปเปอร์ผิดบนวอลเปเปอร์ ASCII", "แก้ไอคอนแถวล่างในลิ้นชักแอปถูกตัด และกระจกบนวิดเจ็ตอ่านง่ายขึ้น"],
